@@ -1,2 +1,12 @@
-# zypher-events
-CMPUT 301 Project
+# Zypher-Events
+## CMPUT 301 Project
+
+## Student Details
+| Team Member # | Student Name     | CCID     |
+| ------------- | ---------------- | -------- |
+|             1 | Arunavo Dutta    | arunavo  |
+|             2 | Noordeep Behla   | behla    |
+|             3 | Eliot Chrystal   | echrysta |
+|             4 | Britney Kunchidi | kunchidi |
+|             5 | Aaron Mramba     | mramba   |
+|             6 | Tom Yang         | yuzne7   |

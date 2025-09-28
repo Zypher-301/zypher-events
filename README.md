@@ -6,7 +6,7 @@
 | ------------- | ---------------- | -------- |
 |             1 | Arunavo Dutta    | arunavo  |
 |             2 | Noordeep Behla   | behla    |
-|             3 | Eliot Chrystal   | echrysta |
+|             3 | Elliot Chrystal  | echrysta |
 |             4 | Britney Kunchidi | kunchidi |
 |             5 | Aaron Mramba     | mramba   |
 |             6 | Tom Yang         | yuzne7   |

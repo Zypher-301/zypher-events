@@ -20,6 +20,6 @@ public class Administrator extends User {
      * @param lastName   the administrator's last name
      */
     public Administrator(String hardwareID, String firstName, String lastName) {
-        super(hardwareID, firstName, lastName);
+        super(UserType.ADMINISTRATOR, hardwareID, firstName, lastName);
     }
 }

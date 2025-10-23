@@ -8,9 +8,12 @@ package com.example.zypherevent.userTypes;
  * reusability). Users are identified primarily by their hardware ID.
  *
  */
-public class User {
+public abstract class User {
     /** The unique hardware identifier associated with the user. */
     private String hardwareID;
+
+    /** The type of user (Entrant, Organizer, Administrator). */
+    private UserType userType;
 
     /** The user's first name. */
     private String firstName;
@@ -25,10 +28,11 @@ public class User {
      * @param firstName  the user's first name
      * @param lastName   the user's last name
      */
-    public User(String hardwareID, String firstName, String lastName) {
+    public User(UserType userType, String hardwareID, String firstName, String lastName) {
         this.hardwareID = hardwareID;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.userType = userType;
     }
 
     /**
@@ -83,5 +87,14 @@ public class User {
      */
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    /**
+     * Returns the type of user (Entrant, Organizer, Administrator).
+     *
+     * @return the user's type
+     */
+    public UserType getUserType() {
+        return userType;
     }
 }

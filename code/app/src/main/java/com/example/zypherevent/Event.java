@@ -14,11 +14,13 @@ import java.util.ArrayList;
  * Represents an event within the Zypher Event system. Each event has identifying details such as
  * name, description, start time, and location, along with registration start and end times. Events
  * are created and managed by an Organizer, and maintain lists of Entrants who have been waitlisted,
- * accepted, or declined. The class also supports optional event promotional posters via Firebase
- * paths, and provides methods for managing entrant lists.
+ * accepted, or declined. The class also supports optional event promotional posters via a poster's
+ * external URL, and provides methods for managing entrant lists.
  *
  */
 public class Event {
+
+    private int uniqueEventID;
 
     /** The event's name. */
     private String eventName;
@@ -38,9 +40,8 @@ public class Event {
     /** The time when registration for the event closes. */
     private LocalDateTime registrationEndTime;
 
-    /** The Firebase storage path for the event's optional promotional poster. */
-    // TODO: in database, make sure that uploading a poster image returns the firebase poster path!
-    private String firebasePosterPath;
+    /** The URL for the event's optional promotional poster. */
+    private String posterURL;
 
     /** The organizer responsible for managing the event. */
     private Organizer eventOrganizer;
@@ -57,6 +58,7 @@ public class Event {
     /**
      * Constructs a new Event instance with all event details specified.
      *
+     * @param uniqueEventID           the unique identifier for the event
      * @param eventName               the name of the event
      * @param eventDescription        a brief description of the event
      * @param startTime               the start time of the event
@@ -64,18 +66,19 @@ public class Event {
      * @param registrationStartTime   the time when registration opens
      * @param registrationEndTime     the time when registration closes
      * @param eventOrganizer          the organizer responsible for the event
-     * @param firebasePosterPath      the Firebase path to the event's optional promotional poster
+     * @param posterURL      the Firebase path to the event's optional promotional poster
      */
-    public Event(String eventName, String eventDescription, LocalDateTime startTime, String location,
+    public Event(Integer uniqueEventID, String eventName, String eventDescription, LocalDateTime startTime, String location,
                  LocalDateTime registrationStartTime, LocalDateTime registrationEndTime,
-                 Organizer eventOrganizer, String firebasePosterPath) {
+                 Organizer eventOrganizer, String posterURL) {
+        this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
         this.startTime = startTime;
         this.location = location;
         this.registrationStartTime = registrationStartTime;
         this.registrationEndTime = registrationEndTime;
-        this.firebasePosterPath = firebasePosterPath;
+        this.posterURL = posterURL;
         this.eventOrganizer = eventOrganizer;
 
         // Initialize entrant lists
@@ -85,8 +88,9 @@ public class Event {
     }
 
     /**
-     * Constructs a new Event instance with all event details specified.
+     * Constructs a new Event instance without a poster URL specified.
      *
+     * @param uniqueEventID           the unique identifier for the event
      * @param eventName               the name of the event
      * @param eventDescription        a brief description of the event
      * @param startTime               the start time of the event
@@ -95,9 +99,10 @@ public class Event {
      * @param registrationEndTime     the time when registration closes
      * @param eventOrganizer          the organizer responsible for the event
      */
-    public Event(String eventName, String eventDescription, LocalDateTime startTime, String location,
+    public Event(Integer uniqueEventID, String eventName, String eventDescription, LocalDateTime startTime, String location,
                  LocalDateTime registrationStartTime, LocalDateTime registrationEndTime,
                  Organizer eventOrganizer) {
+        this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
         this.startTime = startTime;
@@ -110,6 +115,15 @@ public class Event {
         this.waitListEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
+    }
+
+    /**
+     * Returns the unique identifier for the event.
+     *
+     * @return the event's unique identifier
+     */
+    public int getUniqueEventID() {
+        return uniqueEventID;
     }
 
     /**
@@ -221,24 +235,24 @@ public class Event {
     }
 
     /**
-     * Returns the Firebase storage path for the event's poster, or "N/A" if no poster path is set.
+     * Returns the event's poster URL, or "N/A" if no poster URL is set.
      *
-     * @return the Firebase poster path or "N/A" if unavailable
+     * @return the poster URL or "N/A" if unavailable
      */
-    public String getFirebasePosterPath() {
-        if (firebasePosterPath == null) {
+    public String getPosterURL() {
+        if (posterURL == null) {
             return "N/A";
         }
-        return firebasePosterPath;
+        return posterURL;
     }
 
     /**
-     * Updates the Firebase storage path for the event's poster.
+     * Updates the event's poster URL.
      *
-     * @param firebasePosterPath the new Firebase poster path to set
+     * @param posterURL the new poster URL to set for the event
      */
-    public void setFirebasePosterPath(String firebasePosterPath) {
-        this.firebasePosterPath = firebasePosterPath;
+    public void setPosterURL(String posterURL) {
+        this.posterURL = posterURL;
     }
 
     /**

@@ -37,7 +37,7 @@ public class Entrant extends User {
      * @param phoneNumber the entrant's phone number
      */
     public Entrant(String hardwareID, String firstName, String lastName, String email, String phoneNumber) {
-        super(hardwareID, firstName, lastName);
+        super(UserType.ENTRANT, hardwareID, firstName, lastName);
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.registeredEventHistory = new ArrayList<Event>();
@@ -52,7 +52,7 @@ public class Entrant extends User {
      * @param email      the entrant's email address
      */
     public Entrant(String hardwareID, String firstName, String lastName, String email) {
-        super(hardwareID, firstName, lastName);
+        super(UserType.ENTRANT, hardwareID, firstName, lastName);
         this.email = email;
         this.registeredEventHistory = new ArrayList<Event>();
     }

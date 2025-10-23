@@ -29,7 +29,7 @@ public class Organizer extends User {
      * @param lastName   the organizer's last name
      */
     public Organizer(String hardwareID, String firstName, String lastName) {
-        super(hardwareID, firstName, lastName);
+        super(UserType.ORGANIZER, hardwareID, firstName, lastName);
         this.createdEvents = new ArrayList<Event>();
     }
 

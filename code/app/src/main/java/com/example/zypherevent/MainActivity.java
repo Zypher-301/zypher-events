@@ -144,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // run some informal tests on database!
+        // run some informal tests on database (on a thread other than main!!)
 //        new Thread(() -> {
 //            try {
 //                Log.d("informalTesting", "Starting informal testing...");

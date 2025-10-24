@@ -177,6 +177,12 @@ public class Database {
                 });
     }
 
+    /**
+     * Retrieves an unused event number from firebase. Its just an off platform number incrementer
+     * so that we can avoid collisions in the event IDs.
+     *
+     * @return a Task that resolves to the next unused event number
+     */
     public Task<Long> getUniqueEventID() {
 
         DocumentReference uniqueRef = extrasCollection.document("uniqueIdentifierData");

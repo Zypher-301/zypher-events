@@ -8,7 +8,7 @@ package com.example.zypherevent.userTypes;
  * reusability). Users are identified primarily by their hardware ID.
  *
  */
-public abstract class User {
+public class User {
     /** The unique hardware identifier associated with the user. */
     private String hardwareID;
 
@@ -20,6 +20,14 @@ public abstract class User {
 
     /** The user's last name. */
     private String lastName;
+
+    /**
+     * Required by Firestore: public no-arg constructor.
+     * Subclasses should call setUserType(...) if they don't set it in their constructors.
+     */
+    public User() {
+        // Leave blank — Firestore will populate fields
+    }
 
     /**
      * Constructs a new User instance with the specified hardware ID, first name, and last name.
@@ -97,4 +105,14 @@ public abstract class User {
     public UserType getUserType() {
         return userType;
     }
+
+    /**
+     * sets the user type (required for Firestore deserialization)
+     *
+     * @param userType userType to be set
+     */
+    public void setUserType(UserType userType) {
+        this.userType = userType;
+    }
+
 }

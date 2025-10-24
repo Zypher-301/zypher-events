@@ -63,4 +63,25 @@ public class Organizer extends User {
     public void removeCreatedEvent(Event event) {
         createdEvents.remove(event);
     }
+
+    // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------
+
+    /**
+     * Required by Firestore: public no-arg constructor. ONLY to be used by firestore.
+     * Initializes collections to avoid null checks when deserialized.
+     */
+    public Organizer() {
+        // Ensure the type is set
+        setUserType(UserType.ORGANIZER);
+        this.createdEvents = new ArrayList<Event>();
+    }
+
+    /**
+     * Sets the organizer's list of created events. ONLY to be used by firestore.
+     *
+     * @param createdEvents the new list of created events
+     */
+    public void setCreatedEvents(ArrayList<Event> createdEvents) {
+        this.createdEvents = createdEvents;
+    }
 }

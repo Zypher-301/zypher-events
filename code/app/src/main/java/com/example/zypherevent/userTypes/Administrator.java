@@ -1,5 +1,9 @@
 package com.example.zypherevent.userTypes;
 
+import com.example.zypherevent.Event;
+
+import java.util.ArrayList;
+
 /**
  * @author Elliot Chrystal
  * @version 1.0
@@ -22,4 +26,16 @@ public class Administrator extends User {
     public Administrator(String hardwareID, String firstName, String lastName) {
         super(UserType.ADMINISTRATOR, hardwareID, firstName, lastName);
     }
+
+    // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------
+
+    /**
+     * Required by Firestore: public no-arg constructor.
+     * Initializes collections to avoid null checks when deserialized.
+     */
+    public Administrator() {
+        // Ensure the type is set
+        setUserType(UserType.ADMINISTRATOR);
+    }
+
 }

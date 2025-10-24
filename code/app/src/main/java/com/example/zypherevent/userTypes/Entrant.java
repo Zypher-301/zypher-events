@@ -128,4 +128,25 @@ public class Entrant extends User {
         // No contains check needed, as .remove already checks for existence internally
         registeredEventHistory.remove(event);
     }
+
+    // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------
+
+    /**
+     * Required by Firestore: public no-arg constructor. ONLY to be used by firestore!
+     * Initializes collections to avoid null checks when deserialized.
+     */
+    public Entrant() {
+        // Ensure the type is set
+        setUserType(UserType.ENTRANT);
+        this.registeredEventHistory = new ArrayList<Event>();
+    }
+
+    /**
+     * Sets the entrant's registered event history. ONLY to be used by firestore!
+     *
+     * @param registeredEventHistory the new list of registered events
+     */
+    public void setRegisteredEventHistory(ArrayList<Event> registeredEventHistory) {
+        this.registeredEventHistory = registeredEventHistory;
+    }
 }

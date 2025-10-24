@@ -2,6 +2,8 @@ package com.example.zypherevent;
 
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.example.zypherevent.userTypes.UserType;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
@@ -20,7 +22,7 @@ import java.util.ArrayList;
  */
 public class Event {
 
-    private int uniqueEventID;
+    private Long uniqueEventID;
 
     /** The event's name. */
     private String eventName;
@@ -29,22 +31,22 @@ public class Event {
     private String eventDescription;
 
     /** The start time of the event. */
-    private LocalDateTime startTime;
+    private String startTime;
 
     /** The event's physical or virtual location. */
     private String location;
 
     /** The time when registration for the event begins. */
-    private LocalDateTime registrationStartTime;
+    private String registrationStartTime;
 
     /** The time when registration for the event closes. */
-    private LocalDateTime registrationEndTime;
+    private String registrationEndTime;
 
     /** The URL for the event's optional promotional poster. */
     private String posterURL;
 
     /** The organizer responsible for managing the event. */
-    private Organizer eventOrganizer;
+    private String eventOrganizerHardwareID;
 
     /** A list of entrants currently on the event's waitlist. */
     private ArrayList<Entrant> waitListEntrants;
@@ -58,19 +60,19 @@ public class Event {
     /**
      * Constructs a new Event instance with all event details specified.
      *
-     * @param uniqueEventID           the unique identifier for the event
-     * @param eventName               the name of the event
-     * @param eventDescription        a brief description of the event
-     * @param startTime               the start time of the event
-     * @param location                the location where the event will take place
-     * @param registrationStartTime   the time when registration opens
-     * @param registrationEndTime     the time when registration closes
-     * @param eventOrganizer          the organizer responsible for the event
+     * @param uniqueEventID             the unique identifier for the event
+     * @param eventName                 the name of the event
+     * @param eventDescription          a brief description of the event
+     * @param startTime                 the start time of the event
+     * @param location                  the location where the event will take place
+     * @param registrationStartTime     the time when registration opens
+     * @param registrationEndTime       the time when registration closes
+     * @param eventOrganizerHardwareID  the organizer responsible for the event
      * @param posterURL      the Firebase path to the event's optional promotional poster
      */
-    public Event(Integer uniqueEventID, String eventName, String eventDescription, LocalDateTime startTime, String location,
-                 LocalDateTime registrationStartTime, LocalDateTime registrationEndTime,
-                 Organizer eventOrganizer, String posterURL) {
+    public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
+                 String registrationStartTime, String registrationEndTime,
+                 String eventOrganizerHardwareID, String posterURL) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
@@ -79,7 +81,7 @@ public class Event {
         this.registrationStartTime = registrationStartTime;
         this.registrationEndTime = registrationEndTime;
         this.posterURL = posterURL;
-        this.eventOrganizer = eventOrganizer;
+        this.eventOrganizerHardwareID = eventOrganizerHardwareID;
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
@@ -90,18 +92,18 @@ public class Event {
     /**
      * Constructs a new Event instance without a poster URL specified.
      *
-     * @param uniqueEventID           the unique identifier for the event
-     * @param eventName               the name of the event
-     * @param eventDescription        a brief description of the event
-     * @param startTime               the start time of the event
-     * @param location                the location where the event will take place
-     * @param registrationStartTime   the time when registration opens
-     * @param registrationEndTime     the time when registration closes
-     * @param eventOrganizer          the organizer responsible for the event
+     * @param uniqueEventID             the unique identifier for the event
+     * @param eventName                 the name of the event
+     * @param eventDescription          a brief description of the event
+     * @param startTime                 the start time of the event
+     * @param location                  the location where the event will take place
+     * @param registrationStartTime     the time when registration opens
+     * @param registrationEndTime       the time when registration closes
+     * @param eventOrganizerHardwareID  the organizer responsible for the event
      */
-    public Event(Integer uniqueEventID, String eventName, String eventDescription, LocalDateTime startTime, String location,
-                 LocalDateTime registrationStartTime, LocalDateTime registrationEndTime,
-                 Organizer eventOrganizer) {
+    public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
+                 String registrationStartTime, String registrationEndTime,
+                 String eventOrganizerHardwareID) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
@@ -109,7 +111,7 @@ public class Event {
         this.location = location;
         this.registrationStartTime = registrationStartTime;
         this.registrationEndTime = registrationEndTime;
-        this.eventOrganizer = eventOrganizer;
+        this.eventOrganizerHardwareID = eventOrganizerHardwareID;
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
@@ -122,7 +124,7 @@ public class Event {
      *
      * @return the event's unique identifier
      */
-    public int getUniqueEventID() {
+    public Long getUniqueEventID() {
         return uniqueEventID;
     }
 
@@ -167,7 +169,7 @@ public class Event {
      *
      * @return the event's start time
      */
-    public LocalDateTime getStartTime() {
+    public String getStartTime() {
         return startTime;
     }
 
@@ -176,7 +178,7 @@ public class Event {
      *
      * @param startTime the new start time to set
      */
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
 
@@ -203,7 +205,7 @@ public class Event {
      *
      * @return the registration start time
      */
-    public LocalDateTime getRegistrationStartTime() {
+    public String getRegistrationStartTime() {
         return registrationStartTime;
     }
 
@@ -212,7 +214,7 @@ public class Event {
      *
      * @param registrationStartTime the new registration start time to set
      */
-    public void setRegistrationStartTime(LocalDateTime registrationStartTime) {
+    public void setRegistrationStartTime(String registrationStartTime) {
         this.registrationStartTime = registrationStartTime;
     }
 
@@ -221,7 +223,7 @@ public class Event {
      *
      * @return the registration end time
      */
-    public LocalDateTime getRegistrationEndTime() {
+    public String getRegistrationEndTime() {
         return registrationEndTime;
     }
 
@@ -230,7 +232,7 @@ public class Event {
      *
      * @param registrationEndTime the new registration end time to set
      */
-    public void setRegistrationEndTime(LocalDateTime registrationEndTime) {
+    public void setRegistrationEndTime(String registrationEndTime) {
         this.registrationEndTime = registrationEndTime;
     }
 
@@ -256,21 +258,21 @@ public class Event {
     }
 
     /**
-     * Returns the organizer responsible for the event.
+     * Returns the organizer ID responsible for the event.
      *
      * @return the event organizer
      */
-    public Organizer getEventOrganizer() {
-        return eventOrganizer;
+    public String getEventOrganizerHardwareID() {
+        return eventOrganizerHardwareID;
     }
 
     /**
      * Updates the organizer responsible for the event.
      *
-     * @param eventOrganizer the new organizer to assign
+     * @param eventOrganizerHardwareID the new organizer ID to assign
      */
-    public void setEventOrganizer(Organizer eventOrganizer) {
-        this.eventOrganizer = eventOrganizer;
+    public void setEventOrganizerHardwareID(String eventOrganizerHardwareID) {
+        this.eventOrganizerHardwareID = eventOrganizerHardwareID;
     }
 
     /**
@@ -364,5 +366,53 @@ public class Event {
      */
     public void removeEntrantFromDeclinedList(Entrant entrant) {
         declinedEntrants.remove(entrant);
+    }
+
+    // ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!!
+
+    /**
+     * Required by Firestore: public no-arg constructor.
+     * Initializes collections to avoid null checks when deserialized.
+     */
+    public Event() {
+        this.waitListEntrants = new ArrayList<>();
+        this.acceptedEntrants = new ArrayList<>();
+        this.declinedEntrants = new ArrayList<>();
+    }
+
+    /**
+     * Sets the event's unique identifier. ONLY to be used by firestore.
+     *
+     * @param uniqueEventID the new unique event identifier
+     */
+    public void setUniqueEventID(Long uniqueEventID) {
+        this.uniqueEventID = uniqueEventID;
+    }
+
+    /**
+     * Sets the event's waitlist. ONLY to be used by firestore.
+     *
+     * @param waitListEntrants the new list of waitlisted entrants
+     */
+    public void setWaitListEntrants(ArrayList<Entrant> waitListEntrants) {
+        this.waitListEntrants = waitListEntrants;
+    }
+
+    /**
+     * Sets the event's accepted list. ONLY to be used by firestore.
+     *
+     * @param acceptedEntrants the new list of accepted entrants
+     */
+    public void setAcceptedEntrants(ArrayList<Entrant> acceptedEntrants) {
+        this.acceptedEntrants = acceptedEntrants;
+    }
+
+    /**
+     * Sets the event's declined list. ONLY to be used by firestore.
+     *
+     * @param declinedEntrants the new list of declined entrants
+     */
+    public void setDeclinedEntrants(ArrayList<Entrant> declinedEntrants) {
+        this.declinedEntrants = declinedEntrants;
     }
 }

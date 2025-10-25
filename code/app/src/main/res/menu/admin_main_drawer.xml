@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_events"
+            android:icon="@drawable/ic_admin_events"
+            android:title="Events" />
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/ic_admin_profile"
+            android:title="Profile" />
+        <item
+            android:id="@+id/nav_images"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="Images" />
+        <item
+            android:id="@+id/nav_notificationLog"
+            android:icon="@drawable/ic_notificationlog"
+            android:title="Notification Log" />
+    </group>
+</menu>

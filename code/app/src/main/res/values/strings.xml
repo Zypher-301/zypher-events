@@ -10,4 +10,13 @@
     <string name="menu_home">Home</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
+
+    <string name="send_notification">Send Notification</string>
+    <string-array name="status_options">
+        <item>Select</item>
+        <item>Waitlist</item>
+        <item>Accepted</item>
+        <item>Declined</item>
+    </string-array>
+
 </resources>

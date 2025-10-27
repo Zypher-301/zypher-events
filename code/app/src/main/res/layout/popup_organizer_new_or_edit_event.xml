@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        android:id="@+id/label1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event"
+        android:textSize="45sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/event_info"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/event_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/label1"
+        app:layout_constraintBottom_toTopOf="@id/save">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="500dp"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/event_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Name: "
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/edit_name"
+                app:layout_constraintBottom_toTopOf="@id/event_start"/>
+
+            <EditText
+                android:id="@+id/edit_name"
+                android:hint="Event Name"
+                android:inputType="textPersonName"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                app:layout_constraintTop_toTopOf="@id/event_name"
+                app:layout_constraintStart_toStartOf="@id/edit_time"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBaseline_toBaselineOf="@id/event_name" />
+
+            <TextView
+                android:id="@+id/event_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Time: "
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toBottomOf="@id/event_name"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/edit_time"
+                android:layout_marginTop="25dp"/>
+
+            <EditText
+                android:id="@+id/edit_time"
+                android:hint="Event Start Time"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                app:layout_constraintTop_toTopOf="@id/event_start"
+                app:layout_constraintStart_toEndOf="@id/event_start"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBaseline_toBaselineOf="@id/event_start"/>
+
+            <TextView
+                android:id="@+id/event_detail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event Details: "
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toBottomOf="@id/event_start"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="25dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/text_input_details"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toTopOf="@id/event_detail"
+                app:layout_constraintStart_toEndOf="@id/event_detail"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginStart="8dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter Event Details"
+                    android:inputType="textMultiLine"
+                    android:gravity="top|start"
+                    android:minLines="4"
+                    android:maxLines="6" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/geolocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Geolocation"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toBottomOf="@id/event_detail"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/event_detail"
+                app:layout_constraintBottom_toTopOf="@id/waitlist_limit"
+                android:layout_marginTop="50dp"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchGeo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:layout_constraintStart_toEndOf="@id/geolocation"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBaseline_toBaselineOf="@id/geolocation"
+                android:theme="@style/Theme.AppCompat"
+                app:showText="false"
+                android:contentDescription="Turn On Geolocation to Better Search Events"/>
+
+            <TextView
+                android:id="@+id/waitlist_limit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Limit Waitlist"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toTopOf="@id/geolocation"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toBottomOf="@id/limit_amount"
+                app:layout_constraintEnd_toEndOf="@id/geolocation" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchLimit"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:layout_constraintBaseline_toBaselineOf="@id/waitlist_limit"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0"
+                app:layout_constraintStart_toStartOf="@id/switchGeo"
+                android:theme="@style/Theme.AppCompat"
+                app:showText="false"
+                android:contentDescription="Turn on Limit for Waitlist"/>
+
+            <TextView
+                android:id="@+id/limit_amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Limit: "
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                app:layout_constraintTop_toBottomOf="@id/waitlist_limit"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/limit_num"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <EditText
+                android:id="@+id/limit_num"
+                android:layout_width="100dp"
+                android:layout_height="48dp"
+                android:hint="number"
+                android:inputType="number"
+                app:layout_constraintBaseline_toBaselineOf="@id/limit_amount"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/limit_amount"
+                app:layout_constraintTop_toBottomOf="@id/switchLimit" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </androidx.cardview.widget.CardView>
+
+
+    <Button
+        android:id="@+id/save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        app:layout_constraintTop_toBottomOf="@id/event_info"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+    </Button>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

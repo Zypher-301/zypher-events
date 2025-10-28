@@ -1,66 +1,40 @@
 package com.example.zypherevent.ui.admin.events;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.example.zypherevent.model.AdminProfile;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.example.zypherevent.R;
-
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link AdminProfileFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class AdminProfileFragment extends Fragment {
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public AdminProfileFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AdminProfileFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static AdminProfileFragment newInstance(String param1, String param2) {
-        AdminProfileFragment fragment = new AdminProfileFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+public class AdminProfileFragment extends AdminBaseListFragment {
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState); // Sets up the RecyclerView
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_admin_item_profile_card, container, false);
+        // 1. Create placeholder data
+        List<AdminProfile> profiles = new ArrayList<>();
+        profiles.add(new AdminProfile("Amy McDonald", "Organizer", "(780) 123-4567", "amy.mcd@email.com"));
+        profiles.add(new AdminProfile("Bob Smith", "Entrant", "(780) 321-7654", "bob.smith@email.com"));
+        profiles.add(new AdminProfile("Charles Lee", "Entrant", "(587) 555-1212", "c.lee@email.com"));
+
+        // 2. Create the adapter
+        AdminProfilesAdapter adapter = new AdminProfilesAdapter(profiles, new AdminProfilesAdapter.OnDeleteListener() {
+            @Override
+            public void onDelete(AdminProfile profile) {
+                // This is where you would call Firebase to delete the profile
+                Toast.makeText(getContext(), "Deleting " + profile.getName(), Toast.LENGTH_SHORT).show();
+
+                // TODO: Remove the item from the list and notify the adapter
+                // profiles.remove(profile);
+                // adapter.notifyDataSetChanged();
+            }
+        });
+
+        // 3. Set the adapter on the RecyclerView
+        recyclerView.setAdapter(adapter);
     }
 }

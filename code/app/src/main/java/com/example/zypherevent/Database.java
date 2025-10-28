@@ -53,6 +53,19 @@ public class Database {
     }
 
     /**
+     * Constructs a new Database instance and initializes references with custom names
+     * to the Firestore database and its key collections with custom names.
+     * This allows for testing using different collections that do not corrupt
+     * production data.
+     */
+    public Database (String usersCollectionName, String eventsCollectionName, String extrasCollectionName) {
+        this.db = FirebaseFirestore.getInstance();
+        usersCollection = db.collection(usersCollectionName);
+        eventsCollection = db.collection(eventsCollectionName);
+        extrasCollection = db.collection(extrasCollectionName);
+    }
+
+    /**
      * Stores or updates a user document in the Firestore "users" collection.
      *
      * @param hardwareID the unique hardware identifier of the user
@@ -145,7 +158,7 @@ public class Database {
      * @param eventID the unique identifier of the event
      * @return a {@link Task} representing the asynchronous database operation
      */
-    public Task<Void> removeEventData(int eventID) {
+    public Task<Void> removeEventData(Long eventID) {
         return eventsCollection
                 .document(String.valueOf(eventID))
                 .delete();

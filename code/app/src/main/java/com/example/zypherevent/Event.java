@@ -6,6 +6,7 @@ import com.example.zypherevent.userTypes.UserType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * @author Elliot Chrystal
@@ -414,5 +415,40 @@ public class Event {
      */
     public void setDeclinedEntrants(ArrayList<Entrant> declinedEntrants) {
         this.declinedEntrants = declinedEntrants;
+    }
+
+    /**
+     * Checks if this Event is equal to another object.
+     * @param o the object to compare with this Event.
+     * @return {@code true} if the objects are equal, {@code false} otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Event event = (Event) o;
+        return Objects.equals(uniqueEventID, event.uniqueEventID) &&
+                Objects.equals(eventName, event.eventName) &&
+                Objects.equals(eventDescription, event.eventDescription) &&
+                Objects.equals(startTime, event.startTime) &&
+                Objects.equals(location, event.location) &&
+                Objects.equals(registrationStartTime, event.registrationStartTime) &&
+                Objects.equals(registrationEndTime, event.registrationEndTime) &&
+                Objects.equals(posterURL, event.posterURL) &&
+                Objects.equals(eventOrganizerHardwareID, event.eventOrganizerHardwareID) &&
+                Objects.equals(waitListEntrants, event.waitListEntrants) &&
+                Objects.equals(acceptedEntrants, event.acceptedEntrants) &&
+                Objects.equals(declinedEntrants, event.declinedEntrants);
+    }
+
+    /**
+     * Generates a hash code for this Event.
+     * @return a hash code value for this object.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(uniqueEventID, eventName, eventDescription, startTime,
+                location, registrationStartTime, registrationEndTime, posterURL,
+                eventOrganizerHardwareID, waitListEntrants, acceptedEntrants, declinedEntrants);
     }
 }

@@ -3,6 +3,7 @@ package com.example.zypherevent.userTypes;
 import com.example.zypherevent.Event;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * @author Elliot Chrystal
@@ -127,6 +128,35 @@ public class Entrant extends User {
     public void removeEventFromRegisteredEventHistory(Event event) {
         // No contains check needed, as .remove already checks for existence internally
         registeredEventHistory.remove(event);
+    }
+
+    /**
+     * Checks if this Entrant is equal to another object.
+     * @param o the object to compare with this Entrant.
+     * @return {@code true} if the objects are equal, {@code false} otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        // check parent equality
+        if (!super.equals(o)) return false;
+
+        Entrant entrant = (Entrant) o;
+
+        return Objects.equals(email, entrant.email)
+                && Objects.equals(phoneNumber, entrant.phoneNumber)
+                && Objects.equals(registeredEventHistory, entrant.registeredEventHistory);
+    }
+
+    /**
+     * Generates a hash code for this Entrant. Has to be implemented
+     * when equals is implemented.
+     * @return a hash code value for this object.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), email, phoneNumber, registeredEventHistory);
     }
 
     // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------

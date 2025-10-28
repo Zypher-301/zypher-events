@@ -64,6 +64,36 @@ public class Organizer extends User {
         createdEvents.remove(event);
     }
 
+    /**
+     * Checks if this Organizer is equal to another object.
+     * @param o the object to compare with this Organizer.
+     * @return {@code true} if the objects are equal, {@code false} otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false; // parent fields equality
+
+        Organizer organizer = (Organizer) o;
+
+        return java.util.Objects.equals(createdEvents, organizer.createdEvents);
+    }
+
+    /**
+     * Generates a hash code for this Organizer.
+     * <p>
+     * This hash code is consistent with the {@link #equals(Object)} method,
+     * combining the hash code from the superclass with the hash code
+     * of the created events list.
+     *
+     * @return a hash code value for this object.
+     */
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(super.hashCode(), createdEvents);
+    }
+
     // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------
 
     /**

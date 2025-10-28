@@ -1,5 +1,3 @@
-// AdminActivity.java
-// This file you provided is correct and sets up the navigation.
 package com.example.zypherevent;
 
 import android.os.Bundle;

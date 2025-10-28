@@ -177,6 +177,6 @@ public class Entrant extends User {
      * @param registeredEventHistory the new list of registered events
      */
     public void setRegisteredEventHistory(ArrayList<Event> registeredEventHistory) {
-        this.registeredEventHistory = registeredEventHistory;
+        this.registeredEventHistory = Objects.requireNonNullElseGet(registeredEventHistory, ArrayList::new);
     }
 }

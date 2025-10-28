@@ -2,6 +2,7 @@ package com.example.zypherevent.userTypes;
 
 import com.example.zypherevent.Event;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * @author Elliot Chrystal
@@ -112,6 +113,6 @@ public class Organizer extends User {
      * @param createdEvents the new list of created events
      */
     public void setCreatedEvents(ArrayList<Event> createdEvents) {
-        this.createdEvents = createdEvents;
+        this.createdEvents = Objects.requireNonNullElseGet(createdEvents, ArrayList::new);
     }
 }

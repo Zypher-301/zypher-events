@@ -13,63 +13,84 @@ import java.util.Objects;
  * @version 1.0
  * @see Organizer
  * @see Entrant
- *
+ * <p>
  * Represents an event within the Zypher Event system. Each event has identifying details such as
  * name, description, start time, and location, along with registration start and end times. Events
  * are created and managed by an Organizer, and maintain lists of Entrants who have been waitlisted,
  * accepted, or declined. The class also supports optional event promotional posters via a poster's
  * external URL, and provides methods for managing entrant lists.
- *
  */
 public class Event {
 
     private Long uniqueEventID;
 
-    /** The event's name. */
+    /**
+     * The event's name.
+     */
     private String eventName;
 
-    /** A brief description of the event. */
+    /**
+     * A brief description of the event.
+     */
     private String eventDescription;
 
-    /** The start time of the event. */
+    /**
+     * The start time of the event.
+     */
     private String startTime;
 
-    /** The event's physical or virtual location. */
+    /**
+     * The event's physical or virtual location.
+     */
     private String location;
 
-    /** The time when registration for the event begins. */
+    /**
+     * The time when registration for the event begins.
+     */
     private String registrationStartTime;
 
-    /** The time when registration for the event closes. */
+    /**
+     * The time when registration for the event closes.
+     */
     private String registrationEndTime;
 
-    /** The URL for the event's optional promotional poster. */
+    /**
+     * The URL for the event's optional promotional poster.
+     */
     private String posterURL;
 
-    /** The organizer responsible for managing the event. */
+    /**
+     * The organizer responsible for managing the event.
+     */
     private String eventOrganizerHardwareID;
 
-    /** A list of entrants currently on the event's waitlist. */
+    /**
+     * A list of entrants currently on the event's waitlist.
+     */
     private ArrayList<Entrant> waitListEntrants;
 
-    /** A list of entrants who have been accepted into the event. */
+    /**
+     * A list of entrants who have been accepted into the event.
+     */
     private ArrayList<Entrant> acceptedEntrants;
 
-    /** A list of entrants who have been declined from the event. */
+    /**
+     * A list of entrants who have been declined from the event.
+     */
     private ArrayList<Entrant> declinedEntrants;
 
     /**
      * Constructs a new Event instance with all event details specified.
      *
-     * @param uniqueEventID             the unique identifier for the event
-     * @param eventName                 the name of the event
-     * @param eventDescription          a brief description of the event
-     * @param startTime                 the start time of the event
-     * @param location                  the location where the event will take place
-     * @param registrationStartTime     the time when registration opens
-     * @param registrationEndTime       the time when registration closes
-     * @param eventOrganizerHardwareID  the organizer responsible for the event
-     * @param posterURL      the Firebase path to the event's optional promotional poster
+     * @param uniqueEventID            the unique identifier for the event
+     * @param eventName                the name of the event
+     * @param eventDescription         a brief description of the event
+     * @param startTime                the start time of the event
+     * @param location                 the location where the event will take place
+     * @param registrationStartTime    the time when registration opens
+     * @param registrationEndTime      the time when registration closes
+     * @param eventOrganizerHardwareID the organizer responsible for the event
+     * @param posterURL                the Firebase path to the event's optional promotional poster
      */
     public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
                  String registrationStartTime, String registrationEndTime,
@@ -93,14 +114,14 @@ public class Event {
     /**
      * Constructs a new Event instance without a poster URL specified.
      *
-     * @param uniqueEventID             the unique identifier for the event
-     * @param eventName                 the name of the event
-     * @param eventDescription          a brief description of the event
-     * @param startTime                 the start time of the event
-     * @param location                  the location where the event will take place
-     * @param registrationStartTime     the time when registration opens
-     * @param registrationEndTime       the time when registration closes
-     * @param eventOrganizerHardwareID  the organizer responsible for the event
+     * @param uniqueEventID            the unique identifier for the event
+     * @param eventName                the name of the event
+     * @param eventDescription         a brief description of the event
+     * @param startTime                the start time of the event
+     * @param location                 the location where the event will take place
+     * @param registrationStartTime    the time when registration opens
+     * @param registrationEndTime      the time when registration closes
+     * @param eventOrganizerHardwareID the organizer responsible for the event
      */
     public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
                  String registrationStartTime, String registrationEndTime,
@@ -238,14 +259,11 @@ public class Event {
     }
 
     /**
-     * Returns the event's poster URL, or "N/A" if no poster URL is set.
+     * Returns the event's poster URL, or null if no poster URL is set.
      *
-     * @return the poster URL or "N/A" if unavailable
+     * @return the poster URL or null if not set
      */
     public String getPosterURL() {
-        if (posterURL == null) {
-            return "N/A";
-        }
         return posterURL;
     }
 
@@ -396,7 +414,7 @@ public class Event {
      * @param waitListEntrants the new list of waitlisted entrants
      */
     public void setWaitListEntrants(ArrayList<Entrant> waitListEntrants) {
-        this.waitListEntrants = waitListEntrants;
+        this.waitListEntrants = Objects.requireNonNullElseGet(waitListEntrants, ArrayList::new);
     }
 
     /**
@@ -405,7 +423,7 @@ public class Event {
      * @param acceptedEntrants the new list of accepted entrants
      */
     public void setAcceptedEntrants(ArrayList<Entrant> acceptedEntrants) {
-        this.acceptedEntrants = acceptedEntrants;
+        this.acceptedEntrants = Objects.requireNonNullElseGet(acceptedEntrants, ArrayList::new);
     }
 
     /**
@@ -414,7 +432,7 @@ public class Event {
      * @param declinedEntrants the new list of declined entrants
      */
     public void setDeclinedEntrants(ArrayList<Entrant> declinedEntrants) {
-        this.declinedEntrants = declinedEntrants;
+        this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
     }
 
     /**

@@ -144,6 +144,7 @@ public class User {
 
     /**
      * This is required for collections like HashMap or HashSet to work correctly.
+     * Also should be updated together equals?
      */
     @Override
     public int hashCode() {

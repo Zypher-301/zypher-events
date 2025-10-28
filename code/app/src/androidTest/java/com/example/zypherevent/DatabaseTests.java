@@ -1,7 +1,6 @@
 package com.example.zypherevent;
 
-import android.util.Log;
-
+import com.example.zypherevent.userTypes.Administrator;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.User;
@@ -21,15 +20,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Integration test for the Database class.
- * <p>
- * This test class connects to the live Firebase Firestore to tests
- * database function implementation
- * <p>
+ * Tests for the Database class and operations.
+ * This test class connects to Firebase Firestore to test
+ * database function implementation.
  * It uses a separate set of test collections to avoid interfering with
  * production data and cleans up all test data after execution.
- * <p>
- * Each test is isolated via @Before and @After methods.
+ * Each test is isolated using @Before and @After methods.
  */
 @RunWith(AndroidJUnit4.class)
 public class DatabaseTests {
@@ -44,13 +40,15 @@ public class DatabaseTests {
 
     private static Database testDatabase;
 
-    // These objects are re-created before each test in setUp()
+    // cleared before each test in setUp()
+    // helps to avoid try/finally blocks in every test
     private Entrant testEntrant;
     private Organizer testOrganizer;
+    private Administrator testAdmin;
     private Event testEvent;
 
     /**
-     * Runs ONCE before all tests.
+     * Runs once before all tests.
      * Initializes the database connection and sets the unique event ID
      * counter to a known, predictable value for testing.
      */
@@ -69,7 +67,7 @@ public class DatabaseTests {
     }
 
     /**
-     * Runs ONCE after all tests are complete.
+     * Runs once after all tests are complete.
      * Cleans up the test data.
      */
     @AfterClass
@@ -78,7 +76,6 @@ public class DatabaseTests {
                 .collection(TEST_EXTRAS_COLLECTION)
                 .document("uniqueIdentifierData");
         Tasks.await(uniqueRef.delete());
-        Log.d("DatabaseTest", "Test extras collection cleaned up ONCE.");
     }
 
     /**
@@ -95,65 +92,89 @@ public class DatabaseTests {
                 "test@entrant.com",
                 "555-1234");
 
+        // This object has a null email and phone number (implicitly)
         testOrganizer = new Organizer(
                 "test-organizer-id",
                 "Test",
                 "Organizer");
 
-        testEvent = null;
+        testAdmin = new Administrator(
+                "test-admin-id",
+                "Test",
+                "Admin");
+
+        testEvent = null; // events are created in their own tests
     }
 
     /**
-     * Runs AFTER EACH @Test method.
-     * Reliably cleans up any data created during the test,
-     * ensuring tests are isolated and can be run repeatedly.
+     * Runs after each @Test method.
+     * Reliably cleans up any data created during the test.
      */
     @After
     public void tearDown() throws ExecutionException, InterruptedException {
-        // Clean up any test users
+        // Clean up any test data
         if (testEntrant != null) {
             Tasks.await(testDatabase.removeUserData(testEntrant.getHardwareID()));
         }
         if (testOrganizer != null) {
             Tasks.await(testDatabase.removeUserData(testOrganizer.getHardwareID()));
         }
+        if (testAdmin != null) {
+            Tasks.await(testDatabase.removeUserData(testAdmin.getHardwareID()));
+        }
 
-        // Clean up any test events
         if (testEvent != null) {
             Tasks.await(testDatabase.removeEventData(testEvent.getUniqueEventID()));
         }
-        Log.d("DatabaseTest", "--- Test complete, data cleaned up ---");
     }
 
     //  USER TESTS
 
     /**
-     * Tests ADD (Create) and READ (Get) for a User.
-     * Verifies that the user retrieved from the database is
-     * identical to the user that was saved, using .equals().
+     * Tests setUserData and getUser for an Entrant
      */
     @Test
-    public void testAddAndGetUser() throws ExecutionException, InterruptedException {
-        // 1. ADD (Create)
+    public void testAddAndGetEntrant() throws ExecutionException, InterruptedException {
         Tasks.await(testDatabase.setUserData(testEntrant.getHardwareID(), testEntrant));
-
-        // 2. READ (Get)
         User fetchedUser = Tasks.await(testDatabase.getUser(testEntrant.getHardwareID()));
 
-        // 3. Assert
         assertNotNull("Fetched user should not be null", fetchedUser);
         assertTrue("Fetched user should be an instance of Entrant", fetchedUser instanceof Entrant);
-        assertEquals("Fetched user should be identical to the original", testEntrant, (Entrant) fetchedUser);
+        assertEquals("Fetched user should be identical to the original", testEntrant, fetchedUser);
     }
 
     /**
-     * Tests UPDATE for a User.
-     * Verifies that changes to a user object are persisted
-     * when the object is saved again.
+     * Tests setUserData and getUser for an Organizer with null fields
+     */
+    @Test
+    public void testAddAndGetOrganizer() throws ExecutionException, InterruptedException {
+        Tasks.await(testDatabase.setUserData(testOrganizer.getHardwareID(), testOrganizer));
+        User fetchedUser = Tasks.await(testDatabase.getUser(testOrganizer.getHardwareID()));
+
+        assertNotNull("Fetched user should not be null", fetchedUser);
+        assertTrue("Fetched user should be an instance of Organizer", fetchedUser instanceof Organizer);
+        assertEquals("Fetched user should be identical to the original", testOrganizer, fetchedUser);
+    }
+
+    /**
+     * Tests setUserData and getUser for an Administrator.
+     */
+    @Test
+    public void testAddAndGetAdmin() throws ExecutionException, InterruptedException {
+        Tasks.await(testDatabase.setUserData(testAdmin.getHardwareID(), testAdmin));
+        User fetchedUser = Tasks.await(testDatabase.getUser(testAdmin.getHardwareID()));
+
+        assertNotNull("Fetched user should not be null", fetchedUser);
+        assertTrue("Fetched user should be an instance of Administrator", fetchedUser instanceof Administrator);
+        assertEquals("Fetched user should be identical to the original", testAdmin, fetchedUser);
+    }
+
+    /**
+     * Tests updating a user and using setUserData..
+     * Verifies that changes to a user object are persisted.
      */
     @Test
     public void testUpdateUser() throws ExecutionException, InterruptedException {
-        // Create the original user
         Tasks.await(testDatabase.setUserData(testEntrant.getHardwareID(), testEntrant));
 
         // Update user
@@ -161,67 +182,69 @@ public class DatabaseTests {
         testEntrant.setEmail("updated@email.com");
         Tasks.await(testDatabase.setUserData(testEntrant.getHardwareID(), testEntrant));
 
-        // Read the usr
         User fetchedUser = Tasks.await(testDatabase.getUser(testEntrant.getHardwareID()));
 
         // Assert the update happened correctly
         assertNotNull("Fetched user should not be null", fetchedUser);
         assertEquals("First name should be updated", "UpdatedName", fetchedUser.getFirstName());
         assertEquals("Email should be updated", "updated@email.com", ((Entrant) fetchedUser).getEmail());
-        assertEquals("Fetched user should match updated local object", testEntrant, (Entrant) fetchedUser);
+        assertEquals("Fetched user should match updated local object", testEntrant, fetchedUser);
     }
 
     /**
-     * Tests Delete for a User.
+     * Tests removeUserData for a User.
      * Verifies that a user is null after being deleted.
      */
     @Test
     public void testRemoveUser() throws ExecutionException, InterruptedException {
-        // Create
         Tasks.await(testDatabase.setUserData(testEntrant.getHardwareID(), testEntrant));
-
-        // Delete
         Tasks.await(testDatabase.removeUserData(testEntrant.getHardwareID()));
-
-        // Get user
         User fetchedUser = Tasks.await(testDatabase.getUser(testEntrant.getHardwareID()));
-
-        // Assert
         assertNull("User should be null after being removed", fetchedUser);
     }
 
     //  EVENT TESTS
 
+    /**
+     * Tests setEventData and getEvent. Also verifies that the implementation
+     * of equals() for Events are correct.
+     */
     @Test
     public void testAddAndGetEvent() throws ExecutionException, InterruptedException {
-        // 1. Arrange - Get a unique ID and create the event
         Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+
+        // Create an event with all fields non-null
         testEvent = new Event(
                 newEventID,
                 "Test Event", "Event for testing", "2025-10-27T10:00:00",
                 "Test Location", "2025-10-01T10:00:00", "2025-10-25T10:00:00",
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                "http://example.com/poster.png"
         );
 
-        // create
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
-
-        // get
         Event fetchedEvent = Tasks.await(testDatabase.getEvent(testEvent.getUniqueEventID()));
 
-        // Test fields individually instead of object-to-object
+        // Test fields individually
         assertNotNull("Fetched event should not be null", fetchedEvent);
         assertEquals("Event IDs should match", testEvent.getUniqueEventID(), fetchedEvent.getUniqueEventID());
         assertEquals("Event names should match", testEvent.getEventName(), fetchedEvent.getEventName());
         assertEquals("Event locations should match", testEvent.getLocation(), fetchedEvent.getLocation());
         assertEquals("Organizer IDs should match", testEvent.getEventOrganizerHardwareID(), fetchedEvent.getEventOrganizerHardwareID());
+        assertEquals("Poster URLs should match", testEvent.getPosterURL(), fetchedEvent.getPosterURL());
 
-        // Check that lists are initialized correctly (not null)
+        // Test object's equal method
+        assertEquals("Event objects should be equal", testEvent, fetchedEvent);
+
+        // Check that lists were correctly initialized (not null for null safety)
         assertNotNull("Waitlist should not be null", fetchedEvent.getWaitListEntrants());
         assertNotNull("Accepted list should not be null", fetchedEvent.getAcceptedEntrants());
         assertNotNull("Declined list should not be null", fetchedEvent.getDeclinedEntrants());
     }
 
+    /**
+     * Tests setEventData for an Event. Also tests the equals method for Events.
+     */
     @Test
     public void testUpdateEvent() throws ExecutionException, InterruptedException {
         // create
@@ -230,7 +253,8 @@ public class DatabaseTests {
                 newEventID,
                 "Original Event Name", "Original Description", "...",
                 "Original Location", "...", "...",
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                "http://example.com/poster.png"
         );
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
 
@@ -247,11 +271,11 @@ public class DatabaseTests {
         assertEquals("Event name should be updated", "Updated Event Name", fetchedEvent.getEventName());
         assertEquals("Location should be updated", "New Location", fetchedEvent.getLocation());
         assertEquals("Fetched event's ID should match", testEvent.getUniqueEventID(), fetchedEvent.getUniqueEventID());
+        assertEquals("Events objects should be equal", testEvent, fetchedEvent);
     }
 
     /**
-     * Tests REMOVE (Delete) for an Event.
-     * Verifies that an event is null after being deleted.
+     * Tests removeEventData for an Event.
      */
     @Test
     public void testRemoveEvent() throws ExecutionException, InterruptedException {
@@ -264,29 +288,25 @@ public class DatabaseTests {
 
         Tasks.await(testDatabase.removeEventData(testEvent.getUniqueEventID()));
 
-        Event fetchedEvent = Tasks.await(testDatabase.getEvent(testEvent.getUniqueEventID()));
-
+        Event fetchedEvent = Tasks.await(testDatabase.getEvent(newEventID));
         assertNull("Event should be null after being removed", fetchedEvent);
+
+        testEvent = null; // set to null so @After doesn't try to delete it again
     }
 
     //  EXTRA DATABASE TESTS
 
     /**
-     * Tests that the unique ID counter is sequential.
-     * This test is "stateless" and only checks that subsequent calls
-     * return incrementing numbers.
+     * Tests that the getUniqueEventID counter is sequential.
      */
     @Test
     public void testGetUniqueEventID() throws ExecutionException, InterruptedException {
-        // Get two IDs back-to-back
         Long id1 = Tasks.await(testDatabase.getUniqueEventID());
         Long id2 = Tasks.await(testDatabase.getUniqueEventID());
 
-        // We only care that the second ID is one greater than the first.
-        // We do not care what the starting value is.
         assertNotNull("First ID should not be null", id1);
         assertNotNull("Second ID should not be null", id2);
-        assertEquals("IDs should be sequential", (long) id1 + 1, (long) id2);
+        assertEquals("IDs should be sequential", id1 + 1, (long) id2);
     }
 
     /**
@@ -297,7 +317,6 @@ public class DatabaseTests {
         User user = Tasks.await(testDatabase.getUser("id-that-does-not-exist"));
         Event evt = Tasks.await(testDatabase.getEvent(-99L));
 
-        // should be null
         assertNull("Non-existent user should be null", user);
         assertNull("Non-existent event should be null", evt);
     }

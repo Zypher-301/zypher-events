@@ -12,6 +12,14 @@ import com.example.zypherevent.model.AdminEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminEvent
+ * @see AdminBaseListFragment
+ * @see AdminEventsAdapter
+ */
+
 // Note: This needs its own Adapter (AdminEventsAdapter)
 public class AdminEventsFragment extends AdminBaseListFragment {
 

@@ -9,9 +9,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
+import com.example.zypherevent.model.AdminNotificationLog;
 import com.example.zypherevent.model.AdminProfile;
 import java.util.List;
-
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminProfile
+ * @see res/layout/fragment_admin_item_profile_card.xml
+ */
 public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdapter.ProfileViewHolder> {
 
     private List<AdminProfile> profileList;

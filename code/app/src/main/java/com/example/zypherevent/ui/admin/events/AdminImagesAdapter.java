@@ -8,8 +8,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
+import com.example.zypherevent.model.AdminEvent;
 import com.example.zypherevent.model.AdminImage;
 import java.util.List;
+
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminImage
+ * @see res/layout/fragment_admin_item_image_card.xml
+ */
 
 public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.ImageViewHolder> {
 

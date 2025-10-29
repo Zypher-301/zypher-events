@@ -6,9 +6,21 @@ import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.example.zypherevent.model.AdminEvent;
 import com.example.zypherevent.model.AdminImage;
 import java.util.ArrayList;
 import java.util.List;
+
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminBaseListFragment
+ * @see AdminImage
+ * @see AdminImagesAdapter
+ * @see "res/navigation/admin_navigation.xml"
+ */
+
 
 // Note: This needs its own Adapter (AdminImagesAdapter)
 public class AdminImagesFragment extends AdminBaseListFragment {

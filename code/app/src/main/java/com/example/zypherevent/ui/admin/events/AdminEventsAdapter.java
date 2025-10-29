@@ -1,6 +1,5 @@
 package com.example.zypherevent.ui.admin.events;
 
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +10,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
 import com.example.zypherevent.model.AdminEvent;
 import java.util.List;
+
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminEvent
+ * @see res/layout/fragment_admin_item_event_card.xml
+ */
 
 public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.EventViewHolder> {
 

@@ -5,9 +5,20 @@ import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.example.zypherevent.model.AdminNotificationLog;
 import com.example.zypherevent.model.AdminProfile;
 import java.util.ArrayList;
 import java.util.List;
+
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminBaseListFragment
+ * @see AdminProfile
+ * @see AdminProfilesAdapter
+ * @see "res/navigation/admin_navigation.xml"
+ */
 
 public class AdminProfileFragment extends AdminBaseListFragment {
 

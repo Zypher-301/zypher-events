@@ -435,6 +435,8 @@ public class Event {
         this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
     }
 
+    // Comparison functions!
+
     /**
      * Checks if this Event is equal to another object.
      * @param o the object to compare with this Event.

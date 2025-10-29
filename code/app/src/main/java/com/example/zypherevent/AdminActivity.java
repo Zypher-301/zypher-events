@@ -35,9 +35,8 @@ public class AdminActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Get the database that was passed along from MainActivity
-        db = (Database) getIntent().getSerializableExtra("database");
-        Log.d("AdminActivityLogic", "Got Database from MainActivity");
+        // create new instance of database
+        db = new Database();
 
         // Get the Admin user object that was passed along from MainActivity
         adminUser = (Administrator) getIntent().getSerializableExtra("adminUser");

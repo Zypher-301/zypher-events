@@ -31,7 +31,7 @@ import java.io.Serializable;
  * Database implements serializable so that it can be passed between activities with intent.
  *
  */
-public class Database implements Serializable {
+public class Database {
 
     /** Reference to the Firebase Firestore instance. */
     private FirebaseFirestore db;

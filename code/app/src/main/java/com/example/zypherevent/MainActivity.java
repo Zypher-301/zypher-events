@@ -1,5 +1,6 @@
 package com.example.zypherevent;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -20,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private Database db;
 
+    private String userHardwareID;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -27,11 +30,11 @@ public class MainActivity extends AppCompatActivity {
         db = new Database();
 
         // Get hardare ID from user's device
-        String hardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        Log.d("MainActivityLogic", "User hardware id: " + hardwareID);
+        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
         // Start the task for getting the user from hardware ID
-        db.getUser(hardwareID).addOnCompleteListener(task -> {
+        db.getUser(userHardwareID).addOnCompleteListener(task -> {
             // if unsuccessful, then just show the startup page (no internet maybe?)
             if (!task.isSuccessful()) {
                 Log.e("MainActivityLogic", "getUser failed", task.getException());
@@ -90,9 +93,8 @@ public class MainActivity extends AppCompatActivity {
     private void goToEntrant(User curUser) {
 //        // intent is used to switch activites
 //        Intent intent = new Intent(this, EntrantActivity.class);
-//        // Add the database and admin as context for the activity switch
-//        intent.putExtra("database", db);
-//        intent.putExtra("entrantUser", curUser); // pass ID, reload user in AdminActivity
+//        // add user object to intent
+//        intent.putExtra("entrantUser", curUser);
 //        // Actually switch
 //        startActivity(intent);
 //        finish();
@@ -101,9 +103,8 @@ public class MainActivity extends AppCompatActivity {
     private void goToOrganizer(User curUser) {
 //        // intent is used to switch activites
 //        Intent intent = new Intent(this, OrganizerActivity.class);
-//        // Add the database and admin as context for the activity switch
-//        intent.putExtra("database", db);
-//        intent.putExtra("organizerUser", curUser); // pass ID, reload user in AdminActivity
+//        // add user object to intent
+//        intent.putExtra("organizerUser", curUser);
 //        // Actually switch
 //        startActivity(intent);
 //        finish();
@@ -112,9 +113,8 @@ public class MainActivity extends AppCompatActivity {
     private void goToAdministrator(User curUser) {
         // intent is used to switch activites
         Intent intent = new Intent(this, AdminActivity.class);
-        // Add the database and admin as context for the activity switch
-        intent.putExtra("database", db);
-        intent.putExtra("adminUser", curUser); // pass ID, reload user in AdminActivity
+        // add user object to intent
+        intent.putExtra("adminUser", curUser);
         // Actually switch
         startActivity(intent);
         finish();

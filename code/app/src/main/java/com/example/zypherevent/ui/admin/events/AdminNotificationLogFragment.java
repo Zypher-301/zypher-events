@@ -9,6 +9,15 @@ import com.example.zypherevent.model.AdminNotificationLog;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminBaseListFragment
+ * @see AdminNotificationLog
+ * @see AdminNotificationLogAdapter
+ * @see "res/navigation/admin_navigation.xml"
+ */
+
 // Note: This needs its own Adapter (AdminNotificationLogAdapter)
 public class AdminNotificationLogFragment extends AdminBaseListFragment {
 

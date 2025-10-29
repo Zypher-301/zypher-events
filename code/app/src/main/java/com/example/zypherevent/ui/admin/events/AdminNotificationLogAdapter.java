@@ -9,6 +9,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
 import com.example.zypherevent.model.AdminNotificationLog;
 import java.util.List;
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see AdminNotificationLog
+ * @see res/layout/fragment_admin_item_notification_log.xml
+ */
 
 public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotificationLogAdapter.LogViewHolder> {
 

@@ -1,6 +1,9 @@
-
 package com.example.zypherevent.model;
 
+/**
+ * @author Arunavo Dutta
+ * @version 1.0
+ */
 public class AdminProfile {
     private String name;
     private String role;

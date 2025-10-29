@@ -12,9 +12,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
 
 /**
+ * @author Arunavo Dutta
+ * @version 1.0
+ * @see res/layout/fragment_admin_fragment_list_page.xml
  * A base fragment for all admin list pages.
  * It inflates the list layout and sets up the RecyclerView.
  */
+
 public abstract class AdminBaseListFragment extends Fragment {
 
     protected RecyclerView recyclerView;

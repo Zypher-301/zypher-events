@@ -13,6 +13,8 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.Serializable;
+
 /**
  * @author Elliot Chrystal
  * @version 1.0
@@ -26,8 +28,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
  * The Database class abstracts Firestore operations for user and event collections,
  * ensuring consistent handling of data throughout the system.
  *
+ * Database implements serializable so that it can be passed between activities with intent.
+ *
  */
-public class Database {
+public class Database implements Serializable {
 
     /** Reference to the Firebase Firestore instance. */
     private FirebaseFirestore db;

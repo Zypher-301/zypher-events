@@ -1,6 +1,7 @@
 package com.example.zypherevent;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -9,6 +10,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import com.example.zypherevent.databinding.AdminMainBinding;
+import com.example.zypherevent.userTypes.Administrator;
 import com.example.zypherevent.userTypes.User;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -26,10 +28,20 @@ public class AdminActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private AdminMainBinding binding;
+    private Database db;
+    private Administrator adminUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Get the database that was passed along from MainActivity
+        db = (Database) getIntent().getSerializableExtra("database");
+        Log.d("AdminActivityLogic", "Got Database from MainActivity");
+
+        // Get the Admin user object that was passed along from MainActivity
+        adminUser = (Administrator) getIntent().getSerializableExtra("adminUser");
+        Log.d("AdminActivityLogic", "Got Administrator from MainActivity");
 
         // Inflate the admin layout using its binding class (admin_main.xml)
         binding = AdminMainBinding.inflate(getLayoutInflater());

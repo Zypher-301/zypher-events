@@ -1,70 +1,122 @@
 package com.example.zypherevent;
 
-import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
-import android.view.View;
-import android.view.Menu;
+import android.widget.Button;
 
-import com.example.zypherevent.userTypes.Administrator;
-import com.example.zypherevent.userTypes.Entrant;
-import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.User;
-import com.google.android.gms.tasks.Tasks;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.navigation.NavigationView;
 
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.zypherevent.databinding.ActivityMainBinding;
-
-import java.time.LocalDateTime;
-import java.util.concurrent.ExecutionException;
+import com.example.zypherevent.userTypes.UserType;
 
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
+    private Database db;
 
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        // Initialize database
+        db = new Database();
 
-        setSupportActionBar(binding.appBarMain.toolbar);
+        // Get hardare ID from user's device
+        String hardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        Log.d("MainActivityLogic", "User hardware id: " + hardwareID);
 
-        DrawerLayout drawer = binding.drawerLayout;
-        NavigationView navigationView = binding.navView;
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow)
-                .setOpenableLayout(drawer)
-                .build();
+        // Start the task for getting the user from hardware ID
+        db.getUser(hardwareID).addOnCompleteListener(task -> {
+            // if unsuccessful, then just show the startup page (no internet maybe?)
+            if (!task.isSuccessful()) {
+                Log.e("MainActivityLogic", "getUser failed", task.getException());
+                showProfileInformationPage(); // treat as new user on error
+                return;
+            }
 
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
+            // Get the user from the task's result
+            User curUser = task.getResult();
+
+            // If the result is null, no matching user was found for the hardware ID
+            if (curUser == null) {
+                Log.d("MainActivityLogic", "New user (HWID not recognized).");
+                showProfileInformationPage();
+                return;
+            }
+
+            // Recognized users are routed to their activities!
+            if (curUser.getUserType() == UserType.ENTRANT) {
+                Log.d("MainActivityLogic", "Recognized Entrant");
+                goToEntrant(curUser);
+
+            } else if (curUser.getUserType() == UserType.ORGANIZER) {
+                Log.d("MainActivityLogic", "Recognized Organizer");
+                goToOrganizer(curUser);
+
+            } else if (curUser.getUserType() == UserType.ADMINISTRATOR) {
+                Log.d("MainActivityLogic", "Recognized Administrator");
+                goToAdministrator(curUser);
+
+            }
+        });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+    private void showProfileInformationPage() {
+        // Set the view to the startup role declaration page
+        setContentView(R.layout.startup_role_declaration_page);
+
+        // Add the buttons
+        Button btnEntrant = findViewById(R.id.btnEntrant);
+        Button btnOrganizer = findViewById(R.id.btnOrganizer);
+
+        // Listen for entrant click
+        btnEntrant.setOnClickListener(v -> {
+            Log.d("MainActivity", "Entrant button clicked");
+            // start the profile information activity (maybe fragment) as entrant
+        });
+
+        // Listen for Organizer click
+        btnOrganizer.setOnClickListener(v -> {
+            Log.d("MainActivity", "Organizer button clicked");
+            // start the profile information activity (maybe fragment) as organizer
+        });
     }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, mAppBarConfiguration)
-                || super.onSupportNavigateUp();
+    private void goToEntrant(User curUser) {
+//        // intent is used to switch activites
+//        Intent intent = new Intent(this, EntrantActivity.class);
+//        // Add the database and admin as context for the activity switch
+//        intent.putExtra("database", db);
+//        intent.putExtra("entrantUser", curUser); // pass ID, reload user in AdminActivity
+//        // Actually switch
+//        startActivity(intent);
+//        finish();
+    }
+
+    private void goToOrganizer(User curUser) {
+//        // intent is used to switch activites
+//        Intent intent = new Intent(this, OrganizerActivity.class);
+//        // Add the database and admin as context for the activity switch
+//        intent.putExtra("database", db);
+//        intent.putExtra("organizerUser", curUser); // pass ID, reload user in AdminActivity
+//        // Actually switch
+//        startActivity(intent);
+//        finish();
+    }
+
+    private void goToAdministrator(User curUser) {
+        // intent is used to switch activites
+        Intent intent = new Intent(this, AdminActivity.class);
+        // Add the database and admin as context for the activity switch
+        intent.putExtra("database", db);
+        intent.putExtra("adminUser", curUser); // pass ID, reload user in AdminActivity
+        // Actually switch
+        startActivity(intent);
+        finish();
     }
 }

@@ -38,6 +38,9 @@ public class Database {
     /** Reference to the Firestore collection containing event data. */
     private CollectionReference eventsCollection;
 
+    /** Reference to the Firestore collection containing notification data. */
+    private CollectionReference notificationCollection;
+
     /** Reference to the Firestore collection containing extra data. */
     private CollectionReference extrasCollection;
 
@@ -49,7 +52,22 @@ public class Database {
         this.db = FirebaseFirestore.getInstance();
         usersCollection = db.collection("users");
         eventsCollection = db.collection("events");
+        notificationCollection = db.collection("notifications");
         extrasCollection = db.collection("extras");
+    }
+
+    /**
+     * Constructs a new Database instance and initializes references with custom names
+     * to the Firestore database and its key collections with custom names.
+     * This allows for testing using different collections that do not corrupt
+     * production data.
+     */
+    public Database (String usersCollectionName, String eventsCollectionName, String notificationCollectionName, String extrasCollectionName) {
+        this.db = FirebaseFirestore.getInstance();
+        usersCollection = db.collection(usersCollectionName);
+        eventsCollection = db.collection(eventsCollectionName);
+        notificationCollection = db.collection(notificationCollectionName);
+        extrasCollection = db.collection(extrasCollectionName);
     }
 
     /**
@@ -131,7 +149,7 @@ public class Database {
      *
      * @param eventID the unique identifier of the event
      * @param event   the event object to be stored
-     * @return a {@link Task} representing the asynchronous database operation
+     * @return a Task representing the asynchronous database operation
      */
     public Task<Void> setEventData(Long eventID, Event event) {
         return eventsCollection
@@ -143,9 +161,9 @@ public class Database {
      * Removes an event document from the Firestore "events" collection.
      *
      * @param eventID the unique identifier of the event
-     * @return a {@link Task} representing the asynchronous database operation
+     * @return a Task representing the asynchronous database operation
      */
-    public Task<Void> removeEventData(int eventID) {
+    public Task<Void> removeEventData(Long eventID) {
         return eventsCollection
                 .document(String.valueOf(eventID))
                 .delete();
@@ -206,7 +224,89 @@ public class Database {
             // Return the new event ID
             return newEventID;
         });
+    }
 
+    /**
+     * Stores or updates a notification in the Firestore "notifications" collection.
+     *
+     * @param notificationID the unique identifier of the notification
+     * @param notification the notification object to be stored
+     * @return a Task representing the asynchronous database operation
+     */
+    public Task<Void> setNotificationData(Long notificationID, Notification notification) {
+        return notificationCollection
+                .document(String.valueOf(notificationID))
+                .set(notification);
+
+    }
+
+    /**
+     * Removes a notification from the Firestore "notifications" collection.
+     *
+     * @param notificationID the unique identifier of the notification
+     * @return a Task representing the asynchronous database operation
+     */
+    public Task<Void> removeNotificationData(Long notificationID) {
+        return notificationCollection
+                .document(String.valueOf(notificationID))
+                .delete();
+    }
+
+    /**
+     * Retrieves a notification from the Firestore "notifications" collection based on its ID.
+     * If the document does not exist or cannot be parsed, the result will be null.
+     *
+     * @param notificationID the unique identifier of the event
+     * @return a Task that resolves to the retrieved Notification object, or null if not found
+     */
+    public Task<Notification> getNotification(Long notificationID) {
+        return notificationCollection
+                .document(String.valueOf(notificationID))
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+
+                    DocumentSnapshot doc = task.getResult();
+
+                    // If the event document doesn't exist, return null
+                    if (doc == null || !doc.exists()) {
+                        Log.e("Database", "Document doesn't exist for notificationID \"" + notificationID + "\"");
+                        return null;
+                    }
+
+                    return doc.toObject(Notification.class);
+                });
+    }
+
+    /**
+     * Retrieves an unused notification number from firebase. Its just an off platform number incrementer
+     * so that we can avoid collisions in the notification IDs.
+     *
+     * @return a Task that resolves to the next unused notification number
+     */
+    public Task<Long> getUniqueNotificationID() {
+
+        DocumentReference uniqueRef = extrasCollection.document("uniqueIdentifierData");
+
+        return db.runTransaction(transaction -> {
+            // Read the current document snapshot
+            DocumentSnapshot snapshot = transaction.get(uniqueRef);
+
+            // Get the current notification ID, or start at 0 if not present
+            Long currentEventID = snapshot.getLong("curNotification");
+            if (currentEventID == null) {
+                throw new RuntimeException("Error calling getUniqueNotificationID: Current notification ID is null");
+            }
+
+            // Increment by 1
+            Long newNotifID = currentEventID + 1;
+
+            // Update Firestore with the new value
+            transaction.update(uniqueRef, "curNotification", newNotifID);
+
+            // Return the new event ID
+            return newNotifID;
+        });
     }
 
 }

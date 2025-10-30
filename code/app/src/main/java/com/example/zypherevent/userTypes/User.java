@@ -3,22 +3,29 @@ package com.example.zypherevent.userTypes;
 /**
  * @author Elliot Chrystal
  * @version 1.0
- *
+ * <p>
  * This class describes the shared features of Entrants, Organizers, and Administrators (For code
  * reusability). Users are identified primarily by their hardware ID.
- *
  */
 public class User {
-    /** The unique hardware identifier associated with the user. */
+    /**
+     * The unique hardware identifier associated with the user.
+     */
     private String hardwareID;
 
-    /** The type of user (Entrant, Organizer, Administrator). */
+    /**
+     * The type of user (Entrant, Organizer, Administrator).
+     */
     private UserType userType;
 
-    /** The user's first name. */
+    /**
+     * The user's first name.
+     */
     private String firstName;
 
-    /** The user's last name. */
+    /**
+     * The user's last name.
+     */
     private String lastName;
 
     /**
@@ -115,4 +122,32 @@ public class User {
         this.userType = userType;
     }
 
+    /**
+     * Implements equality checks for the class.
+     *
+     * @param o the object to compare to
+     * @return if the given object and this instance are logically equal
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        User user = (User) o;
+
+        return java.util.Objects.equals(hardwareID, user.hardwareID)
+                && java.util.Objects.equals(userType, user.userType)
+                && java.util.Objects.equals(firstName, user.firstName)
+                && java.util.Objects.equals(lastName, user.lastName);
+    }
+
+    /**
+     * This is required for collections like HashMap or HashSet to work correctly.
+     * Also should be updated together equals?
+     */
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(hardwareID, userType, firstName, lastName);
+    }
 }

@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         // Initialize database
         db = new Database();
 
-        // Get hardare ID from user's device
+        // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 

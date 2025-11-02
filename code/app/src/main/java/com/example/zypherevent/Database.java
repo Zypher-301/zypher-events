@@ -355,6 +355,30 @@ public class Database {
         return eventsCollection.get();
     }
 
+
+    /**
+     * Retrieves all event documents from the Firestore "events" collection.
+     * <p>
+     * FOR ENTRANT: Returns a simple, automatically converted List<Event>.
+     * This is less safe (will fail if *any* document has bad data) but
+     * is much simpler to use in the fragment.
+     *
+     * @return A {@code Task<List<Event>>} that resolves with a list of all Event objects.
+     */
+    public Task<List<Event>> getAllEventsList() {
+        return eventsCollection.get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting events list", task.getException());
+                        throw task.getException();
+                    }
+                    // Automatically convert all documents to Event objects
+                    return task.getResult().toObjects(Event.class);
+                });
+    }
+
+// ... (rest of your Database.java class)
+
     /**
      * Added by Arunavo Dutta
      * Retrieves all user documents from the Firestore "users" collection.

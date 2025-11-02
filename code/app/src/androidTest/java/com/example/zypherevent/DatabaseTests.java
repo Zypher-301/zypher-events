@@ -94,7 +94,8 @@ public class DatabaseTests {
                 "Test",
                 "Entrant",
                 "test@entrant.com",
-                "555-1234");
+                "555-1234",
+                false);
 
         // This object has a null email and phone number (implicitly)
         testOrganizer = new Organizer(

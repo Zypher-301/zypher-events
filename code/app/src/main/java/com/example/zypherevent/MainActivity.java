@@ -5,7 +5,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.Patterns;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 
 import com.example.zypherevent.userTypes.Administrator;
 import com.example.zypherevent.userTypes.Entrant;
@@ -105,20 +110,133 @@ public class MainActivity extends AppCompatActivity {
 
         // Listen for entrant click
         btnEntrant.setOnClickListener(v -> {
-            Log.d("MainActivity", "Entrant button clicked");
+            Log.d("MainActivityLogic", "Entrant button clicked");
 
-            // set the view to the profile information page for entrants
-
+            showProfileInformationPageEntrant();
         });
 
         // Listen for Organizer click
         btnOrganizer.setOnClickListener(v -> {
-            Log.d("MainActivity", "Organizer button clicked");
+            Log.d("MainActivityLogic", "Organizer button clicked");
 
-            // set the view to the profile information page for entrants
-
+            showProfileInformationPageOrganizer();
         });
     }
+
+    private void showProfileInformationPageEntrant() {
+        // set the view to the profile information page for entrants
+        setContentView(R.layout.profile_information_page);
+
+        // Get references to XML elements
+        EditText editTextFirstName = findViewById(R.id.etFirstName);
+        EditText editTextLastName = findViewById(R.id.etLastName);
+        EditText editTextEmail = findViewById(R.id.etEmail);
+        EditText editTextPhone = findViewById(R.id.etPhone);
+        Switch switchGeolocation = findViewById(R.id.switchGeo);
+        Button btnSaveProfile = findViewById(R.id.btnSaveProfile);
+
+        btnSaveProfile.setOnClickListener(v -> {
+            // Get the info that was entered by the user
+            String firstName = editTextFirstName.getText().toString();
+            String lastName = editTextLastName.getText().toString();
+            String email = editTextEmail.getText().toString();
+            String phone = editTextPhone.getText().toString();
+            boolean useGeolocation = switchGeolocation.isChecked();
+
+            // Validate input fields
+            if (firstName.isEmpty()) {
+                editTextFirstName.setError("First name is required");
+                editTextFirstName.requestFocus();
+                return;
+            }
+            if (lastName.isEmpty()) {
+                editTextLastName.setError("Last name is required");
+                editTextLastName.requestFocus();
+                return;
+            }
+            if (email.isEmpty()) {
+                editTextEmail.setError("Email is required");
+                editTextEmail.requestFocus();
+                return;
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                editTextEmail.setError("Enter a valid email");
+                editTextEmail.requestFocus();
+                return;
+            }
+            if (phone.isEmpty()) {
+                editTextPhone.setError("Phone number is required");
+                editTextPhone.requestFocus();
+                return;
+            }
+            if (!Patterns.PHONE.matcher(phone).matches()) {
+                editTextPhone.setError("Enter a valid phone number");
+                editTextPhone.requestFocus();
+                return;
+            }
+
+            // Create a new Entrant object with the entered information
+            Entrant newEntrant = new Entrant(userHardwareID, firstName, lastName, email, phone, useGeolocation);
+
+            // Save the new Entrant object to the database
+            db.setUserData(userHardwareID, newEntrant);
+
+            // Switch to the Entrant activity
+            goToEntrant(newEntrant);
+        });
+    }
+
+    private void showProfileInformationPageOrganizer() {
+        // set the view to the profile information page for entrants
+        // set the view to the profile information page for entrants
+        setContentView(R.layout.profile_information_page);
+
+        // Get references to XML elements
+        EditText editTextFirstName = findViewById(R.id.etFirstName);
+        EditText editTextLastName = findViewById(R.id.etLastName);
+        EditText editTextEmail = findViewById(R.id.etEmail);
+        EditText editTextPhone = findViewById(R.id.etPhone);
+        Switch switchGeolocation = findViewById(R.id.switchGeo);
+        Button btnSaveProfile = findViewById(R.id.btnSaveProfile);
+        LinearLayout firstNameLinearLayout = findViewById(R.id.firstNameRow);
+        LinearLayout lastNameLinearLayout = findViewById(R.id.lastNameRow);
+        LinearLayout emailLinearLayout = findViewById(R.id.emailRow);
+        LinearLayout phoneLinearLayout = findViewById(R.id.phoneRow);
+        LinearLayout geolocationLinearLayout = findViewById(R.id.geolocationRow);
+
+        // hide the email, phone, and geolocation feilds
+        emailLinearLayout.setVisibility(View.GONE);
+        phoneLinearLayout.setVisibility(View.GONE);
+        geolocationLinearLayout.setVisibility(View.GONE);
+
+        btnSaveProfile.setOnClickListener(v -> {
+            // Get the info that was entered by the user
+            String firstName = editTextFirstName.getText().toString();
+            String lastName = editTextLastName.getText().toString();
+
+            // Validate input fields
+            if (firstName.isEmpty()) {
+                editTextFirstName.setError("First name is required");
+                editTextFirstName.requestFocus();
+                return;
+            }
+            if (lastName.isEmpty()) {
+                editTextLastName.setError("Last name is required");
+                editTextLastName.requestFocus();
+                return;
+            }
+
+            // Create a new Organizer object with the entered information
+            Organizer newOrganizer = new Organizer(userHardwareID, firstName, lastName);
+
+            // Save the new Entrant object to the database
+            db.setUserData(userHardwareID, newOrganizer);
+
+            // Switch to the Entrant activity
+            goToOrganizer(newOrganizer);
+        });
+    }
+
 
     /**
      * Used to switch to the Entrant activity from the main activity.

@@ -10,7 +10,7 @@
             android:title="My Events" />
         <item
             android:id="@+id/nav_events_map"
-            android:icon="@drawable/baseline_bookmark_border_24"
-            android:title="Events_map" />
+            android:icon="@drawable/baseline_map_24"
+            android:title="Events Map" />
     </group>
 </menu>

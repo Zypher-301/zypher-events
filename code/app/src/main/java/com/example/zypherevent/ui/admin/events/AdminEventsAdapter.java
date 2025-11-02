@@ -1,4 +1,4 @@
-package com.example.zypherevent.ui.admin.events;
+package com.example.zypherevent.ui.admin.events; // Use your actual package name
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,27 +7,26 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.zypherevent.Event; // <-- IMPORTING REAL EVENT
 import com.example.zypherevent.R;
-import com.example.zypherevent.model.AdminEvent;
 import java.util.List;
 
 /**
  * @author Arunavo Dutta
- * @version 1.0
- * @see AdminEvent
+ * @version 2.0
+ * @see Event
  * @see res/layout/fragment_admin_item_event_card.xml
  */
-
 public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.EventViewHolder> {
 
-    private List<AdminEvent> eventList;
+    private List<Event> eventList; // <-- USING REAL EVENT
     private OnDeleteListener deleteListener;
 
     public interface OnDeleteListener {
-        void onDelete(AdminEvent event);
+        void onDelete(Event event); // <-- USING REAL EVENT
     }
 
-    public AdminEventsAdapter(List<AdminEvent> eventList, OnDeleteListener deleteListener) {
+    public AdminEventsAdapter(List<Event> eventList, OnDeleteListener deleteListener) {
         this.eventList = eventList;
         this.deleteListener = deleteListener;
     }
@@ -42,13 +41,13 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        AdminEvent event = eventList.get(position);
-        holder.eventName.setText(event.getName());
-        holder.eventTime.setText(event.getTime());
-        holder.eventDetails.setText(event.getDetails());
+        Event event = eventList.get(position); // <-- USING REAL EVENT
 
-        // We are ignoring lottery_details for this example
-        holder.eventLotteryDetails.setVisibility(View.GONE);
+        // Bind data from the real Event object
+        holder.eventName.setText(event.getEventName());
+        holder.eventTime.setText(event.getStartTime());
+        holder.eventDetails.setText(event.getEventDescription());
+        holder.eventLotteryDetails.setText("Lottery ends: " + event.getRegistrationEndTime());
 
         holder.deleteButton.setOnClickListener(v -> {
             deleteListener.onDelete(event);
@@ -62,7 +61,7 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     public static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView eventName, eventTime, eventLotteryDetails, eventDetails;
-        Button deleteButton; // Note: This is a Button in your XML
+        Button deleteButton;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);

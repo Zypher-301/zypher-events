@@ -1,42 +1,88 @@
-package com.example.zypherevent.ui.admin.events;
+package com.example.zypherevent.ui.admin.events; // Use your actual package name
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import com.example.zypherevent.R;
-import com.example.zypherevent.model.AdminEvent;
+import com.example.zypherevent.Database;
+import com.example.zypherevent.Event;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author Arunavo Dutta
- * @version 1.0
- * @see AdminEvent
+ * @version 2.0
  * @see AdminBaseListFragment
  * @see AdminEventsAdapter
+ * @see Database
+ * @see Event
+ *
+ * Fulfills US 03.04.01: As an administrator, I want to be able to browse events.
+ * Fulfills US 03.01.01: As an administrator, I want to be able to remove events.
  */
-
-// Note: This needs its own Adapter (AdminEventsAdapter)
 public class AdminEventsFragment extends AdminBaseListFragment {
+
+    private static final String TAG = "AdminEventsFragment";
+    private Database db;
+    private AdminEventsAdapter adapter;
+    private List<Event> eventList = new ArrayList<>(); // <-- USING REAL EVENT
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        List<AdminEvent> events = new ArrayList<>();
-        events.add(new AdminEvent("Beginner Swim Lessons", "Mondays, 5-6 PM", "Lottery closes Dec 15"));
-        events.add(new AdminEvent("Interpretive Dance Class", "Tuesdays, 7-9 PM", "20 spots left"));
-        events.add(new AdminEvent("Piano for Beginners", "Saturdays, 10-11 AM", "Full"));
+        db = new Database(); // Initialize database
 
-        AdminEventsAdapter adapter = new AdminEventsAdapter(events, event -> {
-            Toast.makeText(getContext(), "Deleting " + event.getName(), Toast.LENGTH_SHORT).show();
-            // TODO: Add Firebase delete logic
+        // Set up the adapter with an empty list first
+        // The 'event' in the lambda is now the REAL Event type
+        adapter = new AdminEventsAdapter(eventList, event -> {
+            // This is the delete logic (US 03.01.01)
+            handleDeleteEvent(event); // <-- This will now work
         });
 
         recyclerView.setAdapter(adapter);
+
+        // Fetch the events from Firebase
+        loadEvents();
+    }
+
+    private void loadEvents() {
+        db.getAllEvents().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                eventList.clear();
+                List<Event> fetchedEvents = task.getResult();
+                if (fetchedEvents != null) {
+                    eventList.addAll(fetchedEvents);
+                }
+                adapter.notifyDataSetChanged();
+                Log.d(TAG, "Successfully fetched " + eventList.size() + " events.");
+            } else {
+                Log.e(TAG, "Error fetching events: ", task.getException());
+                Toast.makeText(getContext(), "Error fetching events", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // This method correctly expects the REAL Event model
+    private void handleDeleteEvent(Event event) {
+        if (event == null || event.getUniqueEventID() == null) {
+            Toast.makeText(getContext(), "Error: Event has no ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
+
+        db.removeEventData(event.getUniqueEventID()).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Log.d(TAG, "Successfully deleted event: " + event.getEventName());
+                eventList.remove(event);
+                adapter.notifyDataSetChanged();
+            } else {
+                Log.e(TAG, "Error deleting event: ", task.getException());
+                Toast.makeText(getContext(), "Failed to delete event", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

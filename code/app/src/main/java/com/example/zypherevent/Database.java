@@ -14,6 +14,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Elliot Chrystal
@@ -312,5 +314,59 @@ public class Database {
             return newNotifID;
         });
     }
+
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all event documents from the Firestore "events" collection.
+     *
+     * @return a Task that resolves to a List of all Event objects.
+     */
+    public Task<List<Event>> getAllEvents() {
+        return eventsCollection
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+                    // Convert the query snapshot to a list of Event objects
+                    return task.getResult().toObjects(Event.class);
+                });
+    }
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all user documents from the Firestore "users" collection.
+     * This will fetch Entrants, Organizers, and Administrators.
+     *
+     * @return a Task that resolves to a List of all User objects.
+     */
+    public Task<List<User>> getAllUsers() {
+        return usersCollection
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Complex because we must deserialize into subtypes
+                    ArrayList<User> userList = new ArrayList<>();
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        User baseUser = doc.toObject(User.class);
+                        if (baseUser == null) continue;
+
+                        // Re-deserialize into the correct subclass
+                        if (baseUser.getUserType() == UserType.ENTRANT) {
+                            userList.add(doc.toObject(Entrant.class));
+                        } else if (baseUser.getUserType() == UserType.ORGANIZER) {
+                            userList.add(doc.toObject(Organizer.class));
+                        } else if (baseUser.getUserType() == UserType.ADMINISTRATOR) {
+                            userList.add(doc.toObject(Administrator.class));
+                        }
+                    }
+                    return userList;
+                });
+    }
+
 
 }

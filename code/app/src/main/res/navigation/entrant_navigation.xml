@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/admin_navigation"
+    app:startDestination="@+id/nav_all_events">
+
+    <!-- Destination for the "All Events" menu item -->
+    <fragment
+        android:id="@+id/nav_all_events"
+        android:name="com.example.zypherevent.ui.entrant.events.EntrantAllEventsFragment"
+        android:label="All Events"
+        tools:layout="@layout/fragment_entrant_all_events" />
+
+    <!-- Destination for the "Joined Events" menu item -->
+    <fragment
+        android:id="@+id/nav_joined_events"
+        android:name="com.example.zypherevent.ui.entrant.events.EntrantJoinedEventsFragment"
+        android:label="Joined Events"
+        tools:layout="@layout/fragment_entrant_joined_events" />
+
+    <!-- Destination for the "QR Scanner" menu item -->
+    <fragment
+        android:id="@+id/nav_qr_scanner"
+        android:name="com.example.zypherevent.ui.entrant.events.EntrantQRScannerFragment"
+        android:label="QR Scanner"
+        tools:layout="@layout/fragment_entrant_qr_scanner" />
+
+    <!-- Destination for the "Settings" menu item -->
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.example.zypherevent.ui.entrant.events.EntrantSettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_entrant_settings" />
+
+</navigation>

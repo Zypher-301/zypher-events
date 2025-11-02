@@ -14,6 +14,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Elliot Chrystal
@@ -311,6 +313,58 @@ public class Database {
             // Return the new event ID
             return newNotifID;
         });
+    }
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all event documents from the Firestore "events" collection.
+     * This method returns a Task that, upon completion, provides a {@code QuerySnapshot}
+     * containing all documents in the "events" collection. To get a list of {@code Event}
+     * objects, you can iterate through the snapshot's documents and convert each one
+     * to an {@code Event} object.
+     *
+     * @return A {@code Task<QuerySnapshot>} that resolves with the query result. The task
+     *         will fail if the data cannot be fetched.
+     */
+    public Task<com.google.firebase.firestore.QuerySnapshot> getAllEvents() {
+        return eventsCollection.get();
+    }
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all user documents from the Firestore "users" collection.
+     * This method fetches all documents and correctly deserializes each one into its
+     * specific subclass (e.g., {@link Entrant}, {@link Organizer}, {@link Administrator})
+     * based on the {@code userType} field stored in Firestore.
+     *
+     * @return A {@code Task<List<User>>} that resolves with a list containing all user objects.
+     *         The task will fail if the data cannot be fetched or parsed.
+     */
+    public Task<List<User>> getAllUsers() {
+        return usersCollection
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Complex because we must deserialize into subtypes
+                    ArrayList<User> userList = new ArrayList<>();
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        User baseUser = doc.toObject(User.class);
+                        if (baseUser == null) continue;
+
+                        // Re-deserialize into the correct subclass
+                        if (baseUser.getUserType() == UserType.ENTRANT) {
+                            userList.add(doc.toObject(Entrant.class));
+                        } else if (baseUser.getUserType() == UserType.ORGANIZER) {
+                            userList.add(doc.toObject(Organizer.class));
+                        } else if (baseUser.getUserType() == UserType.ADMINISTRATOR) {
+                            userList.add(doc.toObject(Administrator.class));
+                        }
+                    }
+                    return userList;
+                });
     }
 
 }

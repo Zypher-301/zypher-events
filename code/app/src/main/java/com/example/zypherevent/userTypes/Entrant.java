@@ -191,7 +191,7 @@ public class Entrant extends User {
      *
      * @return true if notifications are enabled, false otherwise
      */
-    public boolean wantsNotifications() {
+    public boolean getWantsNotifications() {
         return wantsNotifications;
     }
 

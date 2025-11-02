@@ -19,18 +19,31 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
  * @author Elliot Chrystal
- *
- * copy of AdminActivity by Arunavo
- *
  * @version 1.0
+ *
+ * Activity for entrant-facing navigation and UI. This activity receives an Entrant
+ * instance from MainActivity, initializes the entrant layout and toolbar, and
+ * configures the Navigation Component with a drawer for top-level destinations.
  */
 public class EntrantActivity extends AppCompatActivity {
 
+    /** Navigation configuration for top-level destinations in the drawer. */
     private AppBarConfiguration mAppBarConfiguration;
+
+    /** ViewBinding for the entrant main layout. */
     private EntrantMainBinding binding;
+
+    /** Reference to the application database interface. */
     private Database db;
+
+    /** The entrant user passed in from MainActivity. */
     private Entrant entrantUser;
 
+    /**
+     * Initializes the activity, inflates the layout, and sets up navigation.
+     *
+     * @param savedInstanceState if non-null, the activity is being re-constructed from a previous state
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,14 +81,19 @@ public class EntrantActivity extends AppCompatActivity {
     }
 
     /**
-     * returns the entrant that was passed to EntrantActivity from MainActivity
+     * Returns the entrant that was passed to this activity from MainActivity.
      *
-     * @return Entrant object
+     * @return the current Entrant for this session
      */
     public Entrant getEntrantUser() {
         return entrantUser;
     }
 
+    /**
+     * Handles the ActionBar's "Up" button behavior using the NavController.
+     *
+     * @return true if navigation up was handled; otherwise defers to the superclass
+     */
     @Override
     public boolean onSupportNavigateUp() {
         // Handle the "Up" button by using the NavController (content_entrant.xml)

@@ -18,7 +18,6 @@ import com.example.zypherevent.databinding.FragmentEntrantSettingsBinding;
 import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.gms.tasks.Task;
 
-
 /**
  * @author Elliot Chrystal
  * @version 1.0
@@ -29,14 +28,26 @@ import com.google.android.gms.tasks.Task;
  */
 public class EntrantSettingsFragment extends Fragment {
 
+    /** View binding for the entrant settings layout. */
     private FragmentEntrantSettingsBinding binding;
 
-    public EntrantSettingsFragment() { }
-
+    /** The currently signed-in entrant associated with this fragment. */
     private Entrant currentUser;
 
+    /** Reference to the application database interface. */
     private Database db;
 
+    /** Required empty public constructor. */
+    public EntrantSettingsFragment() { }
+
+    /**
+     * Inflates the fragment's view using ViewBinding.
+     *
+     * @param inflater  the LayoutInflater object that can be used to inflate any views
+     * @param container the parent view that the fragment's UI should be attached to
+     * @param savedInstanceState if non-null, this fragment is being re-constructed from a previous state
+     * @return the root view for the fragment's layout
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
@@ -45,6 +56,13 @@ public class EntrantSettingsFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * Called immediately after onCreateView. Initializes dependencies, loads the
+     * current user from the host activity, populates UI fields, and registers listeners for edits.
+     *
+     * @param view the view returned by onCreateView
+     * @param savedInstanceState if non-null, this fragment is being re-constructed from a previous state
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -62,9 +80,9 @@ public class EntrantSettingsFragment extends Fragment {
         binding.etEmail.setText(currentUser.getEmail());
         binding.etPhone.setText(currentUser.getPhoneNumber());
         binding.switchGeo.setChecked(currentUser.isUseGeolocation());
-        binding.switchNotifications.setChecked(currentUser.wantsNotifications());
+        binding.switchNotifications.setChecked(currentUser.getWantsNotifications());
 
-        // listen for changes, and change the user object to reflect changes
+        // Listen for changes, and update the user object accordingly
         binding.etFirstName.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -97,24 +115,39 @@ public class EntrantSettingsFragment extends Fragment {
         binding.switchNotifications.setOnCheckedChangeListener((btn, checked) ->
                 currentUser.setWantsNotifications(checked));
 
+        // Persist changes
         binding.btnSaveChanges.setOnClickListener(v -> saveChanges(currentUser));
 
-        binding.btnDeleteProfile.setOnClickListener(v ->
-                deleteProfile(currentUser));
+        // Delete profile (stub)
+        binding.btnDeleteProfile.setOnClickListener(v -> deleteProfile(currentUser));
     }
 
-    private Void saveChanges(Entrant userToSave) {
-        // do nothing now
-        return null;
+    /**
+     * Saves the provided entrant to the database.
+     *
+     * @param userToSave the entrant whose changes should be persisted
+     * @return a {@link Task} representing the asynchronous save operation
+     */
+    private Task<Void> saveChanges(Entrant userToSave) {
+        return db.setUserData(userToSave.getHardwareID(), userToSave)
+                .addOnSuccessListener(aVoid ->
+                        Toast.makeText(requireContext(), "Changes saved!", Toast.LENGTH_SHORT).show());
     }
 
+    /**
+     * Deletes the provided entrant's profile. Currently a placeholder; extend to implement
+     * account deletion and cleanup.
+     *
+     * @param userToDelete the entrant whose profile should be deleted
+     * @return null (no-op for now)
+     */
     private Void deleteProfile(Entrant userToDelete) {
         // do nothing now
         return null;
     }
 
     /**
-     * A small helper class to change only what is needed
+     * A small helper class that allows overriding only the required TextWatcher methods.
      */
     private abstract static class SimpleTextWatcher implements TextWatcher {
         @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -122,6 +155,9 @@ public class EntrantSettingsFragment extends Fragment {
         @Override public void afterTextChanged(Editable s) {}
     }
 
+    /**
+     * Clears the binding reference to avoid memory leaks when the view is destroyed.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

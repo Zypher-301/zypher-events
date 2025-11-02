@@ -58,7 +58,7 @@ public class Database {
         this.db = FirebaseFirestore.getInstance();
         usersCollection = db.collection("users");
         eventsCollection = db.collection("events");
-        notificationCollection = db.collection("notifications");
+        notificationCollection = db.collection("test_notifications"); // Use "notifications" in production
         extrasCollection = db.collection("extras");
     }
 
@@ -313,6 +313,31 @@ public class Database {
             // Return the new event ID
             return newNotifID;
         });
+    }
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all notification documents from the Firestore "notifications" collection.
+     * <p>
+     * This method fetches all documents in the collection and converts them into a list
+     * of {@link Notification} objects. If the fetch operation fails, the task will
+     * complete with an exception.
+     *
+     * @return A {@code Task<List<Notification>>} that, upon successful completion, contains a list
+     *         of all {@code Notification} objects from the database. The list will be empty
+     *         if the collection is empty.
+     */
+    public Task<List<Notification>> getAllNotifications() {
+        return notificationCollection
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting notifications", task.getException());
+                        throw task.getException();
+                    }
+                    // Automatically convert all documents to Notification objects
+                    return task.getResult().toObjects(Notification.class);
+                });
     }
 
     /**

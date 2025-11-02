@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.zypherevent.Database;
 import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.databinding.FragmentEntrantSettingsBinding;
 import com.example.zypherevent.userTypes.Entrant;
@@ -34,6 +35,8 @@ public class EntrantSettingsFragment extends Fragment {
 
     private Entrant currentUser;
 
+    private Database db;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
@@ -45,6 +48,9 @@ public class EntrantSettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Initialize database
+        db = new Database();
 
         // Get the entrant user from the activity
         EntrantActivity activity = (EntrantActivity) requireActivity();

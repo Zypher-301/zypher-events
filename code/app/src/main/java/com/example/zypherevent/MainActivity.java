@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
         // For testing, to create a user entry in the database, uncomment one of the following!
-        setCurrentToEntrant(db);
+//        setCurrentToEntrant(db);
 //        setCurrentToOrganizer(db);
 //        setCurrentToAdministrator(db);
         // By leaving these commented, if there is not a pre-existing entry for the hwid in the
@@ -259,13 +259,13 @@ public class MainActivity extends AppCompatActivity {
      * @param curUser
      */
     private void goToOrganizer(User curUser) {
-//        // intent is used to switch activites
-//        Intent intent = new Intent(this, OrganizerActivity.class);
-//        // add user object to intent
-//        intent.putExtra("organizerUser", curUser);
-//        // Actually switch
-//        startActivity(intent);
-//        finish();
+        // intent is used to switch activites
+        Intent intent = new Intent(this, OrganizerActivity.class);
+        // add user object to intent
+        intent.putExtra("organizerUser", curUser);
+        // Actually switch
+        startActivity(intent);
+        finish();
     }
 
     /**

@@ -23,11 +23,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
  * copy of AdminActivity by Arunavo
  *
  * @version 1.0
- * @see res/layout/content_admin.xml
- * @see res/layout/admin_bar_main.xml
- * @see res/layout/admin_main.xml
- * @see res/navigation/admin_navigation.xml
- * @see res/menu/admin_main_drawer.xml
  */
 public class EntrantActivity extends AppCompatActivity {
 

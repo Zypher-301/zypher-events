@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/admin_navigation"
+    app:startDestination="@+id/nav_my_events">
+
+    <!-- Destination for the "My Events" menu item -->
+    <fragment
+        android:id="@+id/nav_my_events"
+        android:name="com.example.zypherevent.ui.organizer.events.OrganizerMyEventsFragment"
+        android:label="My Events"
+        tools:layout="@layout/fragment_organizer_my_events" />
+
+    <!-- Destination for the "Events Map" menu item -->
+    <fragment
+        android:id="@+id/nav_events_map"
+        android:name="com.example.zypherevent.ui.organizer.events.OrganizerEventsMapFragment"
+        android:label="Events Map"
+        tools:layout="@layout/fragment_organizer_events_map" />
+
+</navigation>

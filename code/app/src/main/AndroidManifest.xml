@@ -34,6 +34,12 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.ZypherEvent.NoActionBar">
         </activity>
+        <activity
+            android:name=".OrganizerActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.ZypherEvent.NoActionBar">
+        </activity>
     </application>
 
 </manifest>

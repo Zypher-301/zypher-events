@@ -26,6 +26,13 @@
         android:label="QR Scanner"
         tools:layout="@layout/fragment_entrant_qr_scanner" />
 
+    <!-- Destination for the "QR Scanner" menu item -->
+    <fragment
+        android:id="@+id/nav_notifications"
+        android:name="com.example.zypherevent.ui.entrant.events.EntrantNotificationsFragment"
+        android:label="Notifications"
+        tools:layout="@layout/fragment_entrant_notifications" />
+
     <!-- Destination for the "Settings" menu item -->
     <fragment
         android:id="@+id/nav_settings"

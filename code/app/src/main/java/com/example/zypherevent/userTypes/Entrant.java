@@ -28,6 +28,9 @@ public class Entrant extends User {
     /** Whether the entrant has opted into geolocation. */
     private boolean useGeolocation;
 
+    /** Whether the entrant wants notifications. */
+    private boolean wantsNotifications;
+
     /** A list of events the entrant has registered for. */
     private ArrayList<Event> registeredEventHistory;
 
@@ -46,6 +49,7 @@ public class Entrant extends User {
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.useGeolocation = useGeolocation;
+        this.wantsNotifications = true;
         this.registeredEventHistory = new ArrayList<Event>();
     }
 
@@ -180,6 +184,24 @@ public class Entrant extends User {
      */
     public void setUseGeolocation(boolean useGeolocation) {
         this.useGeolocation = useGeolocation;
+    }
+
+    /**
+     * Returns whether the entrant wants notifications.
+     *
+     * @return true if notifications are enabled, false otherwise
+     */
+    public boolean wantsNotifications() {
+        return wantsNotifications;
+    }
+
+    /**
+     * Updates the entrant's notification setting.
+     *
+     * @param wantsNotifications true to enable notifications, false to disable
+     */
+    public void setWantsNotifications(boolean wantsNotifications) {
+        this.wantsNotifications = wantsNotifications;
     }
 
     // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------

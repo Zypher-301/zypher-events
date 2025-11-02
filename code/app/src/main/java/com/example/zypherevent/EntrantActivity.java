@@ -55,7 +55,7 @@ public class EntrantActivity extends AppCompatActivity {
 
         // Configure the top-level destinations for the entrant drawer menu (entrant_main_drawer.xml)
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_all_events, R.id.nav_joined_events, R.id.nav_qr_scanner, R.id.nav_settings)
+                R.id.nav_all_events, R.id.nav_joined_events, R.id.nav_qr_scanner, R.id.nav_notifications, R.id.nav_settings)
                 .setOpenableLayout(drawer)
                 .build();
 
@@ -65,6 +65,15 @@ public class EntrantActivity extends AppCompatActivity {
         // Set up the ActionBar and NavigationView with the NavController
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+    }
+
+    /**
+     * returns the entrant that was passed to EntrantActivity from MainActivity
+     *
+     * @return Entrant object
+     */
+    public Entrant getEntrantUser() {
+        return entrantUser;
     }
 
     @Override

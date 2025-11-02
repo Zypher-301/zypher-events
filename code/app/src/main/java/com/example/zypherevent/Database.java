@@ -315,31 +315,30 @@ public class Database {
         });
     }
 
-
     /**
      * Added by Arunavo Dutta
      * Retrieves all event documents from the Firestore "events" collection.
+     * This method returns a Task that, upon completion, provides a {@code QuerySnapshot}
+     * containing all documents in the "events" collection. To get a list of {@code Event}
+     * objects, you can iterate through the snapshot's documents and convert each one
+     * to an {@code Event} object.
      *
-     * @return a Task that resolves to a List of all Event objects.
+     * @return A {@code Task<QuerySnapshot>} that resolves with the query result. The task
+     *         will fail if the data cannot be fetched.
      */
-    public Task<List<Event>> getAllEvents() {
-        return eventsCollection
-                .get()
-                .continueWith(task -> {
-                    if (!task.isSuccessful()) {
-                        throw task.getException();
-                    }
-                    // Convert the query snapshot to a list of Event objects
-                    return task.getResult().toObjects(Event.class);
-                });
+    public Task<com.google.firebase.firestore.QuerySnapshot> getAllEvents() {
+        return eventsCollection.get();
     }
 
     /**
      * Added by Arunavo Dutta
      * Retrieves all user documents from the Firestore "users" collection.
-     * This will fetch Entrants, Organizers, and Administrators.
+     * This method fetches all documents and correctly deserializes each one into its
+     * specific subclass (e.g., {@link Entrant}, {@link Organizer}, {@link Administrator})
+     * based on the {@code userType} field stored in Firestore.
      *
-     * @return a Task that resolves to a List of all User objects.
+     * @return A {@code Task<List<User>>} that resolves with a list containing all user objects.
+     *         The task will fail if the data cannot be fetched or parsed.
      */
     public Task<List<User>> getAllUsers() {
         return usersCollection
@@ -367,6 +366,5 @@ public class Database {
                     return userList;
                 });
     }
-
 
 }

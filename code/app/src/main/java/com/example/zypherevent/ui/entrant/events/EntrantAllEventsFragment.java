@@ -166,8 +166,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // 2. Create a "clean" version of the event to save to the user's profile.
-                    // This prevents the nested object save failure.
+                    // 2. Create a version of the event to save to the user's profile.
                     Event eventForHistory = new Event(
                             event.getUniqueEventID(),
                             event.getEventName(),
@@ -226,10 +225,9 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // 2. Create a "clean" event object to find and remove
+                    // 2. Create an event object to find and remove
                     Event eventToRemove = new Event();
                     eventToRemove.setUniqueEventID(event.getUniqueEventID());
-                    // We use our new equals() method, which only checks ID.
 
                     // 3. Remove the event from the user's local history
                     currentUser.removeEventFromRegisteredEventHistory(eventToRemove);

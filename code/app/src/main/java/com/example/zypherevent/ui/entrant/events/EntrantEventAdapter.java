@@ -140,7 +140,6 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
          *                    joining, leaving, or clicking the event item.
          */
         public void bind(final Event event, Entrant currentUser, final OnItemClickListener listener) {
-            // Set basic event info
             tvTitle.setText(event.getEventName());
             tvMeta.setText(event.getLocation());
 
@@ -152,7 +151,6 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             slotActions.setVisibility(View.VISIBLE);
 
             // Check if the current user is on the waitlist.
-            // This requires Entrant.java to have a proper .equals() method!
             if (event.getWaitListEntrants().contains(currentUser)) {
                 // User is ON the waitlist: Show "Leave"
                 btnJoinWaitlist.setVisibility(View.GONE);

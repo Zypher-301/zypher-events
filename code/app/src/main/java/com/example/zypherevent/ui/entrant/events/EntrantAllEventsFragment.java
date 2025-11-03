@@ -70,6 +70,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     }
 
     /**
+     * Added by Arunavo Dutta
      * Called immediately after {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}
      * has returned, but before any saved state has been restored in to the view.
      * This gives subclasses a chance to initialize themselves once
@@ -109,6 +110,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     }
 
     /**
+     * Added by Arunavo Dutta
      * Asynchronously loads all events from the Firestore database.
      * It fetches the list of all available events, clears the current local list,
      * populates it with the newly fetched data, and then notifies the RecyclerView adapter
@@ -132,17 +134,20 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     }
 
     /**
+     * Added by Arunavo Dutta
      * Handles the click event for an item in the RecyclerView. Currently, it displays a Toast
      * message with the name of the clicked event. This can be expanded to show event details.
      *
      * @param event The {@link Event} object that was clicked.
      */
+    // Can be used to show event details in future
     @Override
     public void onItemClick(Event event) {
         Toast.makeText(getContext(), "Clicked on: " + event.getEventName(), Toast.LENGTH_SHORT).show();
     }
 
     /**
+     * Added by Arunavo Dutta
      * Handles the click event when an entrant chooses to join an event's waitlist.
      * This method performs a series of asynchronous operations:
      * 1. It calls the database to add the current entrant to the specified event's waitlist.
@@ -202,6 +207,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     }
 
     /**
+     * Added by Arunavo Dutta
      * Handles the "Leave" button click for an event. This method facilitates the process of
      * an Entrant leaving the waitlist of a specific event. It performs the following actions:
      * <p>

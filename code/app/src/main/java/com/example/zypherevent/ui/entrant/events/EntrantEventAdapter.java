@@ -16,7 +16,6 @@ import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
- * @author Elliot Chrystal
  * @author Arunavo Dutta
  * @version 3.0
  * Adapter for displaying a list of events for an Entrant.
@@ -145,7 +144,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
 
             // US 01.05.04: Show waitlist count
             int waitlistSize = event.getWaitListEntrants().size();
-            tvWaitlistCount.setText("On waiting list: " + waitlistSize);
+            tvWaitlistCount.setText("On Waiting List: " + waitlistSize);
 
             // Make the button area visible
             slotActions.setVisibility(View.VISIBLE);

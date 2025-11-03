@@ -58,7 +58,7 @@ public class Database {
         this.db = FirebaseFirestore.getInstance();
         usersCollection = db.collection("users");
         eventsCollection = db.collection("events");
-        notificationCollection = db.collection("test_notifications"); // Use "notifications" in production
+        notificationCollection = db.collection("notifications");
         extrasCollection = db.collection("extras");
     }
 
@@ -357,6 +357,7 @@ public class Database {
 
 
     /**
+     * Added by Arunavo Dutta
      * Retrieves all event documents from the Firestore "events" collection.
      * <p>
      * FOR ENTRANT: Returns a simple, automatically converted List<Event>.
@@ -417,6 +418,7 @@ public class Database {
 
 
     /**
+     * Added by Arunavo Dutta
      * Adds an entrant to the waitlist of a specific event.
      * <p>
      * This method updates the "waitListEntrants" array field in the corresponding
@@ -436,6 +438,7 @@ public class Database {
     }
 
     /**
+     * Added by Arunavo Dutta
      * Removes an entrant from the waitlist of a specific event.
      * This is typically used when an entrant decides to leave an event they were waitlisted for.
      *

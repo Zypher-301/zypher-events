@@ -54,7 +54,6 @@ public class AdminNotificationLogFragment extends AdminBaseListFragment {
         recyclerView.setAdapter(adapter);
 
         // --- REFRESH BUTTON LOGIC ---
-        // The button is in the layout loaded by AdminBaseListFragment
         refreshButton = view.findViewById(R.id.refresh_button);
         refreshButton.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Refreshing list...", Toast.LENGTH_SHORT).show();

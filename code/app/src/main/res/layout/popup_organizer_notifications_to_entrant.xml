@@ -23,7 +23,7 @@
         android:layout_marginTop="40dp"
         android:gravity="center"
         android:paddingVertical="20dp"
-        android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+        android:text="Select a status group below to send a notification to all entrants in that category. The notification will inform them of their current status in the event."
         android:textColor="@color/black"
         android:textSize="20sp" />
 

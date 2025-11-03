@@ -128,7 +128,6 @@ public class User implements Serializable {
 
     /**
      * Implements equality checks for the class.
-     * Two Users are equal if their hardwareID is the same.
      *
      * @param o the object to compare to
      * @return if the given object and this instance are logically equal
@@ -136,19 +135,24 @@ public class User implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
+
         User user = (User) o;
-        // The ONLY way to identify a user is their unique hardware ID
-        return java.util.Objects.equals(hardwareID, user.hardwareID);
+
+        return java.util.Objects.equals(hardwareID, user.hardwareID)
+                && java.util.Objects.equals(userType, user.userType)
+                && java.util.Objects.equals(firstName, user.firstName)
+                && java.util.Objects.equals(lastName, user.lastName);
     }
 
     /**
-     * Generates a hash code for this User.
-     * Must be based on the same field(s) as equals().
+     * This is required for collections like HashMap or HashSet to work correctly.
+     * Also should be updated together equals?
      */
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(hardwareID);
+        return java.util.Objects.hash(hardwareID, userType, firstName, lastName);
     }
 
 }

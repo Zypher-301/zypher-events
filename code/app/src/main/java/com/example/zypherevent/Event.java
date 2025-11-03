@@ -447,18 +447,7 @@ public class Event {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Event event = (Event) o;
-        return Objects.equals(uniqueEventID, event.uniqueEventID) &&
-                Objects.equals(eventName, event.eventName) &&
-                Objects.equals(eventDescription, event.eventDescription) &&
-                Objects.equals(startTime, event.startTime) &&
-                Objects.equals(location, event.location) &&
-                Objects.equals(registrationStartTime, event.registrationStartTime) &&
-                Objects.equals(registrationEndTime, event.registrationEndTime) &&
-                Objects.equals(posterURL, event.posterURL) &&
-                Objects.equals(eventOrganizerHardwareID, event.eventOrganizerHardwareID) &&
-                Objects.equals(waitListEntrants, event.waitListEntrants) &&
-                Objects.equals(acceptedEntrants, event.acceptedEntrants) &&
-                Objects.equals(declinedEntrants, event.declinedEntrants);
+        return Objects.equals(uniqueEventID, event.uniqueEventID);
     }
 
     /**
@@ -467,8 +456,6 @@ public class Event {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(uniqueEventID, eventName, eventDescription, startTime,
-                location, registrationStartTime, registrationEndTime, posterURL,
-                eventOrganizerHardwareID, waitListEntrants, acceptedEntrants, declinedEntrants);
+        return Objects.hash(uniqueEventID);
     }
 }

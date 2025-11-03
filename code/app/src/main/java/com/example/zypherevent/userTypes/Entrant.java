@@ -142,8 +142,6 @@ public class Entrant extends User {
 
     /**
      * Checks if this Entrant is equal to another object.
-     * Relies on the parent User.equals() method (which checks hardwareID).
-     *
      * @param o the object to compare with this Entrant.
      * @return {@code true} if the objects are equal, {@code false} otherwise.
      */
@@ -151,17 +149,23 @@ public class Entrant extends User {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        return super.equals(o);
+        // check parent equality
+        if (!super.equals(o)) return false;
+
+        Entrant entrant = (Entrant) o;
+
+        return Objects.equals(email, entrant.email)
+                && Objects.equals(phoneNumber, entrant.phoneNumber);
     }
 
     /**
-     * Generates a hash code for this Entrant.
-     * Relies on the parent User.hashCode() method.
+     * Generates a hash code for this Entrant. Has to be implemented
+     * when equals is implemented.
      * @return a hash code value for this object.
      */
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(super.hashCode(), email, phoneNumber, registeredEventHistory);
     }
 
 

@@ -377,7 +377,6 @@ public class Database {
                 });
     }
 
-// ... (rest of your Database.java class)
 
     /**
      * Added by Arunavo Dutta
@@ -415,5 +414,19 @@ public class Database {
                     return userList;
                 });
     }
+
+
+    // Used by "Join" button
+    public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
+    }
+
+    // Used by "Leave" button
+    public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
+    }
+
 
 }

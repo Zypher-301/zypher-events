@@ -71,7 +71,31 @@
             android:paddingTop="6dp"
             app:layout_constraintStart_toStartOf="@id/tvTitle"
             app:layout_constraintEnd_toEndOf="@id/tvTitle"
-            app:layout_constraintTop_toBottomOf="@id/tvWaitlistCount" tools:ignore="UselessParent" />
+            app:layout_constraintTop_toBottomOf="@id/tvWaitlistCount">
+
+            <Button
+                android:id="@+id/btnJoinWaitlist"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Join Waitlist"
+                android:textColor="#4CAF50"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <Button
+                android:id="@+id/btnLeaveWaitlist"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Leave Waitlist"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="gone" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

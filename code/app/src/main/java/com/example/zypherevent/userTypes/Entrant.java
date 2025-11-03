@@ -139,8 +139,12 @@ public class Entrant extends User {
         registeredEventHistory.remove(event);
     }
 
+    // ... (inside your Entrant.java file)
+
     /**
      * Checks if this Entrant is equal to another object.
+     * Relies on the parent User.equals() method (which checks hardwareID).
+     *
      * @param o the object to compare with this Entrant.
      * @return {@code true} if the objects are equal, {@code false} otherwise.
      */
@@ -148,25 +152,20 @@ public class Entrant extends User {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        // check parent equality
-        if (!super.equals(o)) return false;
-
-        Entrant entrant = (Entrant) o;
-
-        return Objects.equals(email, entrant.email)
-                && Objects.equals(phoneNumber, entrant.phoneNumber)
-                && Objects.equals(registeredEventHistory, entrant.registeredEventHistory);
+        return super.equals(o);
     }
 
     /**
-     * Generates a hash code for this Entrant. Has to be implemented
-     * when equals is implemented.
+     * Generates a hash code for this Entrant.
+     * Relies on the parent User.hashCode() method.
      * @return a hash code value for this object.
      */
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), email, phoneNumber, registeredEventHistory);
+        return super.hashCode();
     }
+
+// ... (rest of your Entrant.java file)
 
     /**
      * Returns whether the entrant has opted into geolocation.

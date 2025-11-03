@@ -3,6 +3,7 @@ package com.example.zypherevent.ui.entrant.events;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -11,148 +12,113 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
- * @author Arunavo Dutta
- * Manages and displays a list of {@link Event} objects in a RecyclerView for an entrant.
- * This adapter is responsible for creating view holders and binding event data to the views
- * defined in the {@code item_event.xml} layout file. It also handles item click events
- * to allow for interaction with individual events in the list.
+ * Adapter for displaying a list of events for an Entrant.
+ * Binds Event data to the item_event.xml layout.
+ * Implements logic for US 01.01.01 (Join) and US 01.01.02 (Leave).
  */
 public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapter.EventViewHolder> {
 
     private List<Event> eventList;
-    private OnItemClickListener listener;
+    private Entrant currentUser; // Current user
+    private OnItemClickListener listener; // The fragment that will handle clicks
 
     /**
-     * A listener interface for receiving item click events from the event list.
-     * The containing Fragment or Activity must implement this interface to handle
-     * user interactions with individual events.
+     * This interface defines the "contract" that the fragment must follow.
+     * The fragment will provide the logic for these three methods.
      */
     public interface OnItemClickListener {
-        void onItemClick(Event event);
+        void onItemClick(Event event); // For clicking the card
+        void onJoinClick(Event event); // For clicking "Join"
+        void onLeaveClick(Event event); // For clicking "Leave"
     }
 
-    /**
-     * Constructs a new EntrantEventAdapter.
-     *
-     * @param eventList The list of events to be displayed.
-     * @param listener The listener that will handle item click events.
-     */
-    public EntrantEventAdapter(List<Event> eventList, OnItemClickListener listener) {
+    // Constructor that requires all 3 items
+    public EntrantEventAdapter(List<Event> eventList, Entrant currentUser, OnItemClickListener listener) {
         this.eventList = eventList;
+        this.currentUser = currentUser;
         this.listener = listener;
     }
 
-    /**
-     * Called when the RecyclerView needs a new {@link EventViewHolder} of the given type to represent
-     * an item.
-     * <p>
-     * This new ViewHolder is constructed with a new View that is inflated from the
-     * {@code R.layout.item_event} XML layout file.
-     *
-     * @param parent The ViewGroup into which the new View will be added after it is bound to
-     *               an adapter position.
-     * @param viewType The view type of the new View.
-     * @return A new EventViewHolder that holds a View of the given view type.
-     */
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflate the item_event.xml layout for each row
+        // Inflate the layout for each event row
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_event, parent, false);
         return new EventViewHolder(view);
     }
 
-    /**
-     * Called by RecyclerView to display the data at the specified position.
-     * This method updates the contents of the {@link EventViewHolder#itemView} to reflect the
-     * event at the given position in the list.
-     *
-     * @param holder   The ViewHolder which should be updated to represent the contents of the
-     *                 item at the given position in the data set.
-     * @param position The position of the item within the adapter's data set.
-     */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        // Get the event for this position
+        // Get the specific event for this row
         Event event = eventList.get(position);
-
-        // Bind the event data to the ViewHolder
-        holder.bind(event, listener);
+        // Bind the event data to the views in that row
+        holder.bind(event, currentUser, listener);
     }
 
-    /**
-     * Returns the total number of items in the data set held by the adapter.
-     *
-     * @return The total number of events in the list.
-     */
     @Override
     public int getItemCount() {
         return eventList.size();
     }
 
     /**
-     * A ViewHolder that describes an event item view and metadata about its place
-     * within the RecyclerView. It holds the UI components for a single event item
-     * in the list, such as the event poster, title, and other details.
+     * ViewHolder class that holds the references to the views
+     * in the item_event.xml layout file.
      */
     public static class EventViewHolder extends RecyclerView.ViewHolder {
 
-        // Views from item_event.xml
+        // Declare the views from the layout
         ImageView imgPoster;
         TextView tvTitle, tvMeta, tvWaitlistCount;
         LinearLayout slotActions;
+        Button btnJoinWaitlist, btnLeaveWaitlist;
 
-        /**
-         * Constructs a new EventViewHolder.
-         *
-         * @param itemView The view that represents a single item in the RecyclerView. This view
-         *                 is inflated from the {@code item_event.xml} layout file.
-         */
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
-
-            // Find all the views in the layout
+            // Find all the views by their ID
             imgPoster = itemView.findViewById(R.id.imgPoster);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvMeta = itemView.findViewById(R.id.tvMeta);
             tvWaitlistCount = itemView.findViewById(R.id.tvWaitlistCount);
             slotActions = itemView.findViewById(R.id.slotActions);
+            btnJoinWaitlist = itemView.findViewById(R.id.btnJoinWaitlist);
+            btnLeaveWaitlist = itemView.findViewById(R.id.btnLeaveWaitlist);
         }
 
         /**
-         * Binds an {@link Event} object's data to the corresponding views in the item layout.
-         * This method sets the event's title, location, and the current waitlist count.
-         * It also attaches a click listener to the entire item view, which triggers the
-         * {@link OnItemClickListener#onItemClick(Event)} callback when the item is tapped.
-         *
-         * @param event    The {@link Event} object containing the data to display.
-         * @param listener The listener that will handle the click event for this item.
+         * Binds a single Event object to the views.
          */
-        public void bind(Event event, OnItemClickListener listener) {
-            // Set the event name
+        public void bind(final Event event, Entrant currentUser, final OnItemClickListener listener) {
+            // Set basic event info
             tvTitle.setText(event.getEventName());
-
-            // Set the event metadata (e.g., location)
             tvMeta.setText(event.getLocation());
 
-            // --- THIS IS THE LOGIC FOR US 01.05.04 ---
-            // Get the size of the waitlist from the Event object
+            // US 01.05.04: Show waitlist count
             int waitlistSize = event.getWaitListEntrants().size();
             tvWaitlistCount.setText("On waiting list: " + waitlistSize);
-            // ------------------------------------
 
-            // TODO: Load the event poster image using Glide or Picasso
-            // imgPoster.setImageResource(R.drawable.placeholder);
+            // Make the button area visible
+            slotActions.setVisibility(View.VISIBLE);
 
-            // TODO: Add logic for the slotActions (Join, Leave, Accept buttons)
-            // For now, we can just hide it to keep it simple
-            slotActions.setVisibility(View.GONE);
+            // Check if the current user is on the waitlist.
+            // This requires Entrant.java to have a proper .equals() method!
+            if (event.getWaitListEntrants().contains(currentUser)) {
+                // User is ON the waitlist: Show "Leave"
+                btnJoinWaitlist.setVisibility(View.GONE);
+                btnLeaveWaitlist.setVisibility(View.VISIBLE);
+            } else {
+                // User is NOT on the waitlist: Show "Join"
+                btnJoinWaitlist.setVisibility(View.VISIBLE);
+                btnLeaveWaitlist.setVisibility(View.GONE);
+            }
 
-            // Set the click listener for the whole item
+            // Set the click listeners to call the methods in the fragment
+            btnJoinWaitlist.setOnClickListener(v -> listener.onJoinClick(event));
+            btnLeaveWaitlist.setOnClickListener(v -> listener.onLeaveClick(event));
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }
     }

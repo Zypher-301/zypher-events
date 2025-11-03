@@ -24,10 +24,26 @@ import com.example.zypherevent.databinding.ActivityMainBinding;
 import com.example.zypherevent.userTypes.UserType;
 import com.google.android.gms.tasks.Task;
 
+/**
+ * @author Elliot Chrystal
+ * @version 1.0
+ *
+ * Entry point activity for the Zypher Event app. On launch, this activity attempts to look up
+ * the current device's user by hardware ID and routes recognized users to the appropriate
+ * activity (Entrant, Organizer, or Administrator). If no user is found, it presents a simple
+ * profile creation flow.
+ */
 public class MainActivity extends AppCompatActivity {
+    /** Navigation configuration for top-level destinations (if/when set). */
     private AppBarConfiguration mAppBarConfiguration;
+
+    /** ViewBinding for the main activity layout. */
     private ActivityMainBinding binding;
+
+    /** Reference to the application database interface. */
     private Database db;
+
+    /** The current device's unique hardware ID used to identify the user. */
     private String userHardwareID;
 
     /**
@@ -40,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param savedInstanceState If the activity is being re-initialized after
      *     previously being shut down then this Bundle contains the data it most
-     *     recently supplied in {@link #onSaveInstanceState}.  <b><i>Note: Otherwise it is null.</i></b>
+     *     recently supplied in onSaveInstanceState.
      *
      */
     @Override
@@ -98,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Used to switch to the profile information view from inside the main activity.
+     * Displays the role selection page for new users, allowing them to choose Entrant or Organizer.
      */
     private void showProfileInformationPage() {
         // Set the view to the startup role declaration page
@@ -123,6 +139,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Shows the Entrant profile creation page and handles input validation and persistence.
+     * On save, creates an Entrant with the provided information, stores it in the database,
+     * and routes to the Entrant activity.
+     */
     private void showProfileInformationPageEntrant() {
         // set the view to the profile information page for entrants
         setContentView(R.layout.profile_information_page);
@@ -186,6 +207,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Shows the Organizer profile creation page, limiting inputs to name fields.
+     * On save, creates an Organizer, stores it in the database, and routes to the Organizer activity.
+     */
     private void showProfileInformationPageOrganizer() {
         // set the view to the profile information page for entrants
         // set the view to the profile information page for entrants

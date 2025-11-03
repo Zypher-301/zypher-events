@@ -28,7 +28,7 @@ import java.util.ArrayList;
 /**
  * @author Elliot Chrystal
  * @author Tom Yang (added delete profile function)
- * @version 1.0
+ * @version 2.0
  * @see EntrantActivity
  *
  * Fragment for the entrant's settings page. This is where entrants can change their profile information,

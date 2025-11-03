@@ -139,7 +139,6 @@ public class Entrant extends User {
         registeredEventHistory.remove(event);
     }
 
-    // ... (inside your Entrant.java file)
 
     /**
      * Checks if this Entrant is equal to another object.
@@ -165,7 +164,6 @@ public class Entrant extends User {
         return super.hashCode();
     }
 
-// ... (rest of your Entrant.java file)
 
     /**
      * Returns whether the entrant has opted into geolocation.

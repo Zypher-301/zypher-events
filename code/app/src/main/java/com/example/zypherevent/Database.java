@@ -416,12 +416,33 @@ public class Database {
     }
 
 
+    /**
+     * Adds an entrant to the waitlist of a specific event.
+     * <p>
+     * This method updates the "waitListEntrants" array field in the corresponding
+     * event document in Firestore by adding the provided entrant object. It uses
+     * an atomic `arrayUnion` operation to prevent duplicate entries.
+     *
+     * @param eventId The unique identifier of the event to which the entrant will be added.
+     * @param entrant The entrant object to be added to the event's waitlist.
+     * @return A {@code Task<Void>} representing the asynchronous database operation. The task
+     *         will complete successfully if the update is committed, or fail with an
+     *         exception if the operation is unsuccessful.
+     */
     // Used by "Join" button
     public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
         return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
     }
 
+    /**
+     * Removes an entrant from the waitlist of a specific event.
+     * This is typically used when an entrant decides to leave an event they were waitlisted for.
+     *
+     * @param eventId The ID of the event from which to remove the entrant.
+     * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
+     * @return A {@code Task<Void>} representing the asynchronous Firestore operation.
+     */
     // Used by "Leave" button
     public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));

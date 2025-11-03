@@ -24,7 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Elliot Chrystal (Updated by Gemini)
+ * @author Elliot Chrystal
+ * @author Arunavo Dutta
  * @version 3.0
  * This fragment displays the events the Entrant has joined
  * and implements US 01.01.02 (Leave Waitlist).
@@ -42,14 +43,41 @@ public class EntrantJoinedEventsFragment extends Fragment {
 
     public EntrantJoinedEventsFragment() { }
 
+    /**
+     * Called to have the fragment instantiate its user interface view. This is optional,
+     * and non-graphical fragments can return null. This will be called between
+     * {@code onCreate(Bundle)} and {@code onViewCreated(View, Bundle)}.
+     *
+     * @param inflater           The LayoutInflater object that can be used to inflate
+     *                           any views in the fragment.
+     * @param container          If non-null, this is the parent view that the fragment's
+     *                           UI should be attached to. The fragment should not add the
+     *                           view itself, but this can be used to generate the
+     *                           LayoutParams of the view.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     *                           from a previous saved state as given here.
+     * @return Return the View for the fragment's UI, or null.
+     */
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Use the generic list page layout
+        // Using generic list page layout
         return inflater.inflate(R.layout.fragment_entrant_fragment_list_page, container, false);
     }
 
+    /**
+     * Called immediately after {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)} has returned,
+     * but before any saved state has been restored in to the view. This gives subclasses a chance
+     * to initialize themselves once they know their view hierarchy has been completely created.
+     * <p>
+     * This method initializes the user, RecyclerView, adapter, and click listeners for the UI.
+     * It sets up the "Leave Waitlist" functionality and the refresh button.
+     *
+     * @param view               The View returned by {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     *                           from a previous saved state as given in the Bundle.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -104,7 +132,11 @@ public class EntrantJoinedEventsFragment extends Fragment {
     }
 
     /**
-     * Fetches the events this Entrant has joined FROM THE LOCAL USER OBJECT.
+     * Loads the events that the current entrant has joined.
+     * This method retrieves the list of registered events directly from the local {@code currentUser} object's history.
+     * It then clears the existing event list in the adapter and populates it with the fetched events.
+     * If the user has not joined any events, a toast message is displayed. Finally, it notifies the
+     * adapter to refresh the RecyclerView and display the updated data.
      */
     private void loadJoinedEvents() {
         Log.d(TAG, "Loading joined events from local user object...");

@@ -16,19 +16,23 @@ import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
+ * @author Elliot Chrystal
+ * @author Arunavo Dutta
+ * @version 3.0
  * Adapter for displaying a list of events for an Entrant.
  * Binds Event data to the item_event.xml layout.
- * Implements logic for US 01.01.01 (Join) and US 01.01.02 (Leave).
+ * Implements logic for US 01.01.01 (Join), US 01.01.02 (Leave), US 01.05.04 (Waitlist).
  */
 public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapter.EventViewHolder> {
 
     private List<Event> eventList;
-    private Entrant currentUser; // Current user
-    private OnItemClickListener listener; // The fragment that will handle clicks
+    private Entrant currentUser;
+    private OnItemClickListener listener;
 
     /**
-     * This interface defines the "contract" that the fragment must follow.
-     * The fragment will provide the logic for these three methods.
+     * Interface definition for a callback to be invoked when an item in this
+     * adapter has been clicked. The hosting Fragment or Activity must implement this
+     * interface to handle click events.
      */
     public interface OnItemClickListener {
         void onItemClick(Event event); // For clicking the card
@@ -36,13 +40,32 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         void onLeaveClick(Event event); // For clicking "Leave"
     }
 
-    // Constructor that requires all 3 items
+    /**
+     * Constructs a new EntrantEventAdapter.
+     *
+     * @param eventList   The list of events to display.
+     * @param currentUser The current entrant user, used to determine their waitlist status for events.
+     * @param listener    The listener for click events on items and buttons within the adapter.
+     */
     public EntrantEventAdapter(List<Event> eventList, Entrant currentUser, OnItemClickListener listener) {
         this.eventList = eventList;
         this.currentUser = currentUser;
         this.listener = listener;
     }
 
+    /**
+     * Called when RecyclerView needs a new {@link EventViewHolder} of the given type to represent
+     * an item.
+     * <p>
+     * This new ViewHolder should be constructed with a new View that can represent the items
+     * of the given type. You can either create a new View manually or inflate it from an XML
+     * layout file.
+     *
+     * @param parent   The ViewGroup into which the new View will be added after it is bound to
+     *                 an adapter position.
+     * @param viewType The view type of the new View.
+     * @return A new EventViewHolder that holds a View of the given view type.
+     */
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -52,6 +75,15 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         return new EventViewHolder(view);
     }
 
+    /**
+     * Called by RecyclerView to display the data at the specified position.
+     * This method updates the contents of the {@link EventViewHolder#itemView} to reflect the
+     * event at the given position in the list.
+     *
+     * @param holder   The ViewHolder which should be updated to represent the contents of the
+     *                 item at the given position in the data set.
+     * @param position The position of the item within the adapter's data set.
+     */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
         // Get the specific event for this row
@@ -60,14 +92,21 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         holder.bind(event, currentUser, listener);
     }
 
+    /**
+     * Returns the total number of items in the data set held by the adapter.
+     *
+     * @return The total number of events in the list.
+     */
     @Override
     public int getItemCount() {
         return eventList.size();
     }
 
     /**
-     * ViewHolder class that holds the references to the views
-     * in the item_event.xml layout file.
+     * ViewHolder class for an event item in the RecyclerView.
+     * This class holds references to the UI components (views) within the item_event.xml layout
+     * for a single event, and binds the event data to these views. It also handles the
+     * visibility of "Join" and "Leave" buttons based on the user's waitlist status.
      */
     public static class EventViewHolder extends RecyclerView.ViewHolder {
 
@@ -90,7 +129,15 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         }
 
         /**
-         * Binds a single Event object to the views.
+         * Binds the data from a single {@link Event} object to the views in the ViewHolder.
+         * This method sets the event's title and location. It also handles the visibility
+         * and click listeners for the "Join Waitlist" and "Leave Waitlist" buttons based
+         * on whether the current user is already on the event's waitlist.
+         *
+         * @param event       The {@link Event} object containing the data to display.
+         * @param currentUser The current {@link Entrant} user, used to check waitlist status.
+         * @param listener    The {@link OnItemClickListener} to handle user interactions like
+         *                    joining, leaving, or clicking the event item.
          */
         public void bind(final Event event, Entrant currentUser, final OnItemClickListener listener) {
             // Set basic event info

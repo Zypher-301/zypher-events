@@ -126,8 +126,6 @@ public class User implements Serializable {
     }
 
 
-    // ... (inside your User.java file)
-
     /**
      * Implements equality checks for the class.
      * Two Users are equal if their hardwareID is the same.

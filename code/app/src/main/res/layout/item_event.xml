@@ -14,7 +14,6 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <!-- Event poster / icon -->
         <ImageView
             android:id="@+id/imgPoster"
             android:layout_width="72dp"
@@ -26,7 +25,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             tools:src="@mipmap/ic_launcher_round" />
 
-        <!-- Event title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
@@ -41,7 +39,6 @@
             android:layout_marginStart="12dp"
             tools:text="Event Name" />
 
-        <!-- Event info (date • time • location) -->
         <TextView
             android:id="@+id/tvMeta"
             android:layout_width="0dp"
@@ -53,7 +50,18 @@
             android:ellipsize="end"
             tools:text="Oct 31 · 6:00 PM · SUB Hall A" />
 
-        <!-- Placeholder for buttons (Accept/Deny/Leave/etc.) -->
+        <TextView
+            android:id="@+id/tvWaitlistCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="@id/tvTitle"
+            app:layout_constraintEnd_toEndOf="@id/tvTitle"
+            app:layout_constraintTop_toBottomOf="@id/tvMeta"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:layout_marginTop="2dp"
+            tools:text="Waiting list: 52 people" />
+
         <LinearLayout
             android:id="@+id/slotActions"
             android:layout_width="0dp"
@@ -63,8 +71,31 @@
             android:paddingTop="6dp"
             app:layout_constraintStart_toStartOf="@id/tvTitle"
             app:layout_constraintEnd_toEndOf="@id/tvTitle"
-            app:layout_constraintTop_toBottomOf="@id/tvMeta"
-            tools:ignore="UselessParent" />
+            app:layout_constraintTop_toBottomOf="@id/tvWaitlistCount">
+
+            <Button
+                android:id="@+id/btnJoinWaitlist"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Join Waitlist"
+                android:textColor="#4CAF50"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <Button
+                android:id="@+id/btnLeaveWaitlist"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Leave Waitlist"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="gone" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

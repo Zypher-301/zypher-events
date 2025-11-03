@@ -355,6 +355,29 @@ public class Database {
         return eventsCollection.get();
     }
 
+
+    /**
+     * Retrieves all event documents from the Firestore "events" collection.
+     * <p>
+     * FOR ENTRANT: Returns a simple, automatically converted List<Event>.
+     * This is less safe (will fail if *any* document has bad data) but
+     * is much simpler to use in the fragment.
+     *
+     * @return A {@code Task<List<Event>>} that resolves with a list of all Event objects.
+     */
+    public Task<List<Event>> getAllEventsList() {
+        return eventsCollection.get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting events list", task.getException());
+                        throw task.getException();
+                    }
+                    // Automatically convert all documents to Event objects
+                    return task.getResult().toObjects(Event.class);
+                });
+    }
+
+
     /**
      * Added by Arunavo Dutta
      * Retrieves all user documents from the Firestore "users" collection.
@@ -391,5 +414,40 @@ public class Database {
                     return userList;
                 });
     }
+
+
+    /**
+     * Adds an entrant to the waitlist of a specific event.
+     * <p>
+     * This method updates the "waitListEntrants" array field in the corresponding
+     * event document in Firestore by adding the provided entrant object. It uses
+     * an atomic `arrayUnion` operation to prevent duplicate entries.
+     *
+     * @param eventId The unique identifier of the event to which the entrant will be added.
+     * @param entrant The entrant object to be added to the event's waitlist.
+     * @return A {@code Task<Void>} representing the asynchronous database operation. The task
+     *         will complete successfully if the update is committed, or fail with an
+     *         exception if the operation is unsuccessful.
+     */
+    // Used by "Join" button
+    public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
+    }
+
+    /**
+     * Removes an entrant from the waitlist of a specific event.
+     * This is typically used when an entrant decides to leave an event they were waitlisted for.
+     *
+     * @param eventId The ID of the event from which to remove the entrant.
+     * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
+     * @return A {@code Task<Void>} representing the asynchronous Firestore operation.
+     */
+    // Used by "Leave" button
+    public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
+    }
+
 
 }

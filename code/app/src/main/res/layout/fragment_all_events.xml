@@ -42,6 +42,20 @@
                 android:layout_gravity="center"
                 android:visibility="gone"
                 tools:visibility="visible" />
+
+            <!-- Lottery guidelines for entrants -->
+            <TextView
+                android:id="@+id/tvLotteryGuidelines"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:padding="12dp"
+                android:text="How the lottery works: When registration closes, a random draw selects entrants from each events waiting list. One entry per device. If a selected entrant declines, another entrant is randomly chosen."
+                android:textSize="12sp"
+                android:textColor="@android:color/black"
+                android:background= "#1FFFFFFF"
+                android:lineSpacingExtra="2dp"
+                android:scrollbars="vertical" />
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

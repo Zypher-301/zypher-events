@@ -5,6 +5,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.app.AlertDialog;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.Event; // <-- IMPORTING REAL EVENT
@@ -81,9 +84,9 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
         // Bind data from the real Event object
         holder.eventName.setText(event.getEventName());
-        holder.eventTime.setText(event.getStartTime());
+        holder.eventTime.setText(event.getRegistrationStartTime());
         holder.eventDetails.setText(event.getEventDescription());
-        holder.eventLotteryDetails.setText("Lottery ends: " + event.getRegistrationEndTime());
+        holder.eventLotteryDetails.setText("Lottery Registration Ends: " + event.getRegistrationEndTime());
 
         holder.deleteButton.setOnClickListener(v -> {
             deleteListener.onDelete(event);

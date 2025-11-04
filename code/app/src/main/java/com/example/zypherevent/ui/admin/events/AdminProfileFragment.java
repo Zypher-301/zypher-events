@@ -8,7 +8,7 @@ import android.widget.Button;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
+import android.app.AlertDialog;
 import com.example.zypherevent.Database;
 import com.example.zypherevent.R;
 import com.example.zypherevent.userTypes.User; // Using your real User model
@@ -98,10 +98,14 @@ public class AdminProfileFragment extends AdminBaseListFragment {
      * Handles the deletion of a user profile.
      * This method is triggered when an administrator decides to remove a profile from the list.
      * It first checks if the profile and its ID are valid. If not, it shows an error message.
-     * It then proceeds to call the {@link Database#removeUserData(String)} method to delete the user's data from Firebase,
+     * * [AC #3] It then presents a confirmation dialog to the administrator.
+     *
+     * If confirmed, it proceeds to call the {@link Database#removeUserData(String)} method to delete the user's data from Firebase,
      * using the user's hardware ID.
-     * Upon successful deletion from the database, the profile is removed from the local {@code profileList},
-     * and the {@link AdminProfilesAdapter} is notified to update the UI.
+     *
+     * [AC #5] Upon successful deletion from the database, the profile is removed from the local {@code profileList},
+     * the {@link AdminProfilesAdapter} is notified to update the UI, and a success toast is shown.
+     *
      * If the deletion fails, an error is logged, and a toast message is displayed to the administrator.
      *
      * @param profile The {@link User} object representing the profile to be deleted.
@@ -113,19 +117,39 @@ public class AdminProfileFragment extends AdminBaseListFragment {
         }
 
         String profileName = profile.getFirstName() + " " + profile.getLastName();
-        Toast.makeText(getContext(), "Deleting " + profileName, Toast.LENGTH_SHORT).show();
 
-        // Call database to remove the user
-        db.removeUserData(profile.getHardwareID()).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                Log.d(TAG, "Successfully deleted profile: " + profileName);
-                // Remove from local list and update UI
-                profileList.remove(profile);
-                adapter.notifyDataSetChanged();
-            } else {
-                Log.e(TAG, "Error deleting profile: ", task.getException());
-                Toast.makeText(getContext(), "Failed to delete profile", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // --- Ask for confirmation before deletion ---
+        new AlertDialog.Builder(getContext())
+                .setTitle("Confirm Deletion")
+                .setMessage("Are you sure you want to delete the profile for '" + profileName + "'? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    // User clicked "Delete". Proceed with the original deletion logic.
+
+                    Toast.makeText(getContext(), "Deleting " + profileName, Toast.LENGTH_SHORT).show();
+
+                    // Call database to remove the user
+                    db.removeUserData(profile.getHardwareID()).addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "Successfully deleted profile: " + profileName);
+                            // Remove from local list and update UI
+                            profileList.remove(profile);
+                            adapter.notifyDataSetChanged();
+
+                            // --- Show success message ---
+                            Toast.makeText(getContext(), "Profile deleted successfully", Toast.LENGTH_SHORT).show();
+                            // --- End ---
+
+                        } else {
+                            Log.e(TAG, "Error deleting profile: ", task.getException());
+                            Toast.makeText(getContext(), "Failed to delete profile", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    // User clicked "Cancel", so dismiss the dialog.
+                    dialog.dismiss();
+                })
+                .show(); // Display the confirmation dialog
+        // --- End ---
     }
 }

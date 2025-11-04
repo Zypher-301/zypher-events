@@ -7,6 +7,7 @@ import android.widget.Button; // Import Button
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import android.app.AlertDialog;
 
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -154,7 +155,7 @@ public class AdminEventsFragment extends AdminBaseListFragment {
      * Error messages are logged if the event cannot be found or if the deletion fails.
      *
      * @param event The {@link Event} object to be deleted. The object must not be null
-     *              and must have a valid {@code uniqueEventID}.
+     * and must have a valid {@code uniqueEventID}.
      */
     private void handleDeleteEvent(Event event) {
         if (event == null || event.getUniqueEventID() == null) {
@@ -162,27 +163,46 @@ public class AdminEventsFragment extends AdminBaseListFragment {
             return;
         }
 
-        Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
+        // Ask for confirmation before deletion
+        new AlertDialog.Builder(getContext())
+                .setTitle("Confirm Deletion")
+                .setMessage("Are you sure you want to delete '" + event.getEventName() + "'? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    // User clicked "Delete". Proceed with the original deletion logic.
 
-        db.collection("events")
-                .whereEqualTo("uniqueEventID", event.getUniqueEventID())
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                        String documentId = task.getResult().getDocuments().get(0).getId();
-                        db.collection("events").document(documentId).delete()
-                                .addOnSuccessListener(aVoid -> {
-                                    Log.d(TAG, "Successfully deleted event: " + event.getEventName());
-                                    eventList.remove(event);
-                                    adapter.notifyDataSetChanged();
-                                })
-                                .addOnFailureListener(e -> {
-                                    Log.e(TAG, "Failed to delete event", e);
-                                    Toast.makeText(getContext(), "Failed to delete event", Toast.LENGTH_SHORT).show();
-                                });
-                    } else {
-                        Log.e(TAG, "Could not find document to delete with uniqueEventID: " + event.getUniqueEventID());
-                    }
-                });
+                    Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
+
+                    db.collection("events")
+                            .whereEqualTo("uniqueEventID", event.getUniqueEventID())
+                            .get()
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                                    String documentId = task.getResult().getDocuments().get(0).getId();
+                                    db.collection("events").document(documentId).delete()
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "Successfully deleted event: " + event.getEventName());
+                                                eventList.remove(event);
+                                                adapter.notifyDataSetChanged();
+
+                                                // --- Start: Show success message ---
+                                                Toast.makeText(getContext(), "Event deleted successfully", Toast.LENGTH_SHORT).show();
+                                                // --- End ---
+
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Log.e(TAG, "Failed to delete event", e);
+                                                Toast.makeText(getContext(), "Failed to delete event", Toast.LENGTH_SHORT).show();
+                                            });
+                                } else {
+                                    Log.e(TAG, "Could not find document to delete with uniqueEventID: " + event.getUniqueEventID());
+                                }
+                            });
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    // User clicked "Cancel", so dismiss the dialog.
+                    dialog.dismiss();
+                })
+                .show(); // Display the confirmation dialog
+        // ---  End ---
     }
 }

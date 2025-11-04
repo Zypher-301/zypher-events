@@ -4,6 +4,7 @@ import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.UserType;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -20,7 +21,7 @@ import java.util.Objects;
  * accepted, or declined. The class also supports optional event promotional posters via a poster's
  * external URL, and provides methods for managing entrant lists.
  */
-public class Event {
+public class Event implements Serializable {
 
     private Long uniqueEventID;
 

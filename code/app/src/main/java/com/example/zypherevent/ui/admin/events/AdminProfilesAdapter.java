@@ -1,5 +1,4 @@
-// package com.example.zypherevent.ui.admin.events;
-package com.example.zypherevent.ui.admin.events; // Use your actual package name
+package com.example.zypherevent.ui.admin.events;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +24,7 @@ import java.util.List;
  */
 public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdapter.ProfileViewHolder> {
 
-    private List<User> profileList; // Use real User model
+    private List<User> profileList;
     private OnDeleteListener deleteListener;
 
     /**
@@ -34,7 +33,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
      * such as removing the user from the data source and updating the UI.
      */
     public interface OnDeleteListener {
-        void onDelete(User profile); // Use real User model
+        void onDelete(User profile);
     }
 
     /**

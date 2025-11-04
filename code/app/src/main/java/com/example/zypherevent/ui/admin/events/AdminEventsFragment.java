@@ -1,9 +1,9 @@
-package com.example.zypherevent.ui.admin.events; // Use your actual package name
+package com.example.zypherevent.ui.admin.events;
 
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button; // Import Button
+import android.widget.Button;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,11 +13,11 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.example.zypherevent.Event;
-import com.example.zypherevent.R; // Make sure R is imported
+import com.example.zypherevent.R;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap; // Import HashMap
-import java.util.Map; // Import Map
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Arunavo Dutta
@@ -105,7 +105,6 @@ public class AdminEventsFragment extends AdminBaseListFragment {
         Log.d(TAG, "Attempting to query 'events' collection...");
 
         // Start the asynchronous call to get the data from Firestore
-        // We are going to be using db.collection() directly, not from the Database class
         db.collection(collectionName).get().addOnCompleteListener(task -> {
 
             // The task is the asynchronous job. Check if it was successful.
@@ -116,7 +115,7 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                 // Check if the result is null
                 if (snapshot == null) {
                     Log.e(TAG, "Query successful but snapshot is null!");
-                    return; // Exit the function
+                    return;
                 }
 
                 // Firestore automatically converts all documents into Event objects and puts them in a List.

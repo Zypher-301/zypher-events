@@ -1,4 +1,4 @@
-package com.example.zypherevent.ui.admin.events; // Use your actual package name
+package com.example.zypherevent.ui.admin.events;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -6,11 +6,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.app.AlertDialog;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.zypherevent.Event; // <-- IMPORTING REAL EVENT
+import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 import java.util.List;
 
@@ -53,7 +52,7 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
      * layout file.
      *
      * @param parent The ViewGroup into which the new View will be added after it is bound to
-     *               an adapter position.
+     * an adapter position.
      * @param viewType The view type of the new View.
      * @return A new EventViewHolder that holds a View of the given view type.
      * @see #onBindViewHolder(EventViewHolder, int)
@@ -75,18 +74,33 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
      * callback when clicked.
      *
      * @param holder The ViewHolder which should be updated to represent the contents of the
-     *               item at the given position in the data set.
+     * item at the given position in the data set.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
         Event event = eventList.get(position); // <-- USING REAL EVENT
 
-        // Bind data from the real Event object
+        // --- Start: Bind all requested key details ---
+
+        // 1. Event Name
         holder.eventName.setText(event.getEventName());
-        holder.eventTime.setText(event.getRegistrationStartTime());
-        holder.eventDetails.setText(event.getEventDescription());
-        holder.eventLotteryDetails.setText("Lottery Registration Ends: " + event.getRegistrationEndTime());
+
+        // 2. Registration Start Time
+        holder.eventTime.setText("Registration Opens: " + event.getRegistrationStartTime());
+
+        // 3. Registration End Time
+        holder.eventLotteryDetails.setText("Registration Closes: " + event.getRegistrationEndTime());
+
+        // 4. Description, Location, and Organizer ID
+        // We are combining these into the 'details' text view.
+        String details = "Description: " + event.getEventDescription() +
+                "\nAt: " + event.getLocation() +
+                "\nOrganizer: " + event.getEventOrganizerHardwareID();
+        holder.eventDetails.setText(details);
+
+        // --- End ---
+
 
         holder.deleteButton.setOnClickListener(v -> {
             deleteListener.onDelete(event);

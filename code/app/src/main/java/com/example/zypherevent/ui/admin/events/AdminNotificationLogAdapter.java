@@ -6,7 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.zypherevent.Notification; // Use the REAL Notification model
+import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotificationLogAdapter.LogViewHolder> {
 
-    // Use the real Notification model
+
     private List<Notification> logList;
 
     public AdminNotificationLogAdapter(List<Notification> logList) {

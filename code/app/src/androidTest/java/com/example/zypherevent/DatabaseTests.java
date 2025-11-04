@@ -128,9 +128,11 @@ public class DatabaseTests {
         if (testAdmin != null) {
             Tasks.await(testDatabase.removeUserData(testAdmin.getHardwareID()));
         }
-
         if (testEvent != null) {
             Tasks.await(testDatabase.removeEventData(testEvent.getUniqueEventID()));
+        }
+        if (testNotification != null) {
+            Tasks.await(testDatabase.removeNotificationData(testNotification.getUniqueNotificationID()));
         }
     }
 

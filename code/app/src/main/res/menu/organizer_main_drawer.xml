@@ -12,5 +12,10 @@
             android:id="@+id/nav_events_map"
             android:icon="@drawable/baseline_map_24"
             android:title="Events Map" />
+        <item
+            android:id="@+id/nav_send_notification"
+            android:icon="@drawable/ic_notificationlog"
+            android:title="Send Notification" />
+
     </group>
 </menu>

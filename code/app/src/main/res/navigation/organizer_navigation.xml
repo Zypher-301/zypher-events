@@ -19,4 +19,11 @@
         android:label="Events Map"
         tools:layout="@layout/fragment_organizer_events_map" />
 
+    <!-- Destination for the "Events Map" menu item -->
+    <fragment
+        android:id="@+id/nav_send_notification"
+        android:name="com.example.zypherevent.ui.organizer.events.SendNotificationFragment"
+        android:label="Send Notification"
+        tools:layout="@layout/popup_organizer_notifications_to_entrant" />
+
 </navigation>

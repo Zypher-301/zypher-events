@@ -1,18 +1,14 @@
 package com.example.zypherevent.ui.organizer.events;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
@@ -36,7 +32,7 @@ import java.util.ArrayList;
  * @see Entrant
  * @see Event
  */
-public class SendNotificationFragment extends Fragment {
+public class SendNotificationFragment extends AppCompatActivity {
     /** Spinner for selecting the target status group (Waitlisted, Accepted, or Denied) */
     private Spinner statusSpinner;
 
@@ -59,39 +55,32 @@ public class SendNotificationFragment extends Fragment {
     private String eventName;
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setContentView(R.layout.popup_organizer_notifications_to_entrant);
-        View view = inflater.inflate(R.layout.popup_organizer_notifications_to_entrant, container, false);
+        setContentView(R.layout.popup_organizer_notifications_to_entrant);
 
         // Initialize Database
         database = new Database();
 
         // Get organizer and event ID from intent
-        Bundle args = getArguments();
-        if (args != null) {
-            organizer = (Organizer) args.getSerializable("organizer");
-            eventID   = args.getLong("eventID", -1L);
-        }
+        organizer = (Organizer) getIntent().getSerializableExtra("organizer");
+        eventID = getIntent().getLongExtra("eventID", -1L);
 
-        if (organizer == null || eventID == null || eventID == -1L) {
-            Toast.makeText(requireContext(), "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
-            // Optionally pop back:
-            return view;
+        if (organizer == null || eventID == -1L) {
+            Toast.makeText(this, "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         //Initialize ui
-        statusSpinner = view.findViewById(R.id.dropdown);
-        sendButton = view.findViewById(R.id.send_button);
+        statusSpinner = findViewById(R.id.dropdown);
+        sendButton = findViewById(R.id.send_button);
 
         // Setup spinner with status options
         setupSpinner();
 
         // Setup send button click listener
         sendButton.setOnClickListener(v -> sendNotification());
-
-        return view;
     }
 
     /**
@@ -103,7 +92,7 @@ public class SendNotificationFragment extends Fragment {
         String[] statusOptions = {"Waitlisted", "Accepted", "Denied"};
 
         // Create adapter for spinner
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, statusOptions);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         // Set adapter to spinner
@@ -162,7 +151,7 @@ public class SendNotificationFragment extends Fragment {
         // Query the event to get entrants with selected status
         database.getEvent(eventID).addOnSuccessListener(event -> {
             if (event == null) {
-                Toast.makeText(requireContext(), "Event not found", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
                 sendButton.setEnabled(true);
                 return;
             }
@@ -184,7 +173,7 @@ public class SendNotificationFragment extends Fragment {
             sendNotificationToEntrants(targetEntrants, header, body);
         })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(requireContext(), "Failed to retrieve event " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to retrieve event " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     sendButton.setEnabled(true);
         });
     }
@@ -194,7 +183,7 @@ public class SendNotificationFragment extends Fragment {
      * before sending notification.
      */
     private void showSelectionRequireDialog() {
-        new android.app.AlertDialog.Builder(requireContext())
+        new android.app.AlertDialog.Builder(this)
                 .setTitle("No Group Selected")
                 .setMessage("Please select a group from the dropdown menu before sending notifications")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -207,7 +196,7 @@ public class SendNotificationFragment extends Fragment {
      * @param selectedStatus The status group that has no entrants (waitlisted, accepted, denied)
      */
     private void showNoEntrantDialog(String selectedStatus) {
-        new android.app.AlertDialog.Builder(requireContext())
+        new android.app.AlertDialog.Builder(this)
                 .setTitle("No Entrant Found")
                 .setMessage("There are currently no " + selectedStatus + " entrants for this event")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -293,7 +282,7 @@ public class SendNotificationFragment extends Fragment {
                 message = "Send " + successCount + " notification(s), " + failureCount + " failed";
             }
 
-            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
             sendButton.setEnabled(true);
         }
     }

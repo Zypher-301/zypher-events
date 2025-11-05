@@ -7,6 +7,7 @@ import com.example.zypherevent.userTypes.UserType;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Objects;
 
 /**
@@ -38,7 +39,7 @@ public class Event implements Serializable {
     /**
      * The start time of the event.
      */
-    private String startTime;
+    private Date startTime;
 
     /**
      * The event's physical or virtual location.
@@ -48,12 +49,12 @@ public class Event implements Serializable {
     /**
      * The time when registration for the event begins.
      */
-    private String registrationStartTime;
+    private Date registrationStartTime;
 
     /**
      * The time when registration for the event closes.
      */
-    private String registrationEndTime;
+    private Date registrationEndTime;
 
     /**
      * The URL for the event's optional promotional poster.
@@ -64,6 +65,12 @@ public class Event implements Serializable {
      * The organizer responsible for managing the event.
      */
     private String eventOrganizerHardwareID;
+
+    /**
+     * The maximum number of entrants in the waitlist.
+     * Can be null so we use Integer class instead of int primitive
+     */
+    private Integer waitlistLimit;
 
     /**
      * A list of entrants currently on the event's waitlist.
@@ -93,8 +100,8 @@ public class Event implements Serializable {
      * @param eventOrganizerHardwareID the organizer responsible for the event
      * @param posterURL                the Firebase path to the event's optional promotional poster
      */
-    public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
-                 String registrationStartTime, String registrationEndTime,
+    public Event(Long uniqueEventID, String eventName, String eventDescription, Date startTime, String location,
+                 Date registrationStartTime, Date registrationEndTime,
                  String eventOrganizerHardwareID, String posterURL) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
@@ -124,8 +131,8 @@ public class Event implements Serializable {
      * @param registrationEndTime      the time when registration closes
      * @param eventOrganizerHardwareID the organizer responsible for the event
      */
-    public Event(Long uniqueEventID, String eventName, String eventDescription, String startTime, String location,
-                 String registrationStartTime, String registrationEndTime,
+    public Event(Long uniqueEventID, String eventName, String eventDescription, Date startTime, String location,
+                 Date registrationStartTime, Date registrationEndTime,
                  String eventOrganizerHardwareID) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
@@ -192,7 +199,7 @@ public class Event implements Serializable {
      *
      * @return the event's start time
      */
-    public String getStartTime() {
+    public Date getStartTime() {
         return startTime;
     }
 
@@ -201,7 +208,7 @@ public class Event implements Serializable {
      *
      * @param startTime the new start time to set
      */
-    public void setStartTime(String startTime) {
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
 
@@ -228,7 +235,7 @@ public class Event implements Serializable {
      *
      * @return the registration start time
      */
-    public String getRegistrationStartTime() {
+    public Date getRegistrationStartTime() {
         return registrationStartTime;
     }
 
@@ -237,7 +244,7 @@ public class Event implements Serializable {
      *
      * @param registrationStartTime the new registration start time to set
      */
-    public void setRegistrationStartTime(String registrationStartTime) {
+    public void setRegistrationStartTime(Date registrationStartTime) {
         this.registrationStartTime = registrationStartTime;
     }
 
@@ -246,7 +253,7 @@ public class Event implements Serializable {
      *
      * @return the registration end time
      */
-    public String getRegistrationEndTime() {
+    public Date getRegistrationEndTime() {
         return registrationEndTime;
     }
 
@@ -255,7 +262,7 @@ public class Event implements Serializable {
      *
      * @param registrationEndTime the new registration end time to set
      */
-    public void setRegistrationEndTime(String registrationEndTime) {
+    public void setRegistrationEndTime(Date registrationEndTime) {
         this.registrationEndTime = registrationEndTime;
     }
 
@@ -296,6 +303,21 @@ public class Event implements Serializable {
     }
 
     /**
+     * Gets the current waitlist limit
+     * @return the current limit for entrants in a waitlist.
+     */
+    public Integer getWaitlistLimit() {
+        return this.waitlistLimit;
+    }
+
+    /**
+     * Sets the current waitlist limit
+     */
+    public void setWaitlistLimit(Integer waitlistLimit) {
+        this.waitlistLimit = waitlistLimit;
+    }
+
+    /**
      * Returns a list of entrants currently on the waitlist.
      *
      * @return the list of waitlisted entrants
@@ -325,10 +347,22 @@ public class Event implements Serializable {
     /**
      * Adds an entrant to the event's waitlist.
      * The entrant will only be added if they are not already in the list.
+     * Makes sure that the waitlist limit has not been exceeded and
+     * the registration happens within the allowed date range.
      *
      * @param entrant the entrant to add to the waitlist
      */
     public void addEntrantToWaitList(Entrant entrant) {
+        if (this.waitListEntrants.size() >= this.waitlistLimit) {
+            throw new IllegalStateException("Waitlist is full");
+        }
+        Date now = new Date();
+        if (now.after(this.registrationEndTime)) {
+            throw new IllegalStateException("This event's registration window has ended");
+        }
+        if (now.before(this.registrationStartTime)) {
+            throw new IllegalStateException("This event's registration window has not yet started");
+        }
         if (!waitListEntrants.contains(entrant)) {
             waitListEntrants.add(entrant);
         }

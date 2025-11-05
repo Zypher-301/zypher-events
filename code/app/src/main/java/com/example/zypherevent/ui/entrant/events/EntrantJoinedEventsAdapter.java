@@ -15,6 +15,7 @@ import com.example.zypherevent.R;
 import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.material.chip.Chip;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -107,8 +108,8 @@ public class EntrantJoinedEventsAdapter extends RecyclerView.Adapter<EntrantJoin
         StringBuilder meta = new StringBuilder();
 
         // Add start time if available
-        String startTime = event.getStartTime();
-        if (startTime != null && !startTime.isEmpty()) {
+        Date startTime = event.getStartTime();
+        if (startTime != null) {
             meta.append(startTime);
         }
 

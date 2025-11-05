@@ -65,6 +65,12 @@ public class Event {
     private String eventOrganizerHardwareID;
 
     /**
+     * The maximum number of entrants in the waitlist.
+     * Can be null so we use Integer class instead of int primitive
+     */
+    private Integer waitlistLimit;
+
+    /**
      * A list of entrants currently on the event's waitlist.
      */
     private ArrayList<Entrant> waitListEntrants;
@@ -295,6 +301,21 @@ public class Event {
     }
 
     /**
+     * Gets the current waitlist limit
+     * @return the current limit for entrants in a waitlist.
+     */
+    public Integer getWaitlistLimit() {
+        return this.waitlistLimit;
+    }
+
+    /**
+     * Sets the current waitlist limit
+     */
+    public void setWaitlistLimit(Integer waitlistLimit) {
+        this.waitlistLimit = waitlistLimit;
+    }
+
+    /**
      * Returns a list of entrants currently on the waitlist.
      *
      * @return the list of waitlisted entrants
@@ -328,6 +349,9 @@ public class Event {
      * @param entrant the entrant to add to the waitlist
      */
     public void addEntrantToWaitList(Entrant entrant) {
+        if (this.waitListEntrants.size() >= this.waitlistLimit) {
+            throw new IllegalStateException("Waitlist is full");
+        }
         if (!waitListEntrants.contains(entrant)) {
             waitListEntrants.add(entrant);
         }

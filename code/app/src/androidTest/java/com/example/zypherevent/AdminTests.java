@@ -21,7 +21,10 @@ import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -178,7 +181,7 @@ public class AdminTests {
      * @throws InterruptedException if the database tasks are interrupted.
      */
     @Test
-    public void testAdminBrowseEvents() throws ExecutionException, InterruptedException {
+    public void testAdminBrowseEvents() throws ExecutionException, InterruptedException, ParseException {
         // Setup: Create 3 events
         Event event1 = createTestEvent("Event 1", "org-id-1");
         Event event2 = createTestEvent("Event 2", "org-id-1");
@@ -301,7 +304,7 @@ public class AdminTests {
      * @throws InterruptedException if a Firebase task is interrupted.
      */
     @Test
-    public void testAdminDeleteOrganizerAndCascadeEvents() throws ExecutionException, InterruptedException {
+    public void testAdminDeleteOrganizerAndCascadeEvents() throws ExecutionException, InterruptedException, ParseException {
         // Setup:
         // Create an Organizer
         Organizer organizer = createTestOrganizer("test-organizer-cascade-delete");
@@ -310,7 +313,6 @@ public class AdminTests {
         // Create an Entrant (to prove they are unaffected)
         Entrant entrant = createTestEntrant("test-entrant-unaffected");
         String entrantId = entrant.getHardwareID();
-
         // Create 2 events for the Organizer
         Event event1 = createTestEvent("Organizer's Event 1", organizerId);
         Event event2 = createTestEvent("Organizer's Event 2", organizerId);
@@ -425,11 +427,14 @@ public class AdminTests {
      * @throws ExecutionException   If the database task fails.
      * @throws InterruptedException If the database task is interrupted.
      */
-    private Event createTestEvent(String eventName, String organizerId) throws ExecutionException, InterruptedException {
+    private Event createTestEvent(String eventName, String organizerId) throws ExecutionException, InterruptedException, ParseException {
         Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+        Date start = Utils.createWholeDayDate("2025-10-27");
+        Date registrationStart = Utils.createWholeDayDate("2025-10-01");
+        Date registrationEnd = Utils.createWholeDayDate("2025-10-25");
         Event event = new Event(
-                eventId, eventName, "Test Description", "Time",
-                "Location", "Time", "Time",
+                eventId, eventName, "Test Description", start,
+                "Location", registrationStart, registrationEnd,
                 organizerId
         );
         Tasks.await(testDatabase.setEventData(eventId, event));

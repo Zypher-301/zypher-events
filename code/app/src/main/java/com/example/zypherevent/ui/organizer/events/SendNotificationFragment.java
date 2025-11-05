@@ -1,14 +1,18 @@
 package com.example.zypherevent.ui.organizer.events;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
@@ -32,7 +36,7 @@ import java.util.ArrayList;
  * @see Entrant
  * @see Event
  */
-public class SendNotificationFragment extends AppCompatActivity {
+public class SendNotificationFragment extends Fragment {
     /** Spinner for selecting the target status group (Waitlisted, Accepted, or Denied) */
     private Spinner statusSpinner;
 
@@ -55,32 +59,39 @@ public class SendNotificationFragment extends AppCompatActivity {
     private String eventName;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.popup_organizer_notifications_to_entrant);
+//        setContentView(R.layout.popup_organizer_notifications_to_entrant);
+        View view = inflater.inflate(R.layout.popup_organizer_notifications_to_entrant, container, false);
 
         // Initialize Database
         database = new Database();
 
         // Get organizer and event ID from intent
-        organizer = (Organizer) getIntent().getSerializableExtra("organizer");
-        eventID = getIntent().getLongExtra("eventID", -1L);
+        Bundle args = getArguments();
+        if (args != null) {
+            organizer = (Organizer) args.getSerializable("organizer");
+            eventID   = args.getLong("eventID", -1L);
+        }
 
-        if (organizer == null || eventID == -1L) {
-            Toast.makeText(this, "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
+        if (organizer == null || eventID == null || eventID == -1L) {
+            Toast.makeText(requireContext(), "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
+            // Optionally pop back:
+            return view;
         }
 
         //Initialize ui
-        statusSpinner = findViewById(R.id.dropdown);
-        sendButton = findViewById(R.id.send_button);
+        statusSpinner = view.findViewById(R.id.dropdown);
+        sendButton = view.findViewById(R.id.send_button);
 
         // Setup spinner with status options
         setupSpinner();
 
         // Setup send button click listener
         sendButton.setOnClickListener(v -> sendNotification());
+
+        return view;
     }
 
     /**
@@ -92,7 +103,7 @@ public class SendNotificationFragment extends AppCompatActivity {
         String[] statusOptions = {"Waitlisted", "Accepted", "Denied"};
 
         // Create adapter for spinner
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         // Set adapter to spinner
@@ -151,7 +162,7 @@ public class SendNotificationFragment extends AppCompatActivity {
         // Query the event to get entrants with selected status
         database.getEvent(eventID).addOnSuccessListener(event -> {
             if (event == null) {
-                Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Event not found", Toast.LENGTH_SHORT).show();
                 sendButton.setEnabled(true);
                 return;
             }
@@ -173,7 +184,7 @@ public class SendNotificationFragment extends AppCompatActivity {
             sendNotificationToEntrants(targetEntrants, header, body);
         })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to retrieve event " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Failed to retrieve event " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     sendButton.setEnabled(true);
         });
     }
@@ -183,7 +194,7 @@ public class SendNotificationFragment extends AppCompatActivity {
      * before sending notification.
      */
     private void showSelectionRequireDialog() {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(requireContext())
                 .setTitle("No Group Selected")
                 .setMessage("Please select a group from the dropdown menu before sending notifications")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -196,7 +207,7 @@ public class SendNotificationFragment extends AppCompatActivity {
      * @param selectedStatus The status group that has no entrants (waitlisted, accepted, denied)
      */
     private void showNoEntrantDialog(String selectedStatus) {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(requireContext())
                 .setTitle("No Entrant Found")
                 .setMessage("There are currently no " + selectedStatus + " entrants for this event")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -282,7 +293,7 @@ public class SendNotificationFragment extends AppCompatActivity {
                 message = "Send " + successCount + " notification(s), " + failureCount + " failed";
             }
 
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
             sendButton.setEnabled(true);
         }
     }

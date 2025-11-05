@@ -15,11 +15,24 @@ import com.example.zypherevent.userTypes.UserType;
 import java.util.List;
 
 /**
+ * An adapter for displaying a list of user profiles in a {@link RecyclerView}.
+ *
+ * <p>This adapter is designed for an administrator's view, providing the functionality
+ * to display user profiles with details specific to their roles (e.g., Entrant, Organizer).
+ * It populates a {@code RecyclerView} with data from a list of {@link User} objects,
+ * mapping each user's data to a card-style layout defined in
+ * {@code R.layout.fragment_admin_item_profile_card}.</p>
+ *
+ * <p>The adapter also includes functionality for deleting profiles. It uses an
+ * {@link OnDeleteListener} interface to delegate the deletion action to the hosting
+ * component (e.g., a Fragment or Activity), ensuring a separation of concerns.</p>
+ *
  * @author Arunavo Dutta
  * @version 2.0
  * @see User
  * @see Entrant
  * @see Organizer
+ * @see RecyclerView.Adapter
  * @see res/layout/fragment_admin_item_profile_card.xml
  */
 public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdapter.ProfileViewHolder> {
@@ -92,7 +105,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
      */
     @Override
     public void onBindViewHolder(@NonNull ProfileViewHolder holder, int position) {
-        User profile = profileList.get(position); // Use real User model
+        User profile = profileList.get(position);
 
         // Bind common data from the User object
         holder.profileName.setText(profile.getFirstName() + " " + profile.getLastName());
@@ -103,7 +116,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
             Entrant entrant = (Entrant) profile;
             holder.profilePhone.setText("Phone: " + entrant.getPhoneNumber());
             holder.profileEmail.setText("Email: " + entrant.getEmail());
-            holder.profileEventDetails.setVisibility(View.GONE); // Or show event history count
+            holder.profileEventDetails.setVisibility(View.GONE);
 
         } else if (profile.getUserType() == UserType.ORGANIZER) {
             Organizer organizer = (Organizer) profile;
@@ -113,7 +126,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
             holder.profileEventDetails.setVisibility(View.VISIBLE);
 
         } else { // Administrator
-            holder.profilePhone.setText("Phone: N/A"); // Administrator model doesn't have phone/email
+            holder.profilePhone.setText("Phone: N/A");
             holder.profileEmail.setText("Email: N/A");
             holder.profileEventDetails.setVisibility(View.GONE);
         }

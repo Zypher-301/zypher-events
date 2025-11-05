@@ -319,13 +319,12 @@ public class Database {
      * Added by Arunavo Dutta
      * Retrieves all notification documents from the Firestore "notifications" collection.
      * <p>
-     * This method fetches all documents in the collection and converts them into a list
-     * of {@link Notification} objects. If the fetch operation fails, the task will
-     * complete with an exception.
+     * This method asynchronously fetches all documents in the collection and converts them into a list
+     * of {@link Notification} objects. The list will be empty if the collection contains no documents.
      *
      * @return A {@code Task<List<Notification>>} that, upon successful completion, contains a list
-     *         of all {@code Notification} objects from the database. The list will be empty
-     *         if the collection is empty.
+     *         of all {@code Notification} objects from the database. If the operation fails, the
+     *         task will complete with an exception.
      */
     public Task<List<Notification>> getAllNotifications() {
         return notificationCollection
@@ -343,13 +342,16 @@ public class Database {
     /**
      * Added by Arunavo Dutta
      * Retrieves all event documents from the Firestore "events" collection.
-     * This method returns a Task that, upon completion, provides a {@code QuerySnapshot}
-     * containing all documents in the "events" collection. To get a list of {@code Event}
-     * objects, you can iterate through the snapshot's documents and convert each one
-     * to an {@code Event} object.
+     * <p>
+     * This method asynchronously fetches all documents from the "events" collection.
+     * The result is a {@code Task} that, upon completion, provides a {@link com.google.firebase.firestore.QuerySnapshot}.
+     * The snapshot contains all event documents, which can then be iterated over and
+     * converted into {@link Event} objects. This approach is safer for handling potential
+     * data inconsistencies, as it allows for manual parsing of each document.
      *
      * @return A {@code Task<QuerySnapshot>} that resolves with the query result. The task
-     *         will fail if the data cannot be fetched.
+     *         will fail with an exception if the data cannot be fetched.
+     * @see #getAllEventsList() for a simpler but less safe alternative.
      */
     public Task<com.google.firebase.firestore.QuerySnapshot> getAllEvents() {
         return eventsCollection.get();
@@ -358,13 +360,24 @@ public class Database {
 
     /**
      * Added by Arunavo Dutta
-     * Retrieves all event documents from the Firestore "events" collection.
+     * Retrieves all event documents from the Firestore "events" collection and converts them
+     * into a list of {@link Event} objects.
      * <p>
-     * FOR ENTRANT: Returns a simple, automatically converted List<Event>.
-     * This is less safe (will fail if *any* document has bad data) but
-     * is much simpler to use in the fragment.
+     * This method is designed for simplicity, especially for client-side use cases like
+     * displaying a list of all available events to an entrant. It fetches all documents
+     * from the "events" collection and attempts to automatically deserialize each one
+     * into an {@code Event} object.
+     * <p>
+     * <strong>Warning:</strong> This operation is less safe than fetching a {@code QuerySnapshot}
+     * because it will fail if <em>any</em> single document in the collection cannot be
+     * successfully converted to an {@code Event} object (e.g., due to a data format mismatch).
+     * For more robust data handling, consider using {@link #getAllEvents()}.
      *
-     * @return A {@code Task<List<Event>>} that resolves with a list of all Event objects.
+     * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
+     *         of all {@code Event} objects. The list will be empty if the collection is empty.
+     *         The task will fail if the data cannot be fetched or if any document fails
+     *         to deserialize.
+     * @see #getAllEvents() for a more robust alternative.
      */
     public Task<List<Event>> getAllEventsList() {
         return eventsCollection.get()
@@ -381,13 +394,19 @@ public class Database {
 
     /**
      * Added by Arunavo Dutta
-     * Retrieves all user documents from the Firestore "users" collection.
-     * This method fetches all documents and correctly deserializes each one into its
-     * specific subclass (e.g., {@link Entrant}, {@link Organizer}, {@link Administrator})
-     * based on the {@code userType} field stored in Firestore.
+     * Retrieves all user documents from the Firestore "users" collection and deserializes them
+     * into their specific subclasses.
+     * <p>
+     * This method fetches all documents from the "users" collection. It then inspects the
+     * {@code userType} field of each document to determine the correct user subclass
+     * (e.g., {@link Entrant}, {@link Organizer}, or {@link Administrator}) and deserializes
+     * the document into an object of that specific type. This ensures that the returned list
+     * contains fully-typed user objects.
      *
-     * @return A {@code Task<List<User>>} that resolves with a list containing all user objects.
-     *         The task will fail if the data cannot be fetched or parsed.
+     * @return A {@code Task<List<User>>} that, upon successful completion, contains a list of
+     *         all user objects from the database, each cast to its appropriate subclass. The
+     *         task will fail if the data cannot be fetched or parsed.
+     * @author Arunavo Dutta
      */
     public Task<List<User>> getAllUsers() {
         return usersCollection
@@ -396,13 +415,11 @@ public class Database {
                     if (!task.isSuccessful()) {
                         throw task.getException();
                     }
-
                     // Complex because we must deserialize into subtypes
                     ArrayList<User> userList = new ArrayList<>();
                     for (DocumentSnapshot doc : task.getResult().getDocuments()) {
                         User baseUser = doc.toObject(User.class);
                         if (baseUser == null) continue;
-
                         // Re-deserialize into the correct subclass
                         if (baseUser.getUserType() == UserType.ENTRANT) {
                             userList.add(doc.toObject(Entrant.class));
@@ -419,17 +436,18 @@ public class Database {
 
     /**
      * Added by Arunavo Dutta
-     * Adds an entrant to the waitlist of a specific event.
+     * Adds an entrant to the waitlist for a specific event.
      * <p>
-     * This method updates the "waitListEntrants" array field in the corresponding
-     * event document in Firestore by adding the provided entrant object. It uses
-     * an atomic `arrayUnion` operation to prevent duplicate entries.
+     * This method atomically adds the provided entrant to the {@code waitListEntrants} array
+     * in the event's Firestore document. The {@code arrayUnion} operation ensures that the
+     * entrant is only added if they are not already on the waitlist, preventing duplicates.
+     * This is typically used when an entrant clicks a "Join" button for an event that is
+     * already full.
      *
-     * @param eventId The unique identifier of the event to which the entrant will be added.
-     * @param entrant The entrant object to be added to the event's waitlist.
-     * @return A {@code Task<Void>} representing the asynchronous database operation. The task
-     *         will complete successfully if the update is committed, or fail with an
-     *         exception if the operation is unsuccessful.
+     * @param eventId The unique ID of the event.
+     * @param entrant The {@link Entrant} object to add to the waitlist.
+     * @return A {@code Task<Void>} that completes when the update is successfully committed to the database.
+     *         The task will fail with an exception if the operation is unsuccessful.
      */
     // Used by "Join" button
     public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
@@ -440,11 +458,16 @@ public class Database {
     /**
      * Added by Arunavo Dutta
      * Removes an entrant from the waitlist of a specific event.
-     * This is typically used when an entrant decides to leave an event they were waitlisted for.
+     * <p>
+     * This method updates the "waitListEntrants" array field in the corresponding
+     * event document by atomically removing the provided entrant object. This is
+     * typically used when an entrant decides to leave an event they were waitlisted for.
      *
-     * @param eventId The ID of the event from which to remove the entrant.
+     * @param eventId The unique identifier of the event from which the entrant will be removed.
      * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
-     * @return A {@code Task<Void>} representing the asynchronous Firestore operation.
+     * @return A {@code Task<Void>} representing the asynchronous Firestore operation. The task
+     *         will complete successfully if the update is committed, or fail with an
+     *         exception if the operation is unsuccessful.
      */
     // Used by "Leave" button
     public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {

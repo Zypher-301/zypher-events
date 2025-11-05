@@ -14,10 +14,24 @@ import com.example.zypherevent.R;
 import java.util.List;
 
 /**
+ * An adapter for displaying a list of {@link Event} objects in a {@link RecyclerView}
+ * for the admin interface.
+ * <p>
+ * This class is responsible for creating and binding views for each event in the list,
+ * allowing an administrator to view event details and delete them. It uses a custom
+ * layout {@code fragment_admin_item_event_card.xml} to define the appearance of each
+ * event item.
+ * <p>
+ * The adapter requires an implementation of the {@link OnDeleteListener} interface to handle
+ * the deletion of events, delegating the actual data removal logic to the hosting
+ * component (e.g., a Fragment or Activity).
+ *
  * @author Arunavo Dutta
  * @version 2.0
  * @see Event
- * @see res/layout/fragment_admin_item_event_card.xml
+ * @see AdminEventsAdapter.OnDeleteListener
+ * @see AdminEventsAdapter.EventViewHolder
+ * @see com.example.zypherevent.R.layout#fragment_admin_item_event_card
  */
 public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.EventViewHolder> {
 
@@ -91,27 +105,24 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
      */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        Event event = eventList.get(position); // <-- USING REAL EVENT
+        Event event = eventList.get(position);
 
-        // --- Start: Bind all requested key details ---
-
-        // 1. Event Name
+        // Event Name
         holder.eventName.setText(event.getEventName());
 
-        // 2. Registration Start Time
+        // Registration Start Time
         holder.eventTime.setText("Registration Opens: " + event.getRegistrationStartTime());
 
-        // 3. Registration End Time
+        // Registration End Time
         holder.eventLotteryDetails.setText("Registration Closes: " + event.getRegistrationEndTime());
 
-        // 4. Description, Location, and Organizer ID
+        // Description, Location, and Organizer ID
         // Combining these into the 'details' text view.
         String details = "Description: " + event.getEventDescription() +
                 "\nAt: " + event.getLocation() +
                 "\nOrganizer: " + event.getEventOrganizerHardwareID();
         holder.eventDetails.setText(details);
 
-        // --- End ---
 
 
         holder.deleteButton.setOnClickListener(v -> {

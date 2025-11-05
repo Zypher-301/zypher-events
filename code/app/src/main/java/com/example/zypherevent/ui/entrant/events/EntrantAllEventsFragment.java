@@ -24,11 +24,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A fragment that displays a comprehensive list of all available events to an Entrant.
+ * It provides the functionality for users to join or leave the waitlist for an event.
+ * This class is responsible for fetching event data from the database, displaying it in a
+ * RecyclerView, and handling user interactions such as joining, leaving, and refreshing the event list.
+ * <p>
+ * This class implements the following user stories:
+ * <ul>
+ *   <li>US 01.01.01: As an Entrant, I want to join the waitlist for an event.</li>
+ *   <li>US 01.01.02: As an Entrant, I want to leave the waitlist for an event.</li>
+ * </ul>
+ *
  * @author Elliot Chrystal
  * @author Arunavo Dutta
  * @version 3.0
- * This fragment displays all events available to the Entrant
- * and implements US 01.01.01 (Join Waitlist) and US 01.01.02 (Leave Waitlist).
  */
 
 public class EntrantAllEventsFragment extends Fragment implements EntrantEventAdapter.OnItemClickListener {
@@ -112,10 +121,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     /**
      * Added by Arunavo Dutta
      * Asynchronously loads all events from the Firestore database.
-     * It fetches the list of all available events, clears the current local list,
-     * populates it with the newly fetched data, and then notifies the RecyclerView adapter
-     * to refresh the UI and display the updated list. If the database query fails,
-     * it logs an error message.
+     * <p>
+     * This method fetches the complete list of available events from the database.
+     * It first clears the local {@code eventList}, then populates it with the newly fetched data.
+     * Finally, it notifies the {@link EntrantEventAdapter} that the data set has changed,
+     * prompting the {@link RecyclerView} to refresh and display the updated list of events.
+     * If the database query fails, an error is logged.
      */
     private void loadEvents() {
         Log.d(TAG, "Attempting to query 'events' collection...");
@@ -134,11 +145,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     }
 
     /**
-     * Added by Arunavo Dutta
-     * Handles the click event for an item in the RecyclerView. Currently, it displays a Toast
-     * message with the name of the clicked event. This can be expanded to show event details.
+     * Added by Arunoavo Dutta
+     * Handles the click event for an item in the RecyclerView.
+     * This is triggered when a user taps on an event card.
+     * Currently, it displays a Toast message with the name of the clicked event.
+     * <p>
+     * This method can be expanded in the future to navigate to a detailed view of the event.
      *
-     * @param event The {@link Event} object that was clicked.
+     * @param event The {@link Event} object corresponding to the clicked item.
      */
     // Can be used to show event details in future
     @Override
@@ -148,18 +162,21 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Added by Arunavo Dutta
-     * Handles the click event when an entrant chooses to join an event's waitlist.
-     * This method performs a series of asynchronous operations:
-     * 1. It calls the database to add the current entrant to the specified event's waitlist.
-     * 2. Upon successful addition to the waitlist, it creates a simplified 'clean' version of the
-     *    event object. This is done to prevent nested object saving issues in Firestore.
-     * 3. It adds this clean event object to the current user's local list of registered events.
-     * 4. It then updates the user's data in the database with this new event history.
-     * 5. Finally, upon successful update of the user's profile, it refreshes the list of events
-     *    to reflect the change in status (e.g., showing "Leave Waitlist" instead of "Join").
-     *
+     * Handles the click event for joining an event's waitlist.
+     * <p>
+     * This method orchestrates the process of an entrant joining an event. It performs a sequence
+     * of asynchronous database operations:
+     * <ol>
+     *     <li>Adds the current user to the specified event's waitlist in the database.</li>
+     *     <li>Upon success, creates a simplified "clean" version of the event object to avoid
+     *         nested data issues in Firestore when saving to the user's profile.</li>
+     *     <li>Adds this clean event to the user's local list of registered events.</li>
+     *     <li>Saves the updated user object (with the new event history) back to the database.</li>
+     *     <li>Finally, refreshes the event list to update the UI, typically changing the
+     *         "Join" button to a "Leave" button.</li>
+     * </ol>
      * Error handling is implemented at each step to log failures and provide feedback to the user
-     * via Toasts.
+     * via a {@link Toast}.
      *
      * @param event The {@link Event} object that the user has chosen to join.
      */
@@ -167,11 +184,11 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
-        // 1. Add entrant to the event's 'waitListEntrants' array
+        // Add entrant to the event's 'waitListEntrants' array
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // 2. Create a version of the event to save to the user's profile.
+                    // Create a version of the event to save to the user's profile.
                     Event eventForHistory = new Event(
                             event.getUniqueEventID(),
                             event.getEventName(),
@@ -184,10 +201,10 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getPosterURL()
                     );
 
-                    // 3. Add the clean event to the user's local history
+                    // Add the clean event to the user's local history
                     currentUser.addEventToRegisteredEventHistory(eventForHistory);
 
-                    // 4. Save the updated user object
+                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated with new event.");
@@ -195,7 +212,6 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                                 loadEvents(); // Refresh
                             })
                             .addOnFailureListener(e -> {
-                                // This is where the error was happening silently
                                 Log.e(TAG, "Error saving user data after joining: ", e);
                                 Toast.makeText(getContext(), "Error: Failed to save to your profile.", Toast.LENGTH_SHORT).show();
                             });
@@ -208,18 +224,19 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Added by Arunavo Dutta
-     * Handles the "Leave" button click for an event. This method facilitates the process of
-     * an Entrant leaving the waitlist of a specific event. It performs the following actions:
+     * Handles the "Leave Waitlist" button click for an event.
      * <p>
-     * 1. Calls the database to remove the current user from the specified event's 'waitListEntrants' array.
-     * 2. Upon successful removal from the event's waitlist, it removes the event from the user's
-     *    local registered event history.
-     * 3. Saves the updated user object back to the database, reflecting the removal of the event.
-     * 4. Displays a Toast message to confirm success or failure to the user.
-     * 5. Refreshes the list of events to update the UI.
-     * <p>
-     * If any step in the database operation fails, an error is logged and a corresponding
-     * Toast message is shown to the user.
+     * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
+     * It performs the following sequential, asynchronous operations:
+     * <ol>
+     *     <li>Calls the database to remove the current user from the specified event's waitlist.</li>
+     *     <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
+     *         local list of registered events.</li>
+     *     <li>Saves the updated user object back to the database to persist the change in their event history.</li>
+     *     <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
+     * </ol>
+     * Each step includes error handling. If a database operation fails, an error is logged, and a
+     * {@link Toast} message is shown to the user to inform them of the failure. A success message is shown upon completion.
      *
      * @param event The {@link Event} object from which the user is leaving the waitlist.
      */
@@ -227,18 +244,18 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
-        // 1. Remove entrant from the event's 'waitListEntrants' array
+        // Remove entrant from the event's 'waitListEntrants' array
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // 2. Create an event object to find and remove
+                    // Create an event object to find and remove
                     Event eventToRemove = new Event();
                     eventToRemove.setUniqueEventID(event.getUniqueEventID());
 
-                    // 3. Remove the event from the user's local history
+                    // Remove the event from the user's local history
                     currentUser.removeEventFromRegisteredEventHistory(eventToRemove);
 
-                    // 4. Save the updated user object
+                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated, event removed.");

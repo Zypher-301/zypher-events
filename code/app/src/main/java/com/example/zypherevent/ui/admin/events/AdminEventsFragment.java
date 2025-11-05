@@ -45,14 +45,15 @@ public class AdminEventsFragment extends AdminBaseListFragment {
      * This method initializes the fragment's view components. It sets up the Firestore instance,
      * creates and configures the {@link AdminEventsAdapter} for the RecyclerView, and sets up
      * a click listener for the delete functionality on each list item. It also initializes
-     * the refresh button with a click listener to reload the event data. Finally, it
-     * triggers an initial load of events from Firestore by calling {@link #loadEvents()}.
+     * the refresh button with a click listener to reload the event data from Firestore. Finally, it
+     * triggers an initial data load by calling {@link #loadEvents()}.
      *
      * @param view The View returned by {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}.
      * @param savedInstanceState If non-null, this fragment is being re-constructed
      * from a previous saved state as given here.
      * @see #loadEvents()
      * @see #handleDeleteEvent(Event)
+     * @see AdminEventsAdapter
      */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -82,8 +83,8 @@ public class AdminEventsFragment extends AdminBaseListFragment {
      * Fetches all events from the Firestore "events" collection and updates the RecyclerView.
      * <p>
      * This method initiates an asynchronous query to the Firestore database to retrieve
-     * all documents from the "events" collection. On successful completion, it attempts
-     * to automatically map the retrieved documents to a list of {@link Event} objects.
+     * all documents from the "events" collection. On successful completion, it automatically
+     * maps the retrieved documents to a list of {@link Event} objects.
      * <p>
      * The existing local {@code eventList} is cleared and then populated with the newly
      * fetched data. Finally, it notifies the {@code adapter} that the dataset has changed,
@@ -142,19 +143,20 @@ public class AdminEventsFragment extends AdminBaseListFragment {
     }
 
     /**
-     * Handles the deletion of an event from the Firestore database.
+     * Handles the deletion of a specific event after user confirmation.
      * <p>
-     * This method first queries the "events" collection to find the document
-     * that matches the {@code uniqueEventID} of the given {@code Event} object.
-     * If a matching document is found, it proceeds to delete it.
+     * This method first presents an {@link AlertDialog} to the user to confirm the deletion.
+     * If the user confirms, it proceeds to find and delete the event from the Firestore "events"
+     * collection. The search is based on the {@code uniqueEventID} of the provided {@link Event} object.
      * <p>
-     * Upon successful deletion from Firestore, the event is also removed from the
-     * local {@code eventList} and the RecyclerView's adapter is notified to update the UI.
-     * Toasts are displayed to provide user feedback on the deletion process.
-     * Error messages are logged if the event cannot be found or if the deletion fails.
+     * Upon successful deletion from Firestore, the event is also removed from the local
+     * {@code eventList}, and the adapter is notified to refresh the RecyclerView. A success
+     * message is shown to the user. If the deletion fails or the event document cannot be
+     * found, an error message is logged and displayed via a {@link Toast}. If the user
+     * cancels the dialog, no action is taken.
      *
-     * @param event The {@link Event} object to be deleted. The object must not be null
-     * and must have a valid {@code uniqueEventID}.
+     * @param event The {@link Event} object to be deleted. It must not be null and should
+     *              contain a valid {@code uniqueEventID}.
      */
     private void handleDeleteEvent(Event event) {
         if (event == null || event.getUniqueEventID() == null) {

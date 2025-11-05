@@ -61,10 +61,9 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
      */
     @Override
     public void onBindViewHolder(@NonNull LogViewHolder holder, int position) {
-        // Get the real Notification object
         Notification log = logList.get(position);
 
-        // --- Map Notification data to the existing XML layout ---
+        // --- Mapping Notification data to the existing XML layout ---
 
         // 1. Map notificationBody to notification_message
         holder.message.setText("\"" + log.getNotificationBody() + "\"");

@@ -45,15 +45,20 @@ public class AdminProfileFragment extends AdminBaseListFragment {
 
 
     /**
-     * Called immediately after {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}
-     * has returned, but before any saved state has been restored in to the view.
-     * This gives subclasses a chance to initialize themselves once they know their view hierarchy has been completely created.
-     * In this implementation, it initializes the database connection, sets up the {@link androidx.recyclerview.widget.RecyclerView}
-     * with an {@link AdminProfilesAdapter}, defines the action to be taken on profile deletion, and triggers the initial loading of user profiles.
+     * Called when the fragment's view has been created.
+     *
+     * <p>This method initializes the user interface and sets up the necessary components for the fragment.
+     * It performs the following actions:
+     * <ul>
+     *     <li>Initializes the Firestore database connection.</li>
+     *     <li>Sets up the {@link androidx.recyclerview.widget.RecyclerView} with an {@link AdminProfilesAdapter}.
+     *     The adapter is configured to handle profile deletion requests.</li>
+     *     <li>Configures the refresh button to reload the list of profiles when clicked.</li>
+     *     <li>Triggers the initial fetch of all user profiles from the database to populate the list.</li>
+     * </ul>
      *
      * @param view The View returned by {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}.
-     * @param savedInstanceState If non-null, this fragment is being re-constructed
-     * from a previous saved state as given here.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state as given here.
      */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -81,11 +86,15 @@ public class AdminProfileFragment extends AdminBaseListFragment {
     }
 
     /**
-     * Fetches the list of all user profiles from the database.
-     * This method communicates with the {@link Database} class to retrieve all users.
-     * On successful retrieval, it clears the local {@code profileList}, populates it with the
-     * fetched users, and notifies the {@link AdminProfilesAdapter} to refresh the UI.
-     * If the retrieval fails, it logs the error and displays a toast message to the user.
+     * Fetches all user profiles from the Firestore database.
+     * <p>
+     * This method initiates an asynchronous call to the {@link Database#getAllUsers()} method.
+     * Upon successful completion, it clears the current {@code profileList}, repopulates it with the
+     * fetched user data, and then notifies the {@link AdminProfilesAdapter} to refresh the
+     * {@link androidx.recyclerview.widget.RecyclerView}, displaying the updated list of profiles.
+     * If the database call fails, an error is logged and a toast message is displayed to the user,
+     * indicating the failure.
+     * </p>
      */
     private void loadProfiles() {
         db.getAllUsers().addOnCompleteListener(task -> {
@@ -105,9 +114,17 @@ public class AdminProfileFragment extends AdminBaseListFragment {
     }
 
     /**
-     * Handles the top-level request to delete a user profile.
-     * Shows a confirmation dialog.
-     * Checks if the user is an Organizer to determine if a cascading delete is needed.
+     * Initiates the process of deleting a user profile.
+     * <p>
+     * This method first displays an {@link AlertDialog} to confirm the deletion action with the administrator.
+     * If the user confirms, it checks the {@link UserType} of the profile.
+     * <ul>
+     *     <li>If the user is an {@code ORGANIZER}, it triggers a cascading delete by calling
+     *     {@link #handleDeleteOrganizerEvents(User)} to remove their associated events first.</li>
+     *     <li>If the user is a basic user (e.g., {@code ENTRANT}), it proceeds directly to delete
+     *     the user's profile by calling {@link #handleDeleteBasicUser(User)}.</li>
+     * </ul>
+     * If the user cancels the dialog, no action is taken.
      *
      * @param profile The {@link User} object representing the profile to be deleted.
      */
@@ -148,11 +165,17 @@ public class AdminProfileFragment extends AdminBaseListFragment {
 
 
     /**
-     * [AC #8] Handles the cascading delete for an Organizer.
-     * This method first deletes all events created by the organizer and, only upon
-     * success, proceeds to delete the organizer's own profile.
+     * Manages the cascading deletion of an organizer and their associated events.
+     * <p>
+     * This method is specifically invoked when the user to be deleted is an {@link UserType#ORGANIZER}. It performs a multi-step process to ensure data integrity:
+     * <ol>
+     *     <li>It queries the 'events' collection in Firestore to find all events created by the specified organizer, identified by their hardware ID.</li>
+     *     <li>If events are found, it uses a {@link WriteBatch} to delete all of them in a single atomic operation. This prevents leaving orphaned events in the database.</li>
+     *     <li>Only after the successful deletion of all associated events (or if the organizer had no events to begin with), it proceeds to call {@link #handleDeleteBasicUser(User)} to delete the organizer's own profile document.</li>
+     * </ol>
+     * If any step in this process fails (e.g., failing to query for events or failing to delete them), the entire operation is aborted to prevent partial data deletion, and an error message is displayed to the user.
      *
-     * @param profile The User object (who must be an Organizer) to delete.
+     * @param profile The {@link User} object representing the organizer whose profile and events are to be deleted.
      */
     private void handleDeleteOrganizerEvents(User profile) {
         String organizerId = profile.getHardwareID();
@@ -202,10 +225,15 @@ public class AdminProfileFragment extends AdminBaseListFragment {
 
     /**
      * Handles the final deletion of a single user document from Firestore.
-     * This is called for basic users, or *after* an organizer's events are deleted.
-     * [AC #5] Includes success message.
+     * <p>
+     * This method is called directly for non-organizer users (Entrants, Admins) or
+     * as the final step for an Organizer after all their associated events have been successfully deleted.
+     * It communicates with the database to remove the user's data.
+     * <p>
+     * On successful deletion, it removes the user from the local list, updates the UI adapter,
+     * and displays a confirmation toast. On failure, it logs the error and notifies the user via a toast.
      *
-     * @param profile The User to be deleted.
+     * @param profile The {@link User} object representing the user profile to be deleted from the database.
      */
     private void handleDeleteBasicUser(User profile) {
         String profileName = profile.getFirstName() + " " + profile.getLastName();

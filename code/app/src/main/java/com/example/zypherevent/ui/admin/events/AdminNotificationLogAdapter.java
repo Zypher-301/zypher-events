@@ -6,7 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.zypherevent.Notification; // Use the REAL Notification model
+import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotificationLogAdapter.LogViewHolder> {
 
-    // Use the real Notification model
+
     private List<Notification> logList;
 
     public AdminNotificationLogAdapter(List<Notification> logList) {
@@ -61,10 +61,9 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
      */
     @Override
     public void onBindViewHolder(@NonNull LogViewHolder holder, int position) {
-        // Get the real Notification object
         Notification log = logList.get(position);
 
-        // --- Map Notification data to the existing XML layout ---
+        // --- Mapping Notification data to the existing XML layout ---
 
         // 1. Map notificationBody to notification_message
         holder.message.setText("\"" + log.getNotificationBody() + "\"");

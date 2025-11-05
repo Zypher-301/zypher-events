@@ -7,9 +7,9 @@ import android.widget.Button;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.example.zypherevent.Database; // Import Database
-import com.example.zypherevent.Notification; // Import REAL Notification
-import com.example.zypherevent.R; // Import R
+import com.example.zypherevent.Database;
+import com.example.zypherevent.Notification;
+import com.example.zypherevent.R;
 import java.util.ArrayList;
 import java.util.List;
 

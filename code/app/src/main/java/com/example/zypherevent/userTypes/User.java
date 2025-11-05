@@ -1,13 +1,16 @@
 package com.example.zypherevent.userTypes;
 
+import java.io.Serializable;
+
 /**
  * @author Elliot Chrystal
  * @version 1.0
- * <p>
+ *
  * This class describes the shared features of Entrants, Organizers, and Administrators (For code
  * reusability). Users are identified primarily by their hardware ID.
+ * This class implements serializable so that It can be passed around with intent.
  */
-public class User {
+public class User implements Serializable {
     /**
      * The unique hardware identifier associated with the user.
      */
@@ -122,6 +125,7 @@ public class User {
         this.userType = userType;
     }
 
+
     /**
      * Implements equality checks for the class.
      *
@@ -150,4 +154,5 @@ public class User {
     public int hashCode() {
         return java.util.Objects.hash(hardwareID, userType, firstName, lastName);
     }
+
 }

@@ -1,66 +1,116 @@
 package com.example.zypherevent.ui.admin.events;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-
+import android.widget.Button;
+import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.example.zypherevent.Database;
+import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link AdminNotificationLogFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Represents a fragment for administrators to view a log of all notifications sent through the app.
+ *
+ * This class extends {@link AdminBaseListFragment} to provide a standard list layout.
+ * It fetches notification data from the Firestore database and displays it using a
+ * {@link androidx.recyclerview.widget.RecyclerView} with a custom {@link AdminNotificationLogAdapter}.
+ * The fragment includes a refresh button to manually reload the notification logs from the database.
+ * This class fulfills the following user stories:
+ * <ul>
+ *     <li><b>US 03.08.01 As an administrator, I want to review logs of all notifications sent to entrants by organizers.</li>
+ * </ul>
+ * @author Arunavo Dutta
+ * @version 2.0
+ * @see AdminBaseListFragment
+ * @see Notification
+ * @see AdminNotificationLogAdapter
+ * @see "res/navigation/admin_navigation.xml"
  */
-public class AdminNotificationLogFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+public class AdminNotificationLogFragment extends AdminBaseListFragment {
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private static final String TAG = "AdminNotifLogFragment";
 
-    public AdminNotificationLogFragment() {
-        // Required empty public constructor
+    private Database db;
+    private AdminNotificationLogAdapter adapter;
+    private List<Notification> notificationList = new ArrayList<>();
+    private Button refreshButton;
+
+    /**
+     * Called immediately after {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}
+     * has returned, but before any saved state has been restored in to the view.
+     * This method initializes the database, sets up the RecyclerView adapter for displaying
+     * notification logs, and configures a refresh button to reload the logs. It also
+     * performs an initial load of the notification logs from the database.
+     *
+     * @param view The View returned by {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     * from a previous saved state as given here.
+     */
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState); // Sets up recyclerView
+
+        // Initialize Database
+        db = new Database();
+
+        // Initialize Adapter with the empty list
+        adapter = new AdminNotificationLogAdapter(notificationList);
+        recyclerView.setAdapter(adapter);
+
+        // --- REFRESH BUTTON LOGIC ---
+        refreshButton = view.findViewById(R.id.refresh_button);
+        refreshButton.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Refreshing list...", Toast.LENGTH_SHORT).show();
+            loadLogs();
+        });
+        // --- END REFRESH LOGIC ---
+
+        // Load the logs for the first time
+        loadLogs();
     }
 
     /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AdminNotificationLogFragment.
+     * Fetches all notification logs from the Firestore database.
+     * <p>
+     * This method initiates an asynchronous query to the 'notifications' collection using
+     * the {@link Database#getAllNotifications()} method.
+     * On successful completion, it clears the existing {@code notificationList}, populates it
+     * with the fetched logs, and notifies the {@code adapter} to refresh the RecyclerView.
+     * If the task fails or returns a null result, an error message is logged and displayed
+     * as a Toast.
      */
-    // TODO: Rename and change types and number of parameters
-    public static AdminNotificationLogFragment newInstance(String param1, String param2) {
-        AdminNotificationLogFragment fragment = new AdminNotificationLogFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private void loadLogs() {
+        Log.d(TAG, "Attempting to query 'notifications' collection...");
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
+        db.getAllNotifications().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<Notification> fetchedLogs = task.getResult();
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_admin_item_notification_log, container, false);
+                if (fetchedLogs == null) {
+                    Log.e(TAG, "Failed to get notification list (task result was null).");
+                    Toast.makeText(getContext(), "Error: Failed to get list.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Log.d(TAG, "Firebase query successful. Found " + fetchedLogs.size() + " logs.");
+
+                // Clear the old list and add the new ones
+                notificationList.clear();
+                notificationList.addAll(fetchedLogs);
+
+                // Tell the adapter to update the UI
+                adapter.notifyDataSetChanged();
+
+            } else {
+                Log.e(TAG, "Error running query: ", task.getException());
+                Toast.makeText(getContext(), "Error fetching logs", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

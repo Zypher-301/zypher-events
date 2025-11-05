@@ -33,6 +33,7 @@ public class DatabaseTests {
     // Use separate test collections to avoid changing production data
     private static final String TEST_USERS_COLLECTION = "test_users";
     private static final String TEST_EVENTS_COLLECTION = "test_events";
+    private static final String TEST_NOTIFICATIONS_COLLECTION = "test_notifications";
     private static final String TEST_EXTRAS_COLLECTION = "test_extras";
 
     // Start unique IDs at a high, non-conflicting number
@@ -47,14 +48,16 @@ public class DatabaseTests {
     private Administrator testAdmin;
     private Event testEvent;
 
+    private Notification testNotification;
+
     /**
      * Runs once before all tests.
-     * Initializes the database connection and sets the unique event ID
+     * Initializes the database connection and sets the unique event ID & unique notification ID
      * counter to a known, predictable value for testing.
      */
     @BeforeClass
     public static void setUpClass() throws ExecutionException, InterruptedException {
-        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_EXTRAS_COLLECTION);
+        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION, TEST_EXTRAS_COLLECTION);
 
         // Set the unique ID counter to a known value for testing
         DocumentReference uniqueRef = FirebaseFirestore.getInstance()
@@ -63,6 +66,7 @@ public class DatabaseTests {
 
         Map<String, Object> data = new HashMap<>();
         data.put("curEvent", TEST_ID_START_VALUE);
+        data.put("curNotification", TEST_ID_START_VALUE);
         Tasks.await(uniqueRef.set(data));
     }
 
@@ -90,7 +94,8 @@ public class DatabaseTests {
                 "Test",
                 "Entrant",
                 "test@entrant.com",
-                "555-1234");
+                "555-1234",
+                false);
 
         // This object has a null email and phone number (implicitly)
         testOrganizer = new Organizer(
@@ -104,6 +109,7 @@ public class DatabaseTests {
                 "Admin");
 
         testEvent = null; // events are created in their own tests
+        testNotification = null; // notifications are created in their own tests
     }
 
     /**
@@ -122,9 +128,11 @@ public class DatabaseTests {
         if (testAdmin != null) {
             Tasks.await(testDatabase.removeUserData(testAdmin.getHardwareID()));
         }
-
         if (testEvent != null) {
             Tasks.await(testDatabase.removeEventData(testEvent.getUniqueEventID()));
+        }
+        if (testNotification != null) {
+            Tasks.await(testDatabase.removeNotificationData(testNotification.getUniqueNotificationID()));
         }
     }
 
@@ -294,6 +302,96 @@ public class DatabaseTests {
         testEvent = null; // set to null so @After doesn't try to delete it again
     }
 
+    // NOTIFICATION TESTS
+
+    /**
+     * Tests setNotificationData and getNotification. Also verifies that the implementation
+     * of equals() for Events are correct.
+     */
+    @Test
+    public void testAddAndGetNotification() throws ExecutionException, InterruptedException {
+        Long newNotifID = Tasks.await(testDatabase.getUniqueNotificationID());
+
+        // Create a notification with all fields non-null
+        testNotification = new Notification(
+                newNotifID,
+                testOrganizer.getHardwareID(),
+                testEntrant.getHardwareID(),
+                "Test Notification",
+                "Notification for testing");
+
+
+        Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
+        Notification fetchedNotification = Tasks.await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
+
+        // Test fields individually
+        assertNotNull("Fetched notification should not be null", fetchedNotification);
+        assertEquals("Notification IDs should match", testNotification.getUniqueNotificationID(), fetchedNotification.getUniqueNotificationID());
+        assertEquals("Notification senders should match", testNotification.getSendingUserHardwareID(), fetchedNotification.getSendingUserHardwareID());
+        assertEquals("Notification receivers should match", testNotification.getReceivingUserHardwareID(), fetchedNotification.getReceivingUserHardwareID());
+        assertEquals("Notification headers should match", testNotification.getNotificationHeader(), fetchedNotification.getNotificationHeader());
+        assertEquals("Notification bodies should match", testNotification.getNotificationBody(), fetchedNotification.getNotificationBody());
+
+        // Test object's equal method
+        assertEquals("Event objects should be equal", testNotification, fetchedNotification);
+    }
+
+    /**
+     * Tests setNotificationData for a Notification. Also tests the equals method for Notifications.
+     */
+    @Test
+    public void testUpdateNotification() throws ExecutionException, InterruptedException {
+        // create
+        Long newNotifID = Tasks.await(testDatabase.getUniqueNotificationID());
+        testNotification = new Notification(
+                newNotifID,
+                testOrganizer.getHardwareID(),
+                testEntrant.getHardwareID(),
+                "Original Notification Header",
+                "Original Notification Body"
+        );
+        Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
+
+        // update
+        testNotification.setNotificationHeader("Updated Notification Header");
+        testNotification.setNotificationBody("Updated Notification Body");
+        Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
+
+        // get
+        Notification fetchedNotification = Tasks.await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
+
+        // Test fields individually
+        assertNotNull("Fetched notification should not be null", fetchedNotification);
+        assertEquals("Notification header should be updated", "Updated Notification Header", fetchedNotification.getNotificationHeader());
+        assertEquals("Notification body should be updated", "Updated Notification Body", fetchedNotification.getNotificationBody());
+        assertEquals("Fetched notification's ID should match", testNotification.getUniqueNotificationID(), fetchedNotification.getUniqueNotificationID());
+        assertEquals("Notification objects should be equal", testNotification, fetchedNotification);
+
+    }
+
+    /**
+     * Tests removeNotificationData for a Notification.
+     */
+    @Test
+    public void testRemoveNotification() throws ExecutionException, InterruptedException {
+        Long newNotifID = Tasks.await(testDatabase.getUniqueNotificationID());
+        testNotification = new Notification(
+                newNotifID,
+                testOrganizer.getHardwareID(),
+                testEntrant.getHardwareID(),
+                "Notification To Delete",
+                "This is a test notification to delete"
+        );
+        Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
+
+        Tasks.await(testDatabase.removeNotificationData(testNotification.getUniqueNotificationID()));
+
+        Notification fetchedNotification = Tasks.await(testDatabase.getNotification(newNotifID));
+        assertNull("Notification should be null after being removed", fetchedNotification);
+
+        testNotification = null; // set to null so @After doesn't try to delete it again
+    }
+
     //  EXTRA DATABASE TESTS
 
     /**
@@ -304,9 +402,22 @@ public class DatabaseTests {
         Long id1 = Tasks.await(testDatabase.getUniqueEventID());
         Long id2 = Tasks.await(testDatabase.getUniqueEventID());
 
-        assertNotNull("First ID should not be null", id1);
-        assertNotNull("Second ID should not be null", id2);
-        assertEquals("IDs should be sequential", id1 + 1, (long) id2);
+        assertNotNull("First event ID should not be null", id1);
+        assertNotNull("Second event ID should not be null", id2);
+        assertEquals("Event IDs should be sequential", id1 + 1, (long) id2);
+    }
+
+    /**
+     * Tests that the getUniqueNotificationID counter is sequential.
+     */
+    @Test
+    public void testGetUniqueNotificationID() throws ExecutionException, InterruptedException {
+        Long id1 = Tasks.await(testDatabase.getUniqueNotificationID());
+        Long id2 = Tasks.await(testDatabase.getUniqueNotificationID());
+
+        assertNotNull("First notif ID should not be null", id1);
+        assertNotNull("Second notif ID should not be null", id2);
+        assertEquals("Notif IDs should be sequential", id1 + 1, (long) id2);
     }
 
     /**

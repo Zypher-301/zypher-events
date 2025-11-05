@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="24dp">
+
+    <!-- Form Container -->
+    <LinearLayout
+        android:id="@+id/formContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- First Name Row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:gravity="center_vertical"
+            android:id="@+id/firstNameRow">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="First Name:"
+                android:textSize="16sp"/>
+
+            <EditText
+                android:id="@+id/etFirstName"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:hint="John"
+                android:inputType="textPersonName"/>
+        </LinearLayout>
+
+        <!-- Last Name Row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:gravity="center_vertical"
+            android:id="@+id/lastNameRow">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Last Name:"
+                android:textSize="16sp"/>
+
+            <EditText
+                android:id="@+id/etLastName"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:hint="Doe"
+                android:inputType="textPersonName"/>
+        </LinearLayout>
+
+        <!-- Email Row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:gravity="center_vertical"
+            android:id="@+id/emailRow">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Email:"
+                android:textSize="16sp"/>
+
+            <EditText
+                android:id="@+id/etEmail"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress"
+                android:hint="JohnDoe@zypher.com"/>
+        </LinearLayout>
+
+        <!-- Phone Row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="25dp"
+            android:gravity="center_vertical"
+            android:id="@+id/phoneRow">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Phone:"
+                android:textSize="16sp"/>
+
+            <EditText
+                android:id="@+id/etPhone"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:inputType="phone"
+                android:hint="780-000-1111"/>
+        </LinearLayout>
+
+        <!-- Geolocation Toggle -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="30dp"
+            android:id="@+id/geolocationRow">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Use Geolocation?"
+                android:textSize="16sp"
+                android:layout_marginRight="10dp"/>
+
+            <Switch
+                android:id="@+id/switchGeo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <!-- Notifications Toggle -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="35dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:text="Enable Notifications?"
+                android:textSize="16sp" />
+
+            <Switch
+                android:id="@+id/switchNotifications"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- Save button -->
+        <Button
+            android:id="@+id/btnSaveChanges"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:text="Save Changes" />
+
+        <!-- Delete Button WITH TRASH ICON -->
+        <Button
+            android:id="@+id/btnDeleteProfile"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:drawableRight="@drawable/ic_trash_bin"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:text="Delete Profile" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

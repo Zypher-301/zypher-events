@@ -25,22 +25,31 @@ public class Entrant extends User {
     /** The entrant's phone number (optional). */
     private String phoneNumber;
 
+    /** Whether the entrant has opted into geolocation. */
+    private boolean useGeolocation;
+
+    /** Whether the entrant wants notifications. */
+    private boolean wantsNotifications;
+
     /** A list of events the entrant has registered for. */
     private ArrayList<Event> registeredEventHistory;
 
     /**
      * Constructs a new Entrant instance with all attributes specified. (Including phone number)
      *
-     * @param hardwareID  the unique hardware identifier for this entrant
-     * @param firstName   the entrant's first name
-     * @param lastName    the entrant's last name
-     * @param email       the entrant's email address
-     * @param phoneNumber the entrant's phone number
+     * @param hardwareID     the unique hardware identifier for this entrant
+     * @param firstName      the entrant's first name
+     * @param lastName       the entrant's last name
+     * @param email          the entrant's email address
+     * @param phoneNumber    the entrant's phone number
+     * @param useGeolocation whether the entrant has opted into geolocation
      */
-    public Entrant(String hardwareID, String firstName, String lastName, String email, String phoneNumber) {
+    public Entrant(String hardwareID, String firstName, String lastName, String email, String phoneNumber, boolean useGeolocation) {
         super(UserType.ENTRANT, hardwareID, firstName, lastName);
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.useGeolocation = useGeolocation;
+        this.wantsNotifications = true;
         this.registeredEventHistory = new ArrayList<Event>();
     }
 
@@ -130,6 +139,7 @@ public class Entrant extends User {
         registeredEventHistory.remove(event);
     }
 
+
     /**
      * Checks if this Entrant is equal to another object.
      * @param o the object to compare with this Entrant.
@@ -145,8 +155,7 @@ public class Entrant extends User {
         Entrant entrant = (Entrant) o;
 
         return Objects.equals(email, entrant.email)
-                && Objects.equals(phoneNumber, entrant.phoneNumber)
-                && Objects.equals(registeredEventHistory, entrant.registeredEventHistory);
+                && Objects.equals(phoneNumber, entrant.phoneNumber);
     }
 
     /**
@@ -157,6 +166,43 @@ public class Entrant extends User {
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), email, phoneNumber, registeredEventHistory);
+    }
+
+
+    /**
+     * Returns whether the entrant has opted into geolocation.
+     *
+     * @return true if geolocation is enabled, false otherwise
+     */
+    public boolean isUseGeolocation() {
+        return useGeolocation;
+    }
+
+    /**
+     * Updates the entrant's geolocation setting.
+     *
+     * @param useGeolocation true to enable geolocation, false to disable
+     */
+    public void setUseGeolocation(boolean useGeolocation) {
+        this.useGeolocation = useGeolocation;
+    }
+
+    /**
+     * Returns whether the entrant wants notifications.
+     *
+     * @return true if notifications are enabled, false otherwise
+     */
+    public boolean getWantsNotifications() {
+        return wantsNotifications;
+    }
+
+    /**
+     * Updates the entrant's notification setting.
+     *
+     * @param wantsNotifications true to enable notifications, false to disable
+     */
+    public void setWantsNotifications(boolean wantsNotifications) {
+        this.wantsNotifications = wantsNotifications;
     }
 
     // -------------------- ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!! --------------------

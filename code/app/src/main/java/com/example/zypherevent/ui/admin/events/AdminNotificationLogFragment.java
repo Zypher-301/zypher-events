@@ -14,6 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Represents a fragment for administrators to view a log of all notifications sent through the app.
+ *
+ * This class extends {@link AdminBaseListFragment} to provide a standard list layout.
+ * It fetches notification data from the Firestore database and displays it using a
+ * {@link androidx.recyclerview.widget.RecyclerView} with a custom {@link AdminNotificationLogAdapter}.
+ * The fragment includes a refresh button to manually reload the notification logs from the database.
+ * This class fulfills the following user stories:
+ * <ul>
+ *     <li><b>US 03.08.01 As an administrator, I want to review logs of all notifications sent to entrants by organizers.</li>
+ * </ul>
  * @author Arunavo Dutta
  * @version 2.0
  * @see AdminBaseListFragment

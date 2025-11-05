@@ -20,15 +20,40 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * A fragment for administrators to browse and manage all events in the application.
+ *
+ * <p>
+ * This class extends {@link AdminBaseListFragment} to provide a user interface
+ * for displaying a list of all events stored in the Firestore database. Administrators
+ * can view the list of events and have the ability to delete any event from the system.
+ * The fragment fetches event data from the "events" collection in Firestore and populates
+ * a RecyclerView using the {@link AdminEventsAdapter}.
+ * </p>
+ *
+ * <p>
+ * Functionality includes:
+ * <ul>
+ *     <li>Displaying a list of all events.</li>
+ *     <li>Deleting an event after a confirmation dialog.</li>
+ *     <li>A refresh button to manually reload the list of events from the database.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * This class fulfills the following user stories:
+ * <ul>
+ *     <li><b>US 03.01.01:</b> As an administrator, I want to be able to remove events.</li>
+ *     <li><b>US 03.04.01:</b> As an administrator, I want to be able to browse events.</li>
+ * </ul>
+ * </p>
+ *
+ * @see AdminBaseListFragment
+ * @see AdminEventsAdapter
+ * @see Event
+ * @see FirebaseFirestore
+ * @see res/layout/fragment_admin_events.xml
  * @author Arunavo Dutta
  * @version 4.0
- * @See AdminBaseListFragment
- * @See Event
- * @See AdminEventsAdapter
- * @See FirebaseFirestore
- * @see res/layout/fragment_admin_events.xml
- * Completes US 03.01.01 As an administrator, I want to be able to remove events.
- * Completes US 03.04.01 As an administrator, I want to be able to browse events.
  */
 public class AdminEventsFragment extends AdminBaseListFragment {
 
@@ -108,9 +133,9 @@ public class AdminEventsFragment extends AdminBaseListFragment {
         // Start the asynchronous call to get the data from Firestore
         db.collection(collectionName).get().addOnCompleteListener(task -> {
 
-            // The task is the asynchronous job. Check if it was successful.
+            // Check if it was successful.
             if (task.isSuccessful()) {
-                // Task is successful then we get the list of results.
+                // If Task is successful then we get the list of results.
                 com.google.firebase.firestore.QuerySnapshot snapshot = task.getResult();
 
                 // Check if the result is null
@@ -119,23 +144,23 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                     return;
                 }
 
-                // Firestore automatically converts all documents into Event objects and puts them in a List.
+                // Firestore converts all documents into Event objects and puts them in a List.
                 List<Event> fetchedEvents = snapshot.toObjects(Event.class);
 
                 // Update our local list
 
-                // 1. Clear the old list of events
+                // Clear the old list of events
                 eventList.clear();
-                // 2. Add all the new events we just fetched
+                // Add all the new events we just fetched
                 eventList.addAll(fetchedEvents);
 
-                // 3. Tell the adapter that the data has changed, so that it updates the UI
+                // Tell the adapter that the data has changed, so that it updates the UI
                 adapter.notifyDataSetChanged();
 
                 Log.d(TAG, "Successfully fetched and converted " + eventList.size() + " events.");
 
             } else {
-                // The task failed
+                // Task failed
                 Log.e(TAG, "Error running query: ", task.getException());
                 Toast.makeText(getContext(), "Error fetching events", Toast.LENGTH_SHORT).show();
             }
@@ -169,7 +194,7 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                 .setTitle("Confirm Deletion")
                 .setMessage("Are you sure you want to delete '" + event.getEventName() + "'? This action cannot be undone.")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    // User clicked "Delete". Proceed with the original deletion logic.
+                    // If User clicked "Delete". Proceed with the deletion logic.
 
                     Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
 
@@ -185,9 +210,9 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                                                 eventList.remove(event);
                                                 adapter.notifyDataSetChanged();
 
-                                                // --- Start: Show success message ---
+                                                // Show success message
                                                 Toast.makeText(getContext(), "Event deleted successfully", Toast.LENGTH_SHORT).show();
-                                                // --- End ---
+
 
                                             })
                                             .addOnFailureListener(e -> {
@@ -200,10 +225,9 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                             });
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> {
-                    // User clicked "Cancel", so dismiss the dialog.
+                    // User clicked "Cancel", so we dismiss the dialog.
                     dialog.dismiss();
                 })
                 .show(); // Display the confirmation dialog
-        // ---  End ---
     }
 }

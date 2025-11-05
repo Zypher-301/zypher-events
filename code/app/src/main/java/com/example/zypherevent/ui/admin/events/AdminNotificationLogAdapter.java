@@ -11,10 +11,17 @@ import com.example.zypherevent.R;
 import java.util.List;
 
 /**
+ * Adapter class for displaying a list of notification logs in a RecyclerView.
+ * This adapter is responsible for creating ViewHolders for each item, binding notification data
+ * to the views within each ViewHolder, and managing the overall list. It is specifically
+ * used in the admin section to view logs of sent notifications.
+ *
  * @author Arunavo Dutta
  * @version 2.0
  * @see Notification
- * @see res/layout/fragment_admin_item_notification_log.xml
+ * @see RecyclerView.Adapter
+ * @see AdminNotificationLogAdapter.LogViewHolder
+ * @see com.example.zypherevent.R.layout#fragment_admin_item_notification_log
  */
 public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotificationLogAdapter.LogViewHolder> {
 
@@ -63,21 +70,19 @@ public class AdminNotificationLogAdapter extends RecyclerView.Adapter<AdminNotif
     public void onBindViewHolder(@NonNull LogViewHolder holder, int position) {
         Notification log = logList.get(position);
 
-        // --- Mapping Notification data to the existing XML layout ---
-
-        // 1. Map notificationBody to notification_message
+        // Map notificationBody to notification_message
         holder.message.setText("\"" + log.getNotificationBody() + "\"");
 
-        // 2. Map sendingUserHardwareID to notification_sender
+        // Map sendingUserHardwareID to notification_sender
         holder.sender.setText("From: " + log.getSendingUserHardwareID());
 
-        // 3. Re-use notification_event to show the header
+        // Re-use notification_event to show the header
         holder.event.setText("Title: " + log.getNotificationHeader());
 
-        // 4. Re-use notification_timestamp to show the ID
+        // Re-use notification_timestamp to show the ID
         holder.timestamp.setText("ID: " + log.getUniqueNotificationID().toString());
 
-        // 5. Hide the 'group' field, as we don't have data for it
+        // Hide the 'group' field, as we don't have data for it
         holder.group.setVisibility(View.GONE);
     }
 

@@ -21,16 +21,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A fragment for administrators to browse and manage user profiles.
+ *
+ * <p>This class provides the user interface and logic for administrators to view a list of all
+ * user profiles in the system. It supports key administrative functions, including the ability
+ * to remove user profiles. When removing an organizer, this class handles the cascading deletion
+ * of all events associated with that organizer to maintain data integrity.</p>
+ *
+ * <p>This fragment extends {@link AdminBaseListFragment} to reuse the basic list layout and
+ * functionality. It uses {@link AdminProfilesAdapter} to populate the {@link androidx.recyclerview.widget.RecyclerView}
+ * with user data fetched from the Firestore database via the {@link Database} class.</p>
+ *
+ * <p><b>User Stories Fulfilled:</b></p>
+ * <ul>
+ *     <li><b>US 03.02.01:</b> As an administrator, I want to be able to remove profiles.</li>
+ *     <li><b>US 03.05.01:</b> As an administrator, I want to be able to browse profiles.</li>
+ *     <li><b>US 03.07.01:</b> As an administrator, I want to remove organizers.</li>
+ * </ul>
+ *
  * @author Arunavo Dutta
  * @version 3.0
  * @see AdminBaseListFragment
- * @see User
  * @see AdminProfilesAdapter
+ * @see User
  * @see Database
- *
- * Completes US 03.02.01 As an administrator, I want to be able to remove profiles.
- * Completes US 03.05.01 As an administrator, I want to be able to browse profiles.
- * Completes US 03.07.01 As an administrator, I want to remove organizers.
  */
 public class AdminProfileFragment extends AdminBaseListFragment {
 
@@ -136,7 +150,7 @@ public class AdminProfileFragment extends AdminBaseListFragment {
 
         String profileName = profile.getFirstName() + " " + profile.getLastName();
 
-        // --- Start: Ask for confirmation before deletion ---
+        // Ask for confirmation before deletion
         new AlertDialog.Builder(getContext())
                 .setTitle("Confirm Deletion")
                 .setMessage("Are you sure you want to delete the profile for '" + profileName + "'? This action cannot be undone.")
@@ -144,15 +158,14 @@ public class AdminProfileFragment extends AdminBaseListFragment {
                     // User clicked "Delete".
                     Toast.makeText(getContext(), "Deleting " + profileName + "...", Toast.LENGTH_SHORT).show();
 
-                    // --- Start: Check if cascading delete is needed ---
+                    // Check if cascading delete is needed
                     if (profile.getUserType() == UserType.ORGANIZER) {
                         // This is an organizer. We must delete their events first.
                         handleDeleteOrganizerEvents(profile);
                     } else {
-                        // This is a basic user (Entrant/Admin). Just delete their profile.
+                        // This is a basic user (Entrant/Admin). We just delete their profile.
                         handleDeleteBasicUser(profile);
                     }
-                    // --- End ---
 
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> {
@@ -160,7 +173,6 @@ public class AdminProfileFragment extends AdminBaseListFragment {
                     dialog.dismiss();
                 })
                 .show(); // Display the confirmation dialog
-        // --- End ---
     }
 
 
@@ -181,7 +193,7 @@ public class AdminProfileFragment extends AdminBaseListFragment {
         String organizerId = profile.getHardwareID();
         Log.d(TAG, "Deleting organizer. First, finding events for: " + organizerId);
 
-        // 1. Find all events created by this organizer
+        // Find all events created by this organizer
         firestoreDb.collection("events")
                 .whereEqualTo("eventOrganizerHardwareID", organizerId)
                 .get()
@@ -197,20 +209,20 @@ public class AdminProfileFragment extends AdminBaseListFragment {
 
                         Log.d(TAG, "Found " + documents.size() + " events to delete. Starting batch delete.");
 
-                        // 2. Create a batch write to delete all their events at once
+                        // Create a batch write to delete all their events at once
                         WriteBatch batch = firestoreDb.batch();
                         for (DocumentSnapshot document : documents) {
                             batch.delete(document.getReference());
                         }
 
-                        // 3. Commit the batch
+                        // Commit the batch
                         batch.commit().addOnSuccessListener(aVoid -> {
-                            // 4. After events are deleted, delete the organizer's profile
+                            // After events are deleted, we delete the organizer's profile
                             Log.d(TAG, "Successfully deleted organizer's events. Now deleting profile.");
                             handleDeleteBasicUser(profile);
 
                         }).addOnFailureListener(e -> {
-                            // Failed to delete the events. Do NOT delete the organizer.
+                            // If failed to delete the events. Do NOT delete the organizer.
                             Log.e(TAG, "Error deleting organizer's events", e);
                             Toast.makeText(getContext(), "Error: Failed to delete organizer's events.", Toast.LENGTH_SHORT).show();
                         });
@@ -246,9 +258,8 @@ public class AdminProfileFragment extends AdminBaseListFragment {
                 profileList.remove(profile);
                 adapter.notifyDataSetChanged();
 
-                // --- Start: Show success message ---
+                // Show success message
                 Toast.makeText(getContext(), "Profile deleted successfully", Toast.LENGTH_SHORT).show();
-                // --- End ---
 
             } else {
                 Log.e(TAG, "Error deleting profile: ", task.getException());

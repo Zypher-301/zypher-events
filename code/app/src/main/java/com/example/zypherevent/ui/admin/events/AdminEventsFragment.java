@@ -59,8 +59,8 @@ import java.util.Map;
 public class AdminEventsFragment extends AdminBaseListFragment {
 
     private static final String TAG = "AdminEventsFragment";
-    private FirebaseFirestore firestoreDb; // <-- Renamed for clarity
-    private Database db;                  // <-- Add this instance of your custom class
+    private FirebaseFirestore firestoreDb;
+    private Database db;
     private AdminEventsAdapter adapter;
     private List<Event> eventList = new ArrayList<>();
     private Button refreshButton;
@@ -69,8 +69,8 @@ public class AdminEventsFragment extends AdminBaseListFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        firestoreDb = FirebaseFirestore.getInstance(); // <-- Initialize the raw instance
-        db = new Database();                          // <-- Initialize your custom class
+        firestoreDb = FirebaseFirestore.getInstance();
+        db = new Database();
 
         adapter = new AdminEventsAdapter(eventList, event -> {
             handleDeleteEvent(event);
@@ -94,7 +94,6 @@ public class AdminEventsFragment extends AdminBaseListFragment {
     private void loadEvents() {
         Log.d(TAG, "Attempting to query 'events' collection using db.getAllEventsList()...");
 
-        // Now this will work, because 'db' is your custom Database class
         db.getAllEventsList().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<Event> fetchedEvents = task.getResult();
@@ -147,7 +146,6 @@ public class AdminEventsFragment extends AdminBaseListFragment {
 
                     Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
 
-                    // --- FIX: Use 'firestoreDb' variable ---
                     firestoreDb.collection("events")
                             .whereEqualTo("uniqueEventID", event.getUniqueEventID())
                             .get()
@@ -155,16 +153,14 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                                 if (task.isSuccessful() && !task.getResult().isEmpty()) {
                                     String documentId = task.getResult().getDocuments().get(0).getId();
 
-                                    // --- FIX: Use 'firestoreDb' variable ---
                                     firestoreDb.collection("events").document(documentId).delete()
                                             .addOnSuccessListener(aVoid -> {
                                                 Log.d(TAG, "Successfully deleted event: " + event.getEventName());
                                                 eventList.remove(event);
                                                 adapter.notifyDataSetChanged();
 
-                                                // --- Start: Show success message ---
                                                 Toast.makeText(getContext(), "Event deleted successfully", Toast.LENGTH_SHORT).show();
-                                                // --- End ---
+
 
                                             })
                                             .addOnFailureListener(e -> {
@@ -181,6 +177,5 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                     dialog.dismiss();
                 })
                 .show(); // Display the confirmation dialog
-        // ---  End ---
     }
 }

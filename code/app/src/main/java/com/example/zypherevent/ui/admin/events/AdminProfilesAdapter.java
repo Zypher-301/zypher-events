@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
-import com.example.zypherevent.userTypes.User; // Using your real User model
+import com.example.zypherevent.userTypes.User;
 import com.example.zypherevent.userTypes.UserType;
 import java.util.List;
 

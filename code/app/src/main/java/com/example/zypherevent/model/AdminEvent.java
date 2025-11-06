@@ -65,16 +65,4 @@ public class AdminEvent implements Serializable {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AdminEvent that = (AdminEvent) o;
-        return Objects.equals(eventId, that.eventId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(eventId);
-    }
 }

@@ -8,11 +8,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Represents an event managed by an administrator.
- * This class is designed to be a data model for event information.
- *
+ * This is not an actual class for the application. It is just a Mock class created for Demonstration
+ * purposes.
  * @author Arunavo Dutta
- * @version 1.1
+ * @version 1.0
  */
 public class AdminEvent implements Serializable {
 

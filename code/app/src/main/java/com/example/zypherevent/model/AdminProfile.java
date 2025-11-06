@@ -3,10 +3,10 @@ package com.example.zypherevent.model;
 import java.util.Objects;
 
 /**
- * Represents the profile of an administrator.
- * This class is immutable.
+ * This is not an actual class for the application. It is just a Mock class created for Demonstration
+ * purposes.
  * @author Arunavo Dutta
- * @version 1.1
+ * @version 1.0
  */
 public final class AdminProfile { // Made class final
     private final String name;

@@ -8,11 +8,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
- * Represents a log entry for a notification sent by an administrator.
- * This class is immutable to ensure thread-safety and data integrity.
- *
+ * This is not an actual class for the application. It is just a Mock class created for Demonstration
+ * purposes.
  * @author Arunavo Dutta
- * @version 2.0
+ * @version 1.0
  */
 public final class AdminNotificationLog {
 

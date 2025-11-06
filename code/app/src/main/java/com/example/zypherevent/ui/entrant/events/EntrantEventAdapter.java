@@ -16,6 +16,7 @@ import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
+ * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * An adapter to display a list of {@link Event} objects for an {@link Entrant} in a {@link RecyclerView}.
  * <p>
  * This adapter is responsible for creating views for each event, binding event data to those views,
@@ -193,6 +194,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
 
             // Set the click listeners to call the methods in the fragment
             btnJoinWaitlist.setOnClickListener(v -> listener.onJoinClick(event));
+            // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
             btnLeaveWaitlist.setOnClickListener(v -> listener.onLeaveClick(event));
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }

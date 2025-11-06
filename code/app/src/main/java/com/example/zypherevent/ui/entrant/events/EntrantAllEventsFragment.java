@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * A fragment that displays a comprehensive list of all available events to an Entrant.
  * It provides the functionality for users to join or leave the waitlist for an event.
  * This class is responsible for fetching event data from the database, displaying it in a
@@ -225,6 +226,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Added by Arunavo Dutta
+     * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
      * Handles the "Leave Waitlist" button click for an event.
      * <p>
      * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
@@ -241,6 +243,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      *
      * @param event The {@link Event} object from which the user is leaving the waitlist.
      */
+    // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
     @Override
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());

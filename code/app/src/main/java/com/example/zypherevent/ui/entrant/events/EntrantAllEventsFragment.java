@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.entrant.events;
 
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,8 +32,8 @@ import java.util.List;
  * <p>
  * This class implements the following user stories:
  * <ul>
- *   <li>US 01.01.01: As an Entrant, I want to join the waitlist for an event.</li>
- *   <li>US 01.01.02: As an Entrant, I want to leave the waitlist for an event.</li>
+ * <li>US 01.01.01: As an Entrant, I want to join the waitlist for an event.</li>
+ * <li>US 01.01.02: As an Entrant, I want to leave the waitlist for an event.</li>
  * </ul>
  *
  * @author Elliot Chrystal
@@ -167,13 +168,13 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      * This method orchestrates the process of an entrant joining an event. It performs a sequence
      * of asynchronous database operations:
      * <ol>
-     *     <li>Adds the current user to the specified event's waitlist in the database.</li>
-     *     <li>Upon success, creates a simplified "clean" version of the event object to avoid
-     *         nested data issues in Firestore when saving to the user's profile.</li>
-     *     <li>Adds this clean event to the user's local list of registered events.</li>
-     *     <li>Saves the updated user object (with the new event history) back to the database.</li>
-     *     <li>Finally, refreshes the event list to update the UI, typically changing the
-     *         "Join" button to a "Leave" button.</li>
+     * <li>Adds the current user to the specified event's waitlist in the database.</li>
+     * <li>Upon success, creates a simplified "clean" version of the event object to avoid
+     * nested data issues in Firestore when saving to the user's profile.</li>
+     * <li>Adds this clean event to the user's local list of registered events.</li>
+     * <li>Saves the updated user object (with the new event history) back to the database.</li>
+     * <li>Finally, refreshes the event list to update the UI, typically changing the
+     * "Join" button to a "Leave" button.</li>
      * </ol>
      * Error handling is implemented at each step to log failures and provide feedback to the user
      * via a {@link Toast}.
@@ -229,11 +230,11 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
      * It performs the following sequential, asynchronous operations:
      * <ol>
-     *     <li>Calls the database to remove the current user from the specified event's waitlist.</li>
-     *     <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
-     *         local list of registered events.</li>
-     *     <li>Saves the updated user object back to the database to persist the change in their event history.</li>
-     *     <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
+     * <li>Calls the database to remove the current user from the specified event's waitlist.</li>
+     * <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
+     * local list of registered events.</li>
+     * <li>Saves the updated user object back to the database to persist the change in their event history.</li>
+     * <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
      * </ol>
      * Each step includes error handling. If a database operation fails, an error is logged, and a
      * {@link Toast} message is shown to the user to inform them of the failure. A success message is shown upon completion.

@@ -1,16 +1,37 @@
 package com.example.zypherevent.model;
 
-/**
- * @author Arunavo Dutta
- * @version 1.0
- */
-public class AdminProfile {
-    private String name;
-    private String role;
-    private String phone;
-    private String email;
+import java.util.Objects;
 
-    // Constructor for placeholder data
+/**
+ * Represents the profile of an administrator.
+ * This class is immutable.
+ * @author Arunavo Dutta
+ * @version 1.1
+ */
+public final class AdminProfile { // Made class final
+    private final String name;
+    private final String role;
+    private final String phone;
+    private final String email;
+
+    /**
+     * No-argument constructor, useful for frameworks like JPA or Jackson.
+     */
+    public AdminProfile() {
+        this.name = null;
+        this.role = null;
+        this.phone = null;
+        this.email = null;
+    }
+
+    /**
+     * Constructs an AdminProfile with specified details.
+     *
+     * @param name  The name of the admin.
+     * @param role  The role of the admin.
+     * @param phone The phone number of the admin.
+     * @param email The email address of the admin.
+     */
     public AdminProfile(String name, String role, String phone, String email) {
         this.name = name;
         this.role = role;
@@ -23,4 +44,16 @@ public class AdminProfile {
     public String getRole() { return role; }
     public String getPhone() { return phone; }
     public String getEmail() { return email; }
+
+
+
+    @Override
+    public String toString() {
+        return "AdminProfile{" +
+                "name='" + name + '\'' +
+                ", role='" + role + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
 }

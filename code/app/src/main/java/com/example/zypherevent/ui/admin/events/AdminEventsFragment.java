@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import android.app.AlertDialog;
 
+import com.example.zypherevent.Database;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -58,33 +59,18 @@ import java.util.Map;
 public class AdminEventsFragment extends AdminBaseListFragment {
 
     private static final String TAG = "AdminEventsFragment";
-    private FirebaseFirestore db;
+    private FirebaseFirestore firestoreDb; // <-- Renamed for clarity
+    private Database db;                  // <-- Add this instance of your custom class
     private AdminEventsAdapter adapter;
     private List<Event> eventList = new ArrayList<>();
     private Button refreshButton;
 
-    /**
-     * Called immediately after {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}
-     * has returned, but before any saved state has been restored in to the view.
-     * <p>
-     * This method initializes the fragment's view components. It sets up the Firestore instance,
-     * creates and configures the {@link AdminEventsAdapter} for the RecyclerView, and sets up
-     * a click listener for the delete functionality on each list item. It also initializes
-     * the refresh button with a click listener to reload the event data from Firestore. Finally, it
-     * triggers an initial data load by calling {@link #loadEvents()}.
-     *
-     * @param view The View returned by {@link #onCreateView(android.view.LayoutInflater, android.view.ViewGroup, Bundle)}.
-     * @param savedInstanceState If non-null, this fragment is being re-constructed
-     * from a previous saved state as given here.
-     * @see #loadEvents()
-     * @see #handleDeleteEvent(Event)
-     * @see AdminEventsAdapter
-     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        db = FirebaseFirestore.getInstance();
+        firestoreDb = FirebaseFirestore.getInstance(); // <-- Initialize the raw instance
+        db = new Database();                          // <-- Initialize your custom class
 
         adapter = new AdminEventsAdapter(eventList, event -> {
             handleDeleteEvent(event);
@@ -104,63 +90,26 @@ public class AdminEventsFragment extends AdminBaseListFragment {
     }
 
 
-    /**
-     * Fetches all events from the Firestore "events" collection and updates the RecyclerView.
-     * <p>
-     * This method initiates an asynchronous query to the Firestore database to retrieve
-     * all documents from the "events" collection. On successful completion, it automatically
-     * maps the retrieved documents to a list of {@link Event} objects.
-     * <p>
-     * The existing local {@code eventList} is cleared and then populated with the newly
-     * fetched data. Finally, it notifies the {@code adapter} that the dataset has changed,
-     * which triggers a refresh of the UI to display the latest events.
-     * <p>
-     * If the query fails (e.g., due to network issues or security rule violations), an
-     * error is logged, and a toast message is displayed to the user. It also handles
-     * the case where the query is successful but returns a null result.
-     *
-     * @see FirebaseFirestore#collection(String)
-     * @see com.google.android.gms.tasks.OnCompleteListener
-     * @see QuerySnapshot#toObjects(Class)
-     * @see AdminEventsAdapter#notifyDataSetChanged()
-     */
+
     private void loadEvents() {
-        // Defining the name of the collection we want to read
-        String collectionName = "events";
+        Log.d(TAG, "Attempting to query 'events' collection using db.getAllEventsList()...");
 
-        Log.d(TAG, "Attempting to query 'events' collection...");
-
-        // Start the asynchronous call to get the data from Firestore
-        db.collection(collectionName).get().addOnCompleteListener(task -> {
-
-            // Check if it was successful.
+        // Now this will work, because 'db' is your custom Database class
+        db.getAllEventsList().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                // If Task is successful then we get the list of results.
-                com.google.firebase.firestore.QuerySnapshot snapshot = task.getResult();
-
-                // Check if the result is null
-                if (snapshot == null) {
-                    Log.e(TAG, "Query successful but snapshot is null!");
+                List<Event> fetchedEvents = task.getResult();
+                if (fetchedEvents == null) {
+                    Log.e(TAG, "Query successful but fetchedEvents is null!");
                     return;
                 }
 
-                // Firestore converts all documents into Event objects and puts them in a List.
-                List<Event> fetchedEvents = snapshot.toObjects(Event.class);
-
-                // Update our local list
-
-                // Clear the old list of events
                 eventList.clear();
-                // Add all the new events we just fetched
                 eventList.addAll(fetchedEvents);
-
-                // Tell the adapter that the data has changed, so that it updates the UI
                 adapter.notifyDataSetChanged();
-
                 Log.d(TAG, "Successfully fetched and converted " + eventList.size() + " events.");
 
             } else {
-                // Task failed
+                // The task failed
                 Log.e(TAG, "Error running query: ", task.getException());
                 Toast.makeText(getContext(), "Error fetching events", Toast.LENGTH_SHORT).show();
             }
@@ -181,7 +130,7 @@ public class AdminEventsFragment extends AdminBaseListFragment {
      * cancels the dialog, no action is taken.
      *
      * @param event The {@link Event} object to be deleted. It must not be null and should
-     *              contain a valid {@code uniqueEventID}.
+     * contain a valid {@code uniqueEventID}.
      */
     private void handleDeleteEvent(Event event) {
         if (event == null || event.getUniqueEventID() == null) {
@@ -194,25 +143,28 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                 .setTitle("Confirm Deletion")
                 .setMessage("Are you sure you want to delete '" + event.getEventName() + "'? This action cannot be undone.")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    // If User clicked "Delete". Proceed with the deletion logic.
+                    // User clicked "Delete". Proceed with the original deletion logic.
 
                     Toast.makeText(getContext(), "Deleting " + event.getEventName(), Toast.LENGTH_SHORT).show();
 
-                    db.collection("events")
+                    // --- FIX: Use 'firestoreDb' variable ---
+                    firestoreDb.collection("events")
                             .whereEqualTo("uniqueEventID", event.getUniqueEventID())
                             .get()
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful() && !task.getResult().isEmpty()) {
                                     String documentId = task.getResult().getDocuments().get(0).getId();
-                                    db.collection("events").document(documentId).delete()
+
+                                    // --- FIX: Use 'firestoreDb' variable ---
+                                    firestoreDb.collection("events").document(documentId).delete()
                                             .addOnSuccessListener(aVoid -> {
                                                 Log.d(TAG, "Successfully deleted event: " + event.getEventName());
                                                 eventList.remove(event);
                                                 adapter.notifyDataSetChanged();
 
-                                                // Show success message
+                                                // --- Start: Show success message ---
                                                 Toast.makeText(getContext(), "Event deleted successfully", Toast.LENGTH_SHORT).show();
-
+                                                // --- End ---
 
                                             })
                                             .addOnFailureListener(e -> {
@@ -225,9 +177,10 @@ public class AdminEventsFragment extends AdminBaseListFragment {
                             });
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> {
-                    // User clicked "Cancel", so we dismiss the dialog.
+                    // User clicked "Cancel", so dismiss the dialog.
                     dialog.dismiss();
                 })
                 .show(); // Display the confirmation dialog
+        // ---  End ---
     }
 }

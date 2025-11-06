@@ -68,22 +68,6 @@ public final class AdminNotificationLog {
     @NonNull
     public String getSender() { return sender; }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AdminNotificationLog that = (AdminNotificationLog) o;
-        return Objects.equals(message, that.message) &&
-                Objects.equals(event, that.event) &&
-                Objects.equals(group, that.group) &&
-                Objects.equals(timestamp, that.timestamp) &&
-                Objects.equals(sender, that.sender);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(message, event, group, timestamp, sender);
-    }
 
     @Override
     public String toString() {

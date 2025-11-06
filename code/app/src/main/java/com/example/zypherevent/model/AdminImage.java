@@ -7,11 +7,10 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Represents an image uploaded by an administrator, storing metadata about it.
- * This class is designed to be immutable to ensure data consistency.
- *
+ * This is not an actual class for the application. It is just a Mock class created for Demonstration
+ * purposes.
  * @author Arunavo Dutta
- * @version 1.1
+ * @version 1.0
  */
 public final class AdminImage {
 

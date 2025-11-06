@@ -76,4 +76,13 @@ public class OrganizerActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+
+    /**
+     * Returns the organizer user object associated with this activity.
+     *
+     * @return The {@link Organizer} object that was passed to this activity
+     */
+    public Organizer getOrganizerUser() {
+        return organizerUser;
+    }
 }

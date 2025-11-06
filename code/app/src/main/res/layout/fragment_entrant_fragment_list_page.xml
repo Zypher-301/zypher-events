@@ -1,21 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    tools:context=".ui.userTypes.EntrantActivity">
 
+    <!-- Refresh Button -->
     <Button
         android:id="@+id/refresh_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:text="Refresh" />
+        android:text="Refresh"
+        android:layout_marginBottom="8dp" />
 
+    <!-- RecyclerView for events -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:padding="8dp"
-        android:clipToPadding="false"
-        android:layout_marginTop="56dp"/> </FrameLayout>
+        android:clipToPadding="false" />
+
+    <!-- Lottery guidelines for entrants -->
+    <TextView
+        android:id="@+id/tvLotteryGuidelines"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="How the lottery works: When registration closes, a random draw selects entrants from each event's waiting list. One entry per device. If a selected entrant declines, another entrant is randomly chosen."
+        android:textSize="14sp"
+        android:textColor="@android:color/black"
+        android:background="@android:color/holo_orange_light"
+        android:gravity="center"
+        android:lineSpacingExtra="2dp" />
+
+</LinearLayout>

@@ -353,7 +353,7 @@ public class Event implements Serializable {
      * @param entrant the entrant to add to the waitlist
      */
     public void addEntrantToWaitList(Entrant entrant) {
-        if (this.waitListEntrants.size() >= this.waitlistLimit) {
+        if (this.waitlistLimit != null && this.waitListEntrants.size() >= this.waitlistLimit) {
             throw new IllegalStateException("Waitlist is full");
         }
         Date now = new Date();

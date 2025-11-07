@@ -1,14 +1,18 @@
 package com.example.zypherevent.ui.organizer.events;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
@@ -23,7 +27,7 @@ import java.util.HashSet;
 
 /**
  * @author Tom Yang
- * @version 1.1
+ * @version 2.0
  *
  * Activity for sending notifications to entrants based on their event status.
  * Allows organizers to select a status category (Waitlisted, Accepted, or Denied)
@@ -39,7 +43,7 @@ import java.util.HashSet;
  * @see Entrant
  * @see Event
  */
-public class SendNotificationFragment extends AppCompatActivity {
+public class SendNotificationFragment extends Fragment {
 
     /** Spinner for selecting the target status group (Waitlisted, Accepted, or Denied) */
     private Spinner statusSpinner;
@@ -62,27 +66,55 @@ public class SendNotificationFragment extends AppCompatActivity {
     /** The event name stored for notification */
     private String eventName;
 
+    public SendNotificationFragment() {
+        // Required empty public constructor
+    }
+
+    /**
+     * Sets the organizer for this notification fragment
+     *
+     * @param organizer the organizer sending notifications
+     */
+    public void setOrganizer(Organizer organizer) {
+        this.organizer = organizer;
+    }
+
+    /**
+     * Sets the event ID for this notification fragment
+     *
+     * @param eventID the unique ID for this event
+     */
+    public void setEventID(Long eventID) {
+        this.eventID = eventID;
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.popup_organizer_notifications_to_entrant);
-
-        // Initialize Database
         database = new Database();
+    }
 
-        // Get organizer and event ID from intent
-        organizer = (Organizer) getIntent().getSerializableExtra("organizer");
-        eventID = getIntent().getLongExtra("eventID", -1L);
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.popup_organizer_notifications_to_entrant, container, false);
+    }
 
-        if (organizer == null || eventID == -1L) {
-            Toast.makeText(this, "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
-            finish();
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        if (organizer == null || eventID == null || eventID == -1L) {
+            Toast.makeText(getContext(), "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
+            if (getActivity() != null) {
+                getActivity().getSupportFragmentManager().popBackStack();
+            }
             return;
         }
 
         // Initialize UI
-        statusSpinner = findViewById(R.id.dropdown);
-        sendButton = findViewById(R.id.send_button);
+        statusSpinner = view.findViewById(R.id.dropdown);
+        sendButton = view.findViewById(R.id.send_button);
 
         // Setup spinner with status options
         setupSpinner();
@@ -101,7 +133,7 @@ public class SendNotificationFragment extends AppCompatActivity {
 
         // Create adapter for spinner
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
+                new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         // Set adapter to spinner
@@ -155,7 +187,7 @@ public class SendNotificationFragment extends AppCompatActivity {
         // Query the event to get entrants with selected status
         database.getEvent(eventID).addOnSuccessListener(event -> {
                     if (event == null) {
-                        Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Event not found", Toast.LENGTH_SHORT).show();
                         sendButton.setEnabled(true);
                         return;
                     }
@@ -178,7 +210,7 @@ public class SendNotificationFragment extends AppCompatActivity {
                     sendNotificationToEntrants(targetEntrants, header, body);
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to retrieve event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to retrieve event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     sendButton.setEnabled(true);
                 });
     }
@@ -188,7 +220,7 @@ public class SendNotificationFragment extends AppCompatActivity {
      * before sending notifications.
      */
     private void showSelectionRequireDialog() {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(getContext())
                 .setTitle("No Group Selected")
                 .setMessage("Please select a group from the dropdown menu before sending notifications.")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -201,7 +233,7 @@ public class SendNotificationFragment extends AppCompatActivity {
      * @param selectedStatus The status group that has no entrants (waitlisted, accepted, denied)
      */
     private void showNoEntrantDialog(String selectedStatus) {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(getContext())
                 .setTitle("No Entrant Found")
                 .setMessage("There are currently no " + selectedStatus + " entrants for this event.")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
@@ -269,7 +301,7 @@ public class SendNotificationFragment extends AppCompatActivity {
         final int[] failureCount = {0};
 
         if (totalEntrants == 0) {
-            Toast.makeText(this, "No valid entrants to notify", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "No valid entrants to notify", Toast.LENGTH_SHORT).show();
             sendButton.setEnabled(true);
             return;
         }
@@ -327,7 +359,7 @@ public class SendNotificationFragment extends AppCompatActivity {
                         + failureCount + " failed.";
             }
 
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
             sendButton.setEnabled(true);
         }
     }

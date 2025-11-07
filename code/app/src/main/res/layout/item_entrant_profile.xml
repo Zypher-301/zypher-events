@@ -15,28 +15,15 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/profile_image"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_entrant_profile"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:ignore="ContentDescription" />
-
         <TextView
             android:id="@+id/user_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="0dp"  android:layout_marginEnd="8dp"
             android:text="Name: "
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/profile_image"
-            app:layout_constraintTop_toTopOf="@id/profile_image"
-            app:layout_constraintEnd_toStartOf="@id/btnMoveToAccepted" />
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"   app:layout_constraintEnd_toStartOf="@id/btnMoveToAccepted" />
 
         <TextView
             android:id="@+id/user_email"

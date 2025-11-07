@@ -190,12 +190,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         // Create adapter with accept listener
         WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(waitlistEntrants,
-                new WaitlistEntrantAdapter.OnAcceptClickListener() {
-                    @Override
-                    public void onAcceptClick(WaitlistEntry entry, int position) {
-                        handleAcceptEntrant(event, entry, position);
-                    }
-                });
+                (entry, position) -> handleAcceptEntrant(event, entry, position));
 
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         waitlistRecyclerView.setAdapter(waitlistAdapter);
@@ -232,13 +227,20 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 entry.getEntrant().getLastName() + " for this event?");
 
         confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-            // TODO: Add your database logic here to move entrant to accepted list
-            Toast.makeText(getContext(),
-                    entry.getEntrant().getFirstName() + " accepted!",
-                    Toast.LENGTH_SHORT).show();
 
-            // Refresh the waitlist
-            loadEvents();
+            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant())
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(getContext(),
+                                entry.getEntrant().getFirstName() + " accepted!",
+                                Toast.LENGTH_SHORT).show();
+                        loadEvents();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error accepting entrant", e);
+                        Toast.makeText(getContext(),
+                                "Error: Could not accept entrant. Please try again.",
+                                Toast.LENGTH_LONG).show();
+                    });
         });
 
         confirmBuilder.setNegativeButton("Cancel", null);

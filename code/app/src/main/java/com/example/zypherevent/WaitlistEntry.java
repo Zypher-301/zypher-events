@@ -28,9 +28,7 @@ public class WaitlistEntry {
 
     /**
      * The timestamp when the entrant joined the waitlist.
-     * Automatically populated by Firestore when the document is created.
      */
-    @ServerTimestamp
     private Date timeJoined;
 
     /**
@@ -49,6 +47,7 @@ public class WaitlistEntry {
      */
     public WaitlistEntry(Entrant entrant) {
         this.entrant = entrant;
+        this.timeJoined = new Date();
     }
 
     /**

@@ -132,7 +132,6 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
     public static class EntrantViewHolder extends RecyclerView.ViewHolder {
 
         TextView userName, userEmail, userPhone, timeJoined;
-        ImageView profileImage;
         Button btnAccept;
 
         public EntrantViewHolder(@NonNull View itemView) {
@@ -141,7 +140,6 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
             userEmail = itemView.findViewById(R.id.user_email);
             userPhone = itemView.findViewById(R.id.user_phone);
             timeJoined = itemView.findViewById(R.id.tvTimeJoined);
-            profileImage = itemView.findViewById(R.id.profile_image);
             btnAccept = itemView.findViewById(R.id.btnMoveToAccepted);
         }
 

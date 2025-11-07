@@ -989,7 +989,7 @@ public class Database {
                 Log.w("Database", "Entrant not found on waitlist, could not move.");
             }
 
-            return null; // Transaction success
+            return null;
         });
     }
 

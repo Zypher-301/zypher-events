@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
+/**Author: Britney Kunchidi
  * Simple Activity to run the lottery for an event.
  * Uses popup_organizer_lottery.xml as its layout.
  * For now, uses a dummy waitlist just to demonstrate random sampling.

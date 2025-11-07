@@ -13,8 +13,13 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
 
+import android.text.format.DateUtils;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -218,14 +223,17 @@ public class DatabaseTests {
      * of equals() for Events are correct.
      */
     @Test
-    public void testAddAndGetEvent() throws ExecutionException, InterruptedException {
+    public void testAddAndGetEvent() throws ExecutionException, InterruptedException, ParseException {
         Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
-
         // Create an event with all fields non-null
         testEvent = new Event(
                 newEventID,
-                "Test Event", "Event for testing", "2025-10-27T10:00:00",
-                "Test Location", "2025-10-01T10:00:00", "2025-10-25T10:00:00",
+                "Test Event",
+                "Event for testing",
+                Utils.createWholeDayDate("2025-10-27"),
+                "Test Location",
+                Utils.createWholeDayDate("2025-10-01"),
+                Utils.createWholeDayDate("2025-10-25"),
                 testOrganizer.getHardwareID(),
                 "http://example.com/poster.png"
         );
@@ -254,13 +262,16 @@ public class DatabaseTests {
      * Tests setEventData for an Event. Also tests the equals method for Events.
      */
     @Test
-    public void testUpdateEvent() throws ExecutionException, InterruptedException {
+    public void testUpdateEvent() throws ExecutionException, InterruptedException, ParseException {
         // create
         Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        Date start = Utils.createWholeDayDate("2025-10-27");
+        Date registrationStart = Utils.createWholeDayDate("2025-10-01");
+        Date registrationEnd = Utils.createWholeDayDate("2025-10-25");
         testEvent = new Event(
                 newEventID,
-                "Original Event Name", "Original Description", "...",
-                "Original Location", "...", "...",
+                "Original Event Name", "Original Description", start,
+                "Original Location", registrationStart, registrationEnd,
                 testOrganizer.getHardwareID(),
                 "http://example.com/poster.png"
         );
@@ -286,10 +297,13 @@ public class DatabaseTests {
      * Tests removeEventData for an Event.
      */
     @Test
-    public void testRemoveEvent() throws ExecutionException, InterruptedException {
+    public void testRemoveEvent() throws ExecutionException, InterruptedException, ParseException {
         Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        Date start = Utils.createWholeDayDate("2025-10-27");
+        Date registrationStart = Utils.createWholeDayDate("2025-10-01");
+        Date registrationEnd = Utils.createWholeDayDate("2025-10-25");
         testEvent = new Event(
-                newEventID, "Event To Delete", "...", "...", "...", "...", "...",
+                newEventID, "Event To Delete", "...", start, "...", registrationStart, registrationEnd,
                 testOrganizer.getHardwareID()
         );
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));

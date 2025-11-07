@@ -1,5 +1,4 @@
-// package com.example.zypherevent.ui.admin.events;
-package com.example.zypherevent.ui.admin.events; // Use your actual package name
+package com.example.zypherevent.ui.admin.events;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,37 +10,57 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.R;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
-import com.example.zypherevent.userTypes.User; // Using your real User model
+import com.example.zypherevent.userTypes.User;
 import com.example.zypherevent.userTypes.UserType;
 import java.util.List;
 
 /**
+ * An adapter for displaying a list of user profiles in a {@link RecyclerView}.
+ *
+ * <p>This adapter is designed for an administrator's view, providing the functionality
+ * to display user profiles with details specific to their roles (e.g., Entrant, Organizer).
+ * It populates a {@code RecyclerView} with data from a list of {@link User} objects,
+ * mapping each user's data to a card-style layout defined in
+ * {@code R.layout.fragment_admin_item_profile_card}.</p>
+ *
+ * <p>The adapter also includes functionality for deleting profiles. It uses an
+ * {@link OnDeleteListener} interface to delegate the deletion action to the hosting
+ * component (e.g., a Fragment or Activity), ensuring a separation of concerns.</p>
+ *
  * @author Arunavo Dutta
  * @version 2.0
  * @see User
  * @see Entrant
  * @see Organizer
+ * @see RecyclerView.Adapter
  * @see res/layout/fragment_admin_item_profile_card.xml
  */
 public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdapter.ProfileViewHolder> {
 
-    private List<User> profileList; // Use real User model
+    private List<User> profileList;
     private OnDeleteListener deleteListener;
 
     /**
-     * Interface for a callback to be invoked when a user profile is to be deleted.
-     * This listener is implemented by the hosting fragment or activity to handle the deletion logic,
-     * such as removing the user from the data source and updating the UI.
+     * Defines a callback to be invoked when a user profile is selected for deletion.
+     * <p>
+     * This interface must be implemented by the hosting component (such as a Fragment or Activity)
+     * that uses {@link AdminProfilesAdapter}. The implementation is responsible for handling the
+     * actual deletion logic, which may include removing the user from the data source,
+     * updating the database, and refreshing the user interface.
      */
     public interface OnDeleteListener {
-        void onDelete(User profile); // Use real User model
+        void onDelete(User profile);
     }
 
     /**
      * Constructs an AdminProfilesAdapter.
+     * <p>
+     * Initializes the adapter with the list of user profiles to be displayed
+     * and a listener to handle delete actions.
      *
-     * @param profileList    A list of {@link User} objects to be displayed.
-     * @param deleteListener A listener for handling delete actions on profiles.
+     * @param profileList    A list of {@link User} objects to be displayed in the RecyclerView.
+     * @param deleteListener A listener that defines the callback method {@link OnDeleteListener#onDelete(User)}
+     *                       to be invoked when the delete button for a profile is clicked.
      */
     public AdminProfilesAdapter(List<User> profileList, OnDeleteListener deleteListener) {
         this.profileList = profileList;
@@ -49,18 +68,18 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
     }
 
     /**
-     * Called when RecyclerView needs a new {@link ProfileViewHolder} of the given type to represent
-     * an item.
+     * Inflates the item layout and creates the ViewHolder.
      * <p>
-     * This new ViewHolder should be constructed with a new View that can represent the items
-     * of the given type. You can either create a new View manually or inflate it from an XML
-     * layout file.
+     * This method is called by the RecyclerView when it needs a new {@link ProfileViewHolder}
+     * to represent an item. It inflates the XML layout file for a single profile card
+     * ({@code R.layout.fragment_admin_item_profile_card}) and returns a new instance
+     * of {@link ProfileViewHolder} holding the inflated view.
      *
      * @param parent   The ViewGroup into which the new View will be added after it is bound to
-     *                 an adapter position.
-     * @param viewType The view type of the new View.
-     * @return A new ProfileViewHolder that holds a View of the given view type.
-     * @see #onBindViewHolder(ProfileViewHolder, int)
+     *                 an adapter position. This is the RecyclerView itself.
+     * @param viewType The view type of the new View. This is not used in this adapter as
+     *                 all items share the same layout.
+     * @return A new {@link ProfileViewHolder} that holds the View for a single profile item.
      */
     @NonNull
     @Override
@@ -71,24 +90,22 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
     }
 
     /**
-     * Called by RecyclerView to display the data at the specified position. This method
-     * updates the contents of the {@link ProfileViewHolder#itemView} to reflect the item at the
-     * given position.
+     * Binds the data from a {@link User} object at a given position to a {@link ProfileViewHolder}.
      * <p>
-     * It retrieves the {@link User} object from the list based on the position and binds its
-     * data to the corresponding views in the ViewHolder. The method handles different user types
-     * ({@code ENTRANT}, {@code ORGANIZER}, {@code ADMINISTRATOR}) and displays their specific
-     * details accordingly. It also sets up a click listener for the delete button, which
-     * triggers the {@link OnDeleteListener#onDelete(User)} callback when clicked.
+     * This method is called by the RecyclerView to display the data for a specific item. It retrieves
+     * the {@code User} object from the data set and populates the views within the
+     * {@code ProfileViewHolder}. The method handles different user types (e.g., {@code ENTRANT},
+     * {@code ORGANIZER}) by casting the {@code User} object and displaying type-specific details.
+     * It also sets up a click listener on the delete button, which triggers the
+     * {@link OnDeleteListener#onDelete(User)} callback when activated.
      *
-     * @param holder   The ViewHolder which should be updated to represent the contents of the
-     *                 item at the given position in the data set.
+     * @param holder   The {@link ProfileViewHolder} that should be updated to represent the
+     *                 contents of the item at the given position.
      * @param position The position of the item within the adapter's data set.
-     * @see #onCreateViewHolder(ViewGroup, int)
      */
     @Override
     public void onBindViewHolder(@NonNull ProfileViewHolder holder, int position) {
-        User profile = profileList.get(position); // Use real User model
+        User profile = profileList.get(position);
 
         // Bind common data from the User object
         holder.profileName.setText(profile.getFirstName() + " " + profile.getLastName());
@@ -99,7 +116,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
             Entrant entrant = (Entrant) profile;
             holder.profilePhone.setText("Phone: " + entrant.getPhoneNumber());
             holder.profileEmail.setText("Email: " + entrant.getEmail());
-            holder.profileEventDetails.setVisibility(View.GONE); // Or show event history count
+            holder.profileEventDetails.setVisibility(View.GONE);
 
         } else if (profile.getUserType() == UserType.ORGANIZER) {
             Organizer organizer = (Organizer) profile;
@@ -109,7 +126,7 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
             holder.profileEventDetails.setVisibility(View.VISIBLE);
 
         } else { // Administrator
-            holder.profilePhone.setText("Phone: N/A"); // Administrator model doesn't have phone/email
+            holder.profilePhone.setText("Phone: N/A");
             holder.profileEmail.setText("Email: N/A");
             holder.profileEventDetails.setVisibility(View.GONE);
         }
@@ -131,11 +148,15 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
     }
 
     /**
-     * A ViewHolder class that describes an item view and metadata about its place within the RecyclerView.
-     * It holds the UI components for a single profile item in the list, such as the user's name,
-     * role, contact information, and a delete button. This class is responsible for finding and
-     * caching the views from the layout file {@code fragment_admin_item_profile_card.xml} to avoid
-     * repeated and costly {@code findViewById()} calls.
+     * A ViewHolder that describes an item view and metadata about its place within the RecyclerView.
+     * <p>
+     * This class holds the UI components for a single profile item in the list, such as the user's name,
+     * role, contact information, and a delete button. It is responsible for finding and
+     * caching the views from the layout file ({@code fragment_admin_item_profile_card.xml}) to avoid
+     * repeated and costly {@code findViewById()} calls, improving performance.
+     *
+     * @see RecyclerView.ViewHolder
+     * @see R.layout#fragment_admin_item_profile_card
      */
     public static class ProfileViewHolder extends RecyclerView.ViewHolder {
         TextView profileName, profileRole, profilePhone, profileEmail, profileEventDetails;
@@ -143,10 +164,19 @@ public class AdminProfilesAdapter extends RecyclerView.Adapter<AdminProfilesAdap
 
         /**
          * Constructor for the ProfileViewHolder.
+         * <p>
          * Initializes the views for a profile card item within the RecyclerView. It finds and
-         * holds references to the UI components (TextViews and ImageView) in the item's layout.
+         * holds references to the UI components (TextViews and ImageView) in the item's layout,
+         * which is inflated from {@code R.layout.fragment_admin_item_profile_card}. This avoids
+         * repeated {@code findViewById()} calls, improving performance.
          *
          * @param itemView The View for a single item in the RecyclerView, representing a user profile card.
+         * @see R.id#profile_name
+         * @see R.id#profile_role
+         * @see R.id#profile_phone
+         * @see R.id#profile_email
+         * @see R.id#profile_event_details
+         * @see R.id#delete_button
          */
         public ProfileViewHolder(@NonNull View itemView) {
             super(itemView);

@@ -7,15 +7,15 @@ import android.widget.Button;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.example.zypherevent.Database; // Import Database
-import com.example.zypherevent.Notification; // Import REAL Notification
-import com.example.zypherevent.R; // Import R
+import com.example.zypherevent.Database;
+import com.example.zypherevent.Notification;
+import com.example.zypherevent.R;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author Arunavo Dutta
- * @version 2.0
+ * @version 2.1 (Added lifecycle checks to prevent crashes)
  * @see AdminBaseListFragment
  * @see Notification
  * @see AdminNotificationLogAdapter
@@ -56,6 +56,7 @@ public class AdminNotificationLogFragment extends AdminBaseListFragment {
         // --- REFRESH BUTTON LOGIC ---
         refreshButton = view.findViewById(R.id.refresh_button);
         refreshButton.setOnClickListener(v -> {
+            // Safe to use getContext(), this is an immediate user click
             Toast.makeText(getContext(), "Refreshing list...", Toast.LENGTH_SHORT).show();
             loadLogs();
         });
@@ -79,6 +80,14 @@ public class AdminNotificationLogFragment extends AdminBaseListFragment {
         Log.d(TAG, "Attempting to query 'notifications' collection...");
 
         db.getAllNotifications().addOnCompleteListener(task -> {
+
+            // This prevents a crash if the user navigates away
+            // before the server responds.
+            if (!isAdded() || getContext() == null) {
+                Log.w(TAG, "loadLogs callback received, but fragment is detached.");
+                return;
+            }
+
             if (task.isSuccessful()) {
                 List<Notification> fetchedLogs = task.getResult();
 

@@ -14,9 +14,16 @@ import com.example.zypherevent.R;
 /**
  * @author Arunavo Dutta
  * @version 1.0
- * @see res/layout/fragment_admin_fragment_list_page.xml
- * A base fragment for all admin list pages.
- * It inflates the list layout and sets up the RecyclerView.
+ * An abstract base class for fragments that display a list of items within the admin section of the application.
+ * <p>
+ * This class provides common functionality for admin-related list views, such as inflating a shared layout
+ * containing a {@link RecyclerView} and setting up the {@link LinearLayoutManager}. Subclasses are responsible
+ * for providing the specific data and adapter for the {@code RecyclerView}.
+ * <p>
+ * The layout used by this fragment is {@code R.layout.fragment_admin_fragment_list_page}.
+ *
+ * @see Fragment
+ * @see RecyclerView
  */
 
 public abstract class AdminBaseListFragment extends Fragment {
@@ -24,19 +31,19 @@ public abstract class AdminBaseListFragment extends Fragment {
     protected RecyclerView recyclerView;
 
     /**
-     * Inflates the layout for this fragment.
+     * Called to have the fragment instantiate its user interface view.
      * <p>
-     * This method is called to have the fragment instantiate its user interface view.
-     * All admin list fragments share the same layout file, {@code R.layout.fragment_admin_fragment_list_page},
-     * which is inflated here.
+     * This method inflates the shared layout for all admin list fragments,
+     * {@code R.layout.fragment_admin_fragment_list_page}. This consistent layout
+     * provides a {@link RecyclerView} for displaying lists of data.
      *
-     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
-     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
-     *                  The fragment should not add the view itself, but this can be used to generate
-     *                  the LayoutParams of the view.
+     * @param inflater           The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container          If non-null, this is the parent view that the fragment's UI should be attached to.
+     *                           The fragment should not add the view itself, but this can be used to generate
+     *                           the LayoutParams of the view.
      * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous
      *                           saved state as given here.
-     * @return Return the View for the fragment's UI, or null.
+     * @return Returns the inflated {@link View} for the fragment's UI.
      */
     @Nullable
     @Override
@@ -47,22 +54,21 @@ public abstract class AdminBaseListFragment extends Fragment {
 
     /**
      * Called immediately after {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}
-     * has returned, but before any saved state has been restored in to the view.
-     * This gives subclasses a chance to initialize themselves once
-     * they know their view hierarchy has been completely created.
+     * has returned, but before any saved state has been restored into the view.
+     * This method initializes the {@link RecyclerView} for the list display.
      * <p>
-     * In this base implementation, it finds the RecyclerView from the inflated view
-     * and sets up its LayoutManager.
+     * It finds the {@code RecyclerView} by its ID from the inflated view and sets a
+     * {@link LinearLayoutManager}. Subclasses are expected to set their own adapters
+     * on the {@code recyclerView} field.
      *
      * @param view The View returned by {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
      * @param savedInstanceState If non-null, this fragment is being re-constructed
-     * from a previous saved state as given in the Bundle.
+     *                           from a previous saved state as given here.
      */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Find the RecyclerView and set it up
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
     }

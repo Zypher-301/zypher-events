@@ -14,7 +14,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -315,17 +318,26 @@ public class Database {
         });
     }
 
+
     /**
      * Added by Arunavo Dutta
      * Retrieves all notification documents from the Firestore "notifications" collection.
      * <p>
-     * This method fetches all documents in the collection and converts them into a list
-     * of {@link Notification} objects. If the fetch operation fails, the task will
-     * complete with an exception.
+     * This method asynchronously fetches all documents in the collection. To ensure robustness
+     * against malformed data in Firestore, it manually parses each document instead of using
+     * automatic deserialization. This approach prevents the entire operation from failing if a
+     * single document is missing a field, such as the primitive boolean {@code dismissed},
+     * by providing a safe default (false).
+     * <p>
+     * If a document is missing its essential {@code notificationID}, it is considered invalid
+     * and will be skipped. Any other parsing errors for a single document will be logged,
+     * and the process will continue with the next document.
      *
      * @return A {@code Task<List<Notification>>} that, upon successful completion, contains a list
-     *         of all {@code Notification} objects from the database. The list will be empty
-     *         if the collection is empty.
+     *         of all valid {@code Notification} objects from the database. The list will be empty
+     *         if the collection contains no documents or if no documents could be successfully parsed.
+     *         If the initial fetch from Firestore fails, the task will complete with an exception.
+     * @author Arunavo Dutta
      */
     public Task<List<Notification>> getAllNotifications() {
         return notificationCollection
@@ -335,21 +347,56 @@ public class Database {
                         Log.e("Database", "Error getting notifications", task.getException());
                         throw task.getException();
                     }
-                    // Automatically convert all documents to Notification objects
-                    return task.getResult().toObjects(Notification.class);
+
+                    ArrayList<Notification> notificationList = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        try {
+                            // Get all fields from Firebase.
+                            Long id = doc.getLong("notificationID");
+                            if (id == null) {
+                                // A notification without an ID is invalid, skip it.
+                                Log.e("Database", "Skipping notification with null ID: " + doc.getId());
+                                continue;
+                            }
+                            String sender = doc.getString("sendingUserHardwareID");
+                            String receiver = doc.getString("receivingUserHardwareID");
+                            String header = doc.getString("notificationHeader");
+                            String body = doc.getString("notificationBody");
+
+                            // Use the main constructor to build the object
+                            Notification notification = new Notification(id, sender, receiver, header, body);
+
+                            // This prevents a crash if the field is missing or null.
+                            boolean dismissed = doc.contains("dismissed") ? doc.getBoolean("dismissed") : false;
+                            notification.setDismissed(dismissed);
+
+                            // Add the successfully parsed notification to the list
+                            notificationList.add(notification);
+
+                        } catch (Exception e) {
+                            // If one document is malformed, log it and continue.
+                            Log.e("Database", "Failed to parse notification: " + doc.getId(), e);
+                        }
+                    }
+
+                    return notificationList;
                 });
     }
 
     /**
      * Added by Arunavo Dutta
      * Retrieves all event documents from the Firestore "events" collection.
-     * This method returns a Task that, upon completion, provides a {@code QuerySnapshot}
-     * containing all documents in the "events" collection. To get a list of {@code Event}
-     * objects, you can iterate through the snapshot's documents and convert each one
-     * to an {@code Event} object.
+     * <p>
+     * This method asynchronously fetches all documents from the "events" collection.
+     * The result is a {@code Task} that, upon completion, provides a {@link com.google.firebase.firestore.QuerySnapshot}.
+     * The snapshot contains all event documents, which can then be iterated over and
+     * converted into {@link Event} objects. This approach is safer for handling potential
+     * data inconsistencies, as it allows for manual parsing of each document.
      *
      * @return A {@code Task<QuerySnapshot>} that resolves with the query result. The task
-     *         will fail if the data cannot be fetched.
+     *         will fail with an exception if the data cannot be fetched.
+     * @see #getAllEventsList() for a simpler but less safe alternative.
      */
     public Task<com.google.firebase.firestore.QuerySnapshot> getAllEvents() {
         return eventsCollection.get();
@@ -358,13 +405,92 @@ public class Database {
 
     /**
      * Added by Arunavo Dutta
-     * Retrieves all event documents from the Firestore "events" collection.
+     * Manually parses a list of HashMaps from Firestore into a proper ArrayList of Entrants.
      * <p>
-     * FOR ENTRANT: Returns a simple, automatically converted List<Event>.
-     * This is less safe (will fail if *any* document has bad data) but
-     * is much simpler to use in the fragment.
+     * This helper method is crucial for safely handling lists of complex objects retrieved from
+     * Firestore. When Firestore returns an array of objects (like the `waitListEntrants` in an
+     * event), it deserializes it into a {@code List<HashMap<String, Object>>} rather than the
+     * desired {@code ArrayList<Entrant>}. Attempting to cast this directly will result in a
+     * {@code ClassCastException}.
+     * <p>
+     * This method iterates through the raw list, treating each item as a HashMap. It then
+     * extracts the values for each field, constructs a new {@link Entrant} object, and adds it
+     * to a new, properly typed list. It includes robust checks to handle missing or null fields
+     * (e.g., providing default values for booleans) and catches exceptions to ensure that one
+     * malformed entrant object doesn't cause the entire parsing process to fail.
      *
-     * @return A {@code Task<List<Event>>} that resolves with a list of all Event objects.
+     * @param rawList The raw list object retrieved from Firestore, expected to be a {@code List}
+     *                of {@code HashMap} objects, where each map represents an entrant.
+     * @return A new, properly typed {@code ArrayList<Entrant>}. If the input is not a list or is
+     *         null, an empty list is returned. Malformed items within the list are skipped.
+     */
+    private ArrayList<Entrant> parseEntrantList(Object rawList) {
+        ArrayList<Entrant> entrantList = new ArrayList<>();
+
+        // Check if the list is null or not the expected type
+        if (!(rawList instanceof List)) {
+            return entrantList; // Return empty list
+        }
+
+        List<?> rawEntrantList = (List<?>) rawList;
+        for (Object item : rawEntrantList) {
+            // Check if the item in the list is a HashMap
+            if (item instanceof HashMap) {
+                try {
+                    HashMap<String, Object> map = (HashMap<String, Object>) item;
+
+                    // Get all fields from the map
+                    String hardwareID = (String) map.get("hardwareID");
+                    String firstName = (String) map.get("firstName");
+                    String lastName = (String) map.get("lastName");
+                    String email = (String) map.get("email");
+                    String phone = (String) map.get("phoneNumber");
+
+                    // Default useGeolocation to false if missing
+                    boolean useGeo = map.containsKey("useGeolocation") ? (Boolean) map.get("useGeolocation") : false;
+
+                    // Default wantsNotifications to true if missing
+                    boolean wantsNotifs = map.containsKey("wantsNotifications") ? (Boolean) map.get("wantsNotifications") : true;
+
+                    // Create the Entrant object
+                    Entrant entrant = new Entrant(hardwareID, firstName, lastName, email, phone, useGeo);
+                    entrant.setWantsNotifications(wantsNotifs);
+
+                    entrantList.add(entrant);
+
+                } catch (Exception e) {
+                    // Log and skip any malformed entrant
+                    Log.e("Database", "Failed to parse one entrant from list", e);
+                }
+            }
+        }
+        return entrantList;
+    }
+
+
+
+    /**
+     * Added by Arunavo Dutta
+     * Retrieves all event documents from the Firestore "events" collection and converts them
+     * into a list of {@link Event} objects.
+     * <p>
+     * This method has been updated to manually parse each event document from Firestore
+     * rather than relying on automatic deserialization with {@code .toObject(Event.class)}.
+     * This robust approach provides several key benefits:
+     * <ul>
+     * <li><b>Date Handling:</b> It correctly handles date fields stored as strings in Firestore
+     * (e.g., "2025-10-20") by using the {@link Utils#createWholeDayDate(String)} helper
+     * method to convert them into proper {@link Date} objects as required by the {@link Event} model.</li>
+     * <li><b>Casting Safety:</b> It resolves a critical {@code ClassCastException} that occurs when
+     * Firestore returns a list of entrants as an {@code ArrayList<HashMap>} instead of an
+     * {@code ArrayList<Entrant>}. By using the {@link #parseEntrantList(Object)} helper, it ensures type safety.</li>
+     * <li><b>Error Isolation:</b> If a single event document is malformed or missing a field, this
+     * method will log the error and skip that document, allowing the rest of the valid
+     * events to be loaded successfully. This prevents one bad entry from crashing the entire fetch operation.</li>
+     * </ul>
+     *
+     * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
+     * of all valid {@link Event} objects from the database. The list will be empty if the
      */
     public Task<List<Event>> getAllEventsList() {
         return eventsCollection.get()
@@ -373,43 +499,227 @@ public class Database {
                         Log.e("Database", "Error getting events list", task.getException());
                         throw task.getException();
                     }
-                    // Automatically convert all documents to Event objects
-                    return task.getResult().toObjects(Event.class);
+
+                    ArrayList<Event> eventList = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        try {
+
+                            Long uniqueEventID = doc.getLong("uniqueEventID");
+                            String eventName = doc.getString("eventName");
+                            String eventDescription = doc.getString("eventDescription");
+                            String location = doc.getString("location");
+                            String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
+                            String posterURL = doc.getString("posterURL");
+
+                            Date startTime = doc.getDate("startTime");
+                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationEndTime = doc.getDate("registrationEndTime");
+
+                            Event event = new Event(
+                                    uniqueEventID,
+                                    eventName,
+                                    eventDescription,
+                                    startTime,
+                                    location,
+                                    registrationStartTime,
+                                    registrationEndTime,
+                                    eventOrganizerHardwareID,
+                                    posterURL
+                            );
+
+                            if (doc.contains("waitlistLimit")) {
+                                Long limitLong = doc.getLong("waitlistLimit");
+                                if (limitLong != null) {
+                                    event.setWaitlistLimit(limitLong.intValue());
+                                }
+                            }
+
+                            ArrayList<Entrant> waitList = parseEntrantList(doc.get("waitListEntrants"));
+                            ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
+                            ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+
+                            event.setWaitListEntrants(waitList);
+                            event.setAcceptedEntrants(acceptedList);
+                            event.setDeclinedEntrants(declinedList);
+
+                            eventList.add(event);
+
+                        } catch (Exception e) {
+
+                            Log.e("Database", "Failed to parse event: " + doc.getId(), e);
+                        }
+                    }
+                    return eventList;
+                });
+    }
+
+    /**
+     * Retrieves all event documents from the Firestore "events" collection that were created
+     * by a specific organizer, identified by their hardware ID.
+     * <p>
+     * This method queries the events collection for events where the {@code eventOrganizerHardwareID}
+     * field matches the provided organizer hardware ID. It manually parses each event document
+     * following the same robust pattern as {@link #getAllEventsList()} to handle:
+     * <ul>
+     * <li><b>Date Handling:</b> Converts date strings (yyyy-MM-dd) to Date objects using {@link Utils#createWholeDayDate(String)}</li>
+     * <li><b>Casting Safety:</b> Uses {@link #parseEntrantList(Object)} to safely convert entrant lists from HashMaps</li>
+     * <li><b>Error Isolation:</b> Skips malformed documents and continues processing valid ones</li>
+     * </ul>
+     *
+     * @param organizerHardwareID The hardware ID of the organizer whose events should be retrieved
+     * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
+     *         of all valid {@code Event} objects created by the specified organizer. The list will
+     *         be empty if the organizer has no events or if no events could be successfully parsed.
+     *         The task will fail if the initial query fails.
+     */
+    public Task<List<Event>> getEventsByOrganizer(String organizerHardwareID) {
+        return eventsCollection
+                .whereEqualTo("eventOrganizerHardwareID", organizerHardwareID)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting organizer events", task.getException());
+                        throw task.getException();
+                    }
+
+                    ArrayList<Event> eventList = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        try {
+                            Long uniqueEventID = doc.getLong("uniqueEventID");
+                            String eventName = doc.getString("eventName");
+                            String eventDescription = doc.getString("eventDescription");
+                            String location = doc.getString("location");
+                            String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
+                            String posterURL = doc.getString("posterURL");
+
+                            Date startTime = doc.getDate("startTime");
+                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationEndTime = doc.getDate("registrationEndTime");
+
+                            Event event = new Event(
+                                    uniqueEventID,
+                                    eventName,
+                                    eventDescription,
+                                    startTime,
+                                    location,
+                                    registrationStartTime,
+                                    registrationEndTime,
+                                    eventOrganizerHardwareID,
+                                    posterURL
+                            );
+
+                            if (doc.contains("waitlistLimit")) {
+                                Long limitLong = doc.getLong("waitlistLimit");
+                                if (limitLong != null) {
+                                    event.setWaitlistLimit(limitLong.intValue());
+                                }
+                            }
+
+                            ArrayList<Entrant> waitList = parseEntrantList(doc.get("waitListEntrants"));
+                            ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
+                            ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+
+                            event.setWaitListEntrants(waitList);
+                            event.setAcceptedEntrants(acceptedList);
+                            event.setDeclinedEntrants(declinedList);
+
+                            eventList.add(event);
+
+                        } catch (Exception e) {
+                            Log.e("Database", "Failed to parse event: " + doc.getId(), e);
+                        }
+                    }
+                    return eventList;
                 });
     }
 
 
     /**
      * Added by Arunavo Dutta
-     * Retrieves all user documents from the Firestore "users" collection.
-     * This method fetches all documents and correctly deserializes each one into its
-     * specific subclass (e.g., {@link Entrant}, {@link Organizer}, {@link Administrator})
-     * based on the {@code userType} field stored in Firestore.
+     * Retrieves all user documents from the Firestore "users" collection and deserializes them
+     * into their specific subclasses.
+     * <p>
+     * This method fetches all documents from the "users" collection. It then inspects the
+     * {@code userType} field of each document to determine the correct user subclass
+     * (e.g., {@link Entrant}, {@link Organizer}, or {@link Administrator}) and deserializes
+     * the document into an object of that specific type. This ensures that the returned list
+     * contains fully-typed user objects.
+     * <p>
+     * This method manually parses each user to prevent the app from crashing if a single user document
+     * in Firebase is malformed, has null fields, or is missing a field that the automatic
+     * {@code .toObject()} converter would expect. This robust approach ensures that one bad profile
+     * does not prevent the entire list from loading.
      *
-     * @return A {@code Task<List<User>>} that resolves with a list containing all user objects.
-     *         The task will fail if the data cannot be fetched or parsed.
+     * @return A {@code Task<List<User>>} that, upon successful completion, contains a list of
+     *         all user objects from the database, each cast to its appropriate subclass. If the
+     *         initial data fetch fails, the task will complete with an exception. Malformed
+     *         individual documents will be logged and skipped.
      */
     public Task<List<User>> getAllUsers() {
         return usersCollection
                 .get()
                 .continueWith(task -> {
                     if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting users list", task.getException());
                         throw task.getException();
                     }
 
-                    // Complex because we must deserialize into subtypes
                     ArrayList<User> userList = new ArrayList<>();
-                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
-                        User baseUser = doc.toObject(User.class);
-                        if (baseUser == null) continue;
 
-                        // Re-deserialize into the correct subclass
-                        if (baseUser.getUserType() == UserType.ENTRANT) {
-                            userList.add(doc.toObject(Entrant.class));
-                        } else if (baseUser.getUserType() == UserType.ORGANIZER) {
-                            userList.add(doc.toObject(Organizer.class));
-                        } else if (baseUser.getUserType() == UserType.ADMINISTRATOR) {
-                            userList.add(doc.toObject(Administrator.class));
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        try {
+                            // Get the type string from Firebase.
+                            String userTypeStr = doc.getString("userType");
+                            if (userTypeStr == null) {
+                                Log.e("Database", "Skipping user with null userType: " + doc.getId());
+                                continue;
+                            }
+
+                            // Convert string to Enum
+                            UserType type = UserType.valueOf(userTypeStr);
+
+                            // Get base fields common to all users
+                            String hardwareID = doc.getString("hardwareID");
+                            String firstName = doc.getString("firstName");
+                            String lastName = doc.getString("lastName");
+
+                            // Build the correct object based on its type
+                            switch (type) {
+                                case ENTRANT:
+                                    // Get all Entrant-specific fields
+                                    String email = doc.getString("email");
+                                    String phone = doc.getString("phoneNumber");
+
+                                    // Default useGeolocation to false if missing
+                                    boolean useGeo = doc.contains("useGeolocation") ? doc.getBoolean("useGeolocation") : false;
+                                    boolean wantsNotifs = doc.contains("wantsNotifications") ? doc.getBoolean("wantsNotifications") : true;
+
+                                    // Create the object using its constructor
+                                    Entrant entrant = new Entrant(hardwareID, firstName, lastName, email, phone, useGeo);
+                                    entrant.setWantsNotifications(wantsNotifs);
+
+                                    userList.add(entrant);
+                                    break;
+
+                                case ORGANIZER:
+                                    // Create the object
+                                    Organizer organizer = new Organizer(hardwareID, firstName, lastName);
+
+                                    userList.add(organizer);
+                                    break;
+
+                                case ADMINISTRATOR:
+                                    // Create the object
+                                    Administrator admin = new Administrator(hardwareID, firstName, lastName);
+                                    userList.add(admin);
+                                    break;
+                            }
+
+                        } catch (Exception e) {
+                            // If one document is malformed, log it and continue.
+                            Log.e("Database", "Failed to parse user: " + doc.getId(), e);
                         }
                     }
                     return userList;
@@ -417,39 +727,175 @@ public class Database {
     }
 
 
-    /**
-     * Added by Arunavo Dutta
-     * Adds an entrant to the waitlist of a specific event.
-     * <p>
-     * This method updates the "waitListEntrants" array field in the corresponding
-     * event document in Firestore by adding the provided entrant object. It uses
-     * an atomic `arrayUnion` operation to prevent duplicate entries.
-     *
-     * @param eventId The unique identifier of the event to which the entrant will be added.
-     * @param entrant The entrant object to be added to the event's waitlist.
-     * @return A {@code Task<Void>} representing the asynchronous database operation. The task
-     *         will complete successfully if the update is committed, or fail with an
-     *         exception if the operation is unsuccessful.
-     */
-    // Used by "Join" button
-    public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
-        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
-        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
-    }
 
     /**
      * Added by Arunavo Dutta
-     * Removes an entrant from the waitlist of a specific event.
-     * This is typically used when an entrant decides to leave an event they were waitlisted for.
+     * Adds an entrant to the waitlist for a specific event using a Firestore transaction.
+     * <p>
+     * This method atomically adds the provided entrant to the {@code waitListEntrants} array
+     * in the event's Firestore document. By using a transaction, it performs several critical
+     * server-side checks before committing the change, ensuring data integrity and enforcing business logic.
+     * This prevents race conditions where, for example, multiple users could join a waitlist that appears
+     * to have space but is already full.
+     * <p>
+     * The transaction performs the following checks:
+     * <ul>
+     *   <li>Verifies that the event exists.</li>
+     *   <li>Ensures the current time is within the event's registration window (after start and before end).</li>
+     *   <li>Checks if the waitlist has reached its capacity (if a {@code waitlistLimit} is set).</li>
+     * </ul>
+     * If all checks pass, it uses an {@code arrayUnion} operation to add the entrant, which also
+     * inherently prevents duplicate entries.
+     * <p>
+     * This method also robustly parses the event document from Firestore, correctly converting
+     * date strings to {@code Date} objects to avoid crashes from data type mismatches.
      *
-     * @param eventId The ID of the event from which to remove the entrant.
-     * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
-     * @return A {@code Task<Void>} representing the asynchronous Firestore operation.
-     */
-    // Used by "Leave" button
-    public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
+     * @param eventId The unique ID of the event to which the entrant will be added.
+     * @param entrant The {@link Entrant} object to add to the waitlist.
+     * @return A {@code Task<Void>} that completes when the transaction is successfully committed.
+     *         The task will fail with an exception if the event is not found, the registration window
+     *         is closed, the waitlist is full, or if any other transaction error occurs.
+     * @author Arunavo Dutta
+     */ // Used by "Join" button
+    public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
+        // Get reference to the event document
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
-        return eventRef.update("waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
+
+        // Run a transaction to perform server-side checks and add the entrant
+        return db.runTransaction(transaction -> {
+            // Read the event document within the transaction
+            DocumentSnapshot snapshot = transaction.get(eventRef);
+
+            if (snapshot == null || !snapshot.exists()) {
+                try {
+                    throw new Exception("Event not found!");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // Get the date strings
+            Date registrationStartTime = snapshot.getDate("registrationStartTime");
+            Date registrationEndTime = snapshot.getDate("registrationEndTime");
+
+            // Get waitlist limit
+            Integer limit = null;
+            if (snapshot.contains("waitlistLimit")) {
+                Long limitLong = snapshot.getLong("waitlistLimit");
+                if (limitLong != null) {
+                    limit = limitLong.intValue();
+                }
+            }
+
+            // Get current waitlist size
+            int waitlistSize = 0;
+            if (snapshot.contains("waitListEntrants")) {
+                List<?> rawList = (List<?>) snapshot.get("waitListEntrants");
+                if (rawList != null) {
+                    waitlistSize = rawList.size();
+                }
+            }
+
+            // Perform server-side checks
+            if (limit != null && waitlistSize >= limit) {
+                try {
+                    throw new Exception("Waitlist is full");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            Date now = new Date(); // Server's current time
+            if (registrationEndTime != null && now.after(registrationEndTime)) {
+                try {
+                    throw new Exception("This event's registration window has ended");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (registrationStartTime != null && now.before(registrationStartTime)) {
+                try {
+                    throw new Exception("This event's registration window has not yet started");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            // All checks passed, add the entrant to the waitlist
+            transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
+            return null; // Return null on success
+        });
+    }
+
+
+    /**
+     * Added by Arunavo Dutta
+     * Removes an entrant from the waitlist of a specific event using a secure transaction.
+     * <p>
+     * This method atomically removes the provided entrant from the {@code waitListEntrants} array
+     * in the specified event's Firestore document. It is typically used when an entrant chooses
+     * to leave an event they were waitlisted for.
+     * <p>
+     * To ensure data integrity and prevent race conditions, the operation is wrapped in a
+     * Firestore transaction. This transaction enforces critical server-side business logic:
+     * <ul>
+     *   <li>It verifies that the event exists before attempting any modification.</li>
+     *   <li>It checks that the current server time is within the event's active registration window,
+     *   preventing users from leaving the waitlist after the registration period has closed.</li>
+     *   <li>It manually parses date strings from Firestore using the {@code Utils} class to
+     *   avoid crashes related to date formatting.</li>
+     * </ul>
+     * If any of these checks fail, the transaction is aborted, and the task will fail with an exception,
+     * ensuring the database remains in a consistent state.
+     *
+     * @param eventId The unique identifier of the event from which the entrant will be removed.
+     * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
+     * @return A {@code Task<Void>} that completes when the transaction is successfully committed.
+     *         The task will fail with an exception if the event is not found, the registration
+     *         window is closed, or any other database error occurs.
+     */ // Used by "Leave" button
+    public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
+        // Get reference to the event document
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+
+        // Run a transaction to perform server-side checks and remove the entrant
+        return db.runTransaction(transaction -> {
+            // Read the current state of the event
+            DocumentSnapshot snapshot = transaction.get(eventRef);
+
+            if (snapshot == null || !snapshot.exists()) {
+                try {
+                    throw new Exception("Event not found!");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+
+            // Get the date strings
+            Date registrationStartTime = snapshot.getDate("registrationStartTime");
+            Date registrationEndTime = snapshot.getDate("registrationEndTime");
+
+            // Perform server-side checks
+            Date now = new Date(); // Server's current time
+            if (registrationEndTime != null && now.after(registrationEndTime)) {
+                try {
+                    throw new Exception("This event's registration window has ended");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (registrationStartTime != null && now.before(registrationStartTime)) {
+                try {
+                    throw new Exception("This event's registration window has not yet started");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // All checks passed, proceed to remove the entrant from the waitlist
+            transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
+            return null; // Return null on success
+        });
     }
 
 

@@ -186,11 +186,9 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
-        // Add entrant to the event's 'waitListEntrants' array
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create a version of the event to save to the user's profile.
                     Event eventForHistory = new Event(
                             event.getUniqueEventID(),
                             event.getEventName(),
@@ -203,10 +201,8 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getPosterURL()
                     );
 
-                    // Add the clean event to the user's local history
                     currentUser.addEventToRegisteredEventHistory(eventForHistory);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated with new event.");
@@ -215,12 +211,21 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after joining: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to save to your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error saving to profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error joining waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not join waitlist.", Toast.LENGTH_SHORT).show();
+                    String message = e.getMessage();
+                    if (message != null && (message.contains("registration window has not yet started") || message.contains("registration window has ended"))) {
+                        if (message.contains("not yet started")) {
+                            Toast.makeText(getContext(), "Registration Window Not Started", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "Registration Window Ended", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "Failed to join waitlist", Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 
@@ -248,18 +253,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
-        // Remove entrant from the event's 'waitListEntrants' array
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create an event object to find and remove
                     Event eventToRemove = new Event();
                     eventToRemove.setUniqueEventID(event.getUniqueEventID());
 
-                    // Remove the event from the user's local history
                     currentUser.removeEventFromRegisteredEventHistory(eventToRemove);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated, event removed.");
@@ -268,12 +269,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after leaving: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to update your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error leaving waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not leave waitlist.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Error leaving waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 }

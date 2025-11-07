@@ -47,13 +47,6 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.ZypherEvent.NoActionBar" />
 
-        <!--  Your lottery activity  -->
-        <activity
-            android:name=".ui.organizer.events.OrganizerLotteryActivity"
-            android:exported="false"
-            android:label="Organizer Lottery"
-            android:theme="@style/Theme.ZypherEvent.NoActionBar" />
-
     </application>
 
 </manifest>

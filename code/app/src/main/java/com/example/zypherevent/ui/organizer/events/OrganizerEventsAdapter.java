@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,7 +22,6 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
     private List<Event> eventList;
     private OnItemClickListener listener;
 
-    // The interface now has two methods
     public interface OnItemClickListener {
         void onViewEntrantsClick(Event event);
         void onMenuClick(Event event, View anchorView);
@@ -56,6 +56,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
         TextView tvTitle, tvMeta;
         Button btnViewEntrants;
         Button btnMenu;
+        ImageView imgPoster;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -63,6 +64,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
             tvMeta = itemView.findViewById(R.id.tvMeta);
             btnViewEntrants = itemView.findViewById(R.id.btnViewEntrants);
             btnMenu = itemView.findViewById(R.id.btnMenu);
+            imgPoster = itemView.findViewById(R.id.imgPoster);
         }
 
         public void bind(final Event event, final OnItemClickListener listener) {
@@ -88,9 +90,12 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
 
             tvMeta.setText(meta.toString());
 
-            // Set both listeners
+            // Set Button Listeners
             btnViewEntrants.setOnClickListener(v -> listener.onViewEntrantsClick(event));
             btnMenu.setOnClickListener(v -> listener.onMenuClick(event, v));
+
+            // Set the placeholder image
+            imgPoster.setImageResource(R.drawable.ic_images);
         }
     }
 }

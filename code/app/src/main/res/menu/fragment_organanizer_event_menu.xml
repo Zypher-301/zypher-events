@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_notifications"
+        android:title="Notifications" />
+    <item
+        android:id="@+id/action_view_qr"
+        android:title="View QR" />
+    <item
+        android:id="@+id/action_export_csv"
+        android:title="Export CSV" />
+    <item
+        android:id="@+id/action_edit_event"
+        android:title="Edit" />
+</menu>

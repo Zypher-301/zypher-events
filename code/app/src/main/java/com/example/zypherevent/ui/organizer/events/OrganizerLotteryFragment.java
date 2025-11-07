@@ -198,6 +198,9 @@ public class OrganizerLotteryFragment extends Fragment {
                     // Send notification to selected entrants
                     sendInvitationNotification(selected);
 
+                    // Send notification to denied entrants
+                    sendWaitlistNotification(denied);
+
                     Toast.makeText(getContext(), "Lottery complete! Invited " + selected.size() + " entrants.", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e -> {
@@ -222,6 +225,31 @@ public class OrganizerLotteryFragment extends Fragment {
                 db.setNotificationData(notificationID, notification)
                         .addOnSuccessListener(v ->
                             Log.d(TAG, "Invitation sent to: " + entrantID))
+                        .addOnFailureListener(e ->
+                                Log.e(TAG, "Failed to send notification to: " + entrantID, e));
+            });
+        }
+    }
+
+    /**
+     * Sends notification to the non-selected entrants
+     *
+     * @param denied List of WaitlistEntry objects that were not selected
+     */
+    private void sendWaitlistNotification(List<WaitlistEntry> denied) {
+        for (WaitlistEntry entry : denied) {
+            String entrantID = entry.getEntrant().getHardwareID();
+
+            db.getUniqueEventID().addOnSuccessListener(notificationID -> {
+                Notification notification = new Notification(notificationID, organizerID, entrantID,
+                        "Event Update",
+                        "You were not selected in "
+                                + currentEvent.getEventName() +
+                                "at this lottery run, but you will remain on the waitlist for future selections.");
+
+                db.setNotificationData(notificationID, notification)
+                        .addOnSuccessListener(v ->
+                                Log.d(TAG, "Invitation sent to: " + entrantID))
                         .addOnFailureListener(e ->
                                 Log.e(TAG, "Failed to send notification to: " + entrantID, e));
             });

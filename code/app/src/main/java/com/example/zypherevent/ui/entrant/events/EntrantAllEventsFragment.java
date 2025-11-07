@@ -215,12 +215,21 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after joining: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to save to your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error saving to profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error joining waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not join waitlist.", Toast.LENGTH_SHORT).show();
+                    String message = e.getMessage();
+                    if (message != null && (message.contains("registration window has not yet started") || message.contains("registration window has ended"))) {
+                        if (message.contains("not yet started")) {
+                            Toast.makeText(getContext(), "Registration Window Not Started", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "Registration Window Ended", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "Failed to join waitlist", Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 
@@ -268,12 +277,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after leaving: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to update your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error leaving waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not leave waitlist.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Error leaving waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 }

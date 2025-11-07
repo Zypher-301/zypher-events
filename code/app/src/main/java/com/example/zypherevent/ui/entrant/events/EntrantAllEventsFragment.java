@@ -52,6 +52,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     private List<Event> eventList = new ArrayList<>();
     private Button refreshButton;
     private Entrant currentUser;
+    private Long highlightEventId = null;
 
     public EntrantAllEventsFragment() { }
 
@@ -108,6 +109,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
             return;
         }
 
+        // Check if we need to highlight a specific event from QR scan
+        if (getArguments() != null) {
+            highlightEventId = getArguments().getLong("highlightEventId", -1L);
+            if (highlightEventId == -1L) {
+                highlightEventId = null;
+            }
+        }
+
         recyclerView = view.findViewById(R.id.recycler_view);
         refreshButton = view.findViewById(R.id.refresh_button);
         adapter = new EntrantEventAdapter(eventList, currentUser, this);
@@ -140,6 +149,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                 eventList.clear();
                 eventList.addAll(fetchedEvents);
                 adapter.notifyDataSetChanged();
+                
+                // Scroll to and highlight the scanned event if specified
+                if (highlightEventId != null) {
+                    scrollToEvent(highlightEventId);
+                    highlightEventId = null; // Clear after use
+                }
             } else {
                 Log.e(TAG, "Error running query: ", task.getException());
             }
@@ -156,11 +171,47 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      *
      * @param event The {@link Event} object corresponding to the clicked item.
      */
-    // Can be used to show event details in future
     @Override
     public void onItemClick(Event event) {
         Toast.makeText(getContext(), "Clicked on: " + event.getEventName(), Toast.LENGTH_SHORT).show();
     }
+
+    /**
+     * Scrolls to and highlights a specific event in the list.
+     * Called after scanning a QR code to show the user which event was scanned.
+     * 
+     * @param eventId The unique ID of the event to highlight
+     */
+    private void scrollToEvent(Long eventId) {
+        if (eventId == null) {
+            Toast.makeText(getContext(), "Invalid event ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Find the event position
+        int position = -1;
+        for (int i = 0; i < eventList.size(); i++) {
+            if (eventList.get(i).getUniqueEventID().equals(eventId)) {
+                position = i;
+                break;
+            }
+        }
+
+        // Scroll to it or show not found message
+        if (position != -1) {
+            final int finalPosition = position;
+            recyclerView.post(() -> {
+                recyclerView.smoothScrollToPosition(finalPosition);
+                Toast.makeText(getContext(),
+                        "Found: " + eventList.get(finalPosition).getEventName(),
+                        Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            Toast.makeText(getContext(), "Event not found in current list",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     /**
      * Added by Arunavo Dutta

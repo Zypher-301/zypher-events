@@ -834,11 +834,14 @@ public class Database {
                 }
             }
 
-            // Get current waitlist from the snapshot
-            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
-
             // Get current waitlist size
-            int waitlistSize = currentWaitlist.size();
+            int waitlistSize = 0;
+            if (snapshot.contains("waitListEntrants")) {
+                List<?> rawList = (List<?>) snapshot.get("waitListEntrants");
+                if (rawList != null) {
+                    waitlistSize = rawList.size();
+                }
+            }
 
             // Perform server-side checks
             if (limit != null && waitlistSize >= limit) {
@@ -852,8 +855,8 @@ public class Database {
             if (registrationStartTime != null && now.before(registrationStartTime)) {
                 throw new RuntimeException("Registration window has not yet started");
             }
-
-            // Check if entrant already exists on waitlist
+            // Check if entrant already exists on waitlist (arrayUnion won't work correctly with null timestamp)
+            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
             boolean alreadyExists = false;
             for (WaitlistEntry existingEntry : currentWaitlist) {
                 if (existingEntry.getEntrant() != null && existingEntry.getEntrant().equals(entrant)) {
@@ -863,14 +866,10 @@ public class Database {
             }
 
             if (!alreadyExists) {
-                // FIX: Create a new WaitlistEntry with the current date and add it to the list manually
-                WaitlistEntry entry = new WaitlistEntry(entrant, new Date()); // Pass the current time directly
-                currentWaitlist.add(entry);
-
-                // FIX: Update the entire field with the modified list instead of using arrayUnion
-                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
+                WaitlistEntry entry = new WaitlistEntry(entrant);
+                // Add the entry to the waitlist
+                transaction.update(eventRef, "waitListEntrants", FieldValue.arrayUnion(entry));
             }
-
             return null; // Return null on success
         });
     }

@@ -34,11 +34,11 @@ public class AdminImagesFragment extends AdminBaseListFragment {
         super.onViewCreated(view, savedInstanceState);
 
         List<AdminImage> images = new ArrayList<>();
-        SimpleDateFormat formatter = new SimpleDateFormat("d'st' MMMM, yyyy", Locale.ENGLISH);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 
         try {
-            images.add(new AdminImage("img1", "http://example.com/amy.jpg", "amy.mcd@email.com", formatter.parse("23rd June, 2025")));
-            images.add(new AdminImage("img2", "http://example.com/swim.jpg", "swim.center@email.com", formatter.parse("24th June, 2025")));
+            images.add(new AdminImage("img1", "https://picsum.photos/seed/amy/400/300", "amy.mcd@email.com", formatter.parse("2025-06-23")));
+            images.add(new AdminImage("img2", "https://picsum.photos/seed/swim/400/300", "swim.center@email.com", formatter.parse("2025-06-24")));
         } catch (ParseException e) {
             // TODO: Handle exception, perhaps show an error message to the user
             e.printStackTrace();

@@ -814,11 +814,7 @@ public class Database {
             DocumentSnapshot snapshot = transaction.get(eventRef);
 
             if (snapshot == null || !snapshot.exists()) {
-                try {
-                    throw new Exception("Event not found!");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Event not found");
             }
 
             // Get the date strings
@@ -845,27 +841,15 @@ public class Database {
 
             // Perform server-side checks
             if (limit != null && waitlistSize >= limit) {
-                try {
-                    throw new Exception("Waitlist is full");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Waitlist is full");
             }
 
             Date now = new Date(); // Server's current time
             if (registrationEndTime != null && now.after(registrationEndTime)) {
-                try {
-                    throw new Exception("This event's registration window has ended");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Registration window has ended");
             }
             if (registrationStartTime != null && now.before(registrationStartTime)) {
-                try {
-                    throw new Exception("This event's registration window has not yet started");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Registration window has not yet started");
             }
             // Check if entrant already exists on waitlist (arrayUnion won't work correctly with null timestamp)
             ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
@@ -929,13 +913,8 @@ public class Database {
             DocumentSnapshot snapshot = transaction.get(eventRef);
 
             if (snapshot == null || !snapshot.exists()) {
-                try {
-                    throw new Exception("Event not found!");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Event not found");
             }
-
 
             // Get the date strings
             Date registrationStartTime = snapshot.getDate("registrationStartTime");
@@ -944,18 +923,10 @@ public class Database {
             // Perform server-side checks
             Date now = new Date(); // Server's current time
             if (registrationEndTime != null && now.after(registrationEndTime)) {
-                try {
-                    throw new Exception("This event's registration window has ended");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Registration window has ended");
             }
             if (registrationStartTime != null && now.before(registrationStartTime)) {
-                try {
-                    throw new Exception("This event's registration window has not yet started");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                throw new RuntimeException("Registration window has not yet started");
             }
 
             // All checks passed, remove matching WaitlistEntry (by entrant) and write back the list

@@ -156,7 +156,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 Toast.makeText(getContext(), "Export CSV for " + event.getEventName(), Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.action_edit_event) {
-                Toast.makeText(getContext(), "Edit " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                showEditEventDialog(event);
                 return true;
             }
             return false;
@@ -212,6 +212,17 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Create Event");
+
+        // Initially hide limit_num if switch is off
+        limitNum.setVisibility(switchLimit.isChecked() ? View.VISIBLE : View.GONE);
+        
+        // Add listener to show/hide limit field based on switch
+        switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            if (!isChecked) {
+                limitNum.setText(""); // Clear the field when unchecked
+            }
+        });
 
         AlertDialog dialog = builder.create();
 
@@ -344,6 +355,181 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                             Toast.LENGTH_SHORT).show();
                 }
             });
+        });
+    }
+
+    private void showEditEventDialog(Event event) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        LayoutInflater inflater = requireActivity().getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.popup_organizer_new_or_edit_event, null);
+        builder.setView(dialogView);
+
+        EditText editName = dialogView.findViewById(R.id.edit_name);
+        EditText editTime = dialogView.findViewById(R.id.edit_time);
+        EditText editLocation = dialogView.findViewById(R.id.edit_location);
+        EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
+        EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
+        EditText editDetails = dialogView.findViewById(R.id.edit_details);
+        Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
+        EditText limitNum = dialogView.findViewById(R.id.limit_num);
+        Button saveButton = dialogView.findViewById(R.id.save);
+
+        TextView label = dialogView.findViewById(R.id.label1);
+        label.setText("Edit Event");
+
+        // Populate fields with existing event data
+        editName.setText(event.getEventName());
+        if (event.getStartTime() != null) {
+            editTime.setText(Utils.formatDateForDisplay(event.getStartTime()));
+        }
+        editLocation.setText(event.getLocation());
+        if (event.getRegistrationStartTime() != null) {
+            editRegStart.setText(Utils.formatDateForDisplay(event.getRegistrationStartTime()));
+        }
+        if (event.getRegistrationEndTime() != null) {
+            editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
+        }
+        editDetails.setText(event.getEventDescription());
+        
+        // Set waitlist limit fields
+        Integer currentLimit = event.getWaitlistLimit();
+        if (currentLimit != null) {
+            switchLimit.setChecked(true);
+            limitNum.setText(String.valueOf(currentLimit));
+            limitNum.setVisibility(View.VISIBLE);
+        } else {
+            switchLimit.setChecked(false);
+            limitNum.setVisibility(View.GONE);
+        }
+        
+        // Add listener to show/hide limit field based on switch
+        switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            if (!isChecked) {
+                limitNum.setText(""); // Clear the field when unchecked
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+
+        saveButton.setOnClickListener(v -> {
+            String eventName = editName.getText().toString().trim();
+            String startTimeStr = editTime.getText().toString().trim();
+            String location = editLocation.getText().toString().trim();
+            String regStartStr = editRegStart.getText().toString().trim();
+            String regEndStr = editRegEnd.getText().toString().trim();
+            String description = editDetails.getText().toString().trim();
+            boolean hasLimit = switchLimit.isChecked();
+            String limitStr = limitNum.getText().toString().trim();
+
+            if (TextUtils.isEmpty(eventName)) {
+                Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (TextUtils.isEmpty(startTimeStr)) {
+                Toast.makeText(getContext(), "Event start time is required (format: yyyy-MM-dd)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (TextUtils.isEmpty(location)) {
+                Toast.makeText(getContext(), "Event location is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (TextUtils.isEmpty(regStartStr)) {
+                Toast.makeText(getContext(), "Registration start time is required (format: yyyy-MM-dd)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (TextUtils.isEmpty(regEndStr)) {
+                Toast.makeText(getContext(), "Registration end time is required (format: yyyy-MM-dd)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (hasLimit && TextUtils.isEmpty(limitStr)) {
+                Toast.makeText(getContext(), "Please enter a waitlist limit number", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Date startTime;
+            Date registrationStartTime;
+            Date registrationEndTime;
+
+            try {
+                startTime = Utils.createWholeDayDate(startTimeStr);
+                registrationStartTime = Utils.createWholeDayDate(regStartStr);
+                registrationEndTime = Utils.createWholeDayDate(regEndStr);
+            } catch (ParseException e) {
+                Toast.makeText(getContext(), "Invalid date format. Please use yyyy-MM-dd", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Date parsing error", e);
+                return;
+            }
+
+            if (registrationStartTime != null && registrationEndTime != null &&
+                    registrationStartTime.after(registrationEndTime)) {
+                Toast.makeText(getContext(), "Registration start time must be before end time", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (startTime != null && registrationEndTime != null &&
+                    (startTime.before(registrationEndTime) || startTime.equals(registrationEndTime))) {
+                Toast.makeText(getContext(), "Event start time should be after registration end time", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Integer waitlistLimit = null;
+            if (hasLimit && !TextUtils.isEmpty(limitStr)) {
+                try {
+                    int limit = Integer.parseInt(limitStr);
+                    if (limit <= 0) {
+                        Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    // Check if new limit is less than current waitlist size
+                    int currentWaitlistSize = event.getWaitListEntrants() != null ? event.getWaitListEntrants().size() : 0;
+                    if (limit < currentWaitlistSize) {
+                        Toast.makeText(getContext(), "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    waitlistLimit = limit;
+                } catch (NumberFormatException e) {
+                    Toast.makeText(getContext(), "Invalid waitlist limit number", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
+                    registrationStartTime, registrationEndTime, waitlistLimit);
+
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
+        Log.d(TAG, "Updating event: " + eventName);
+
+        Event updatedEvent = new Event(
+                eventId,
+                eventName,
+                description,
+                startTime,
+                location,
+                registrationStartTime,
+                registrationEndTime,
+                organizerUser.getHardwareID()
+        );
+
+        updatedEvent.setWaitlistLimit(waitlistLimit);
+
+        db.setEventData(eventId, updatedEvent).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Log.d(TAG, "Event updated successfully with ID: " + eventId);
+                Toast.makeText(getContext(), "Event updated successfully!", Toast.LENGTH_SHORT).show();
+                loadEvents();
+            } else {
+                Log.e(TAG, "Error updating event in database", task.getException());
+                Toast.makeText(getContext(), "Error updating event: " +
+                                (task.getException() != null ? task.getException().getMessage() : "Unknown error"),
+                        Toast.LENGTH_SHORT).show();
+            }
         });
     }
 

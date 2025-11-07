@@ -30,4 +30,15 @@ public class Utils {
         calendar.set(Calendar.MILLISECOND, 999);
         return calendar.getTime();
     }
+
+    /**
+     * Formats a Date object to a string in "yyyy-MM-dd" format for display.
+     * @param date the date to format
+     * @return a string representation of the date in "yyyy-MM-dd" format, or empty string if date is null
+     */
+    public static String formatDateForDisplay(Date date) {
+        if (date == null) return "";
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        return formatter.format(date);
+    }
 }

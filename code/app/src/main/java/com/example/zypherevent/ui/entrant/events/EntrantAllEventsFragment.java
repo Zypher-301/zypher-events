@@ -217,12 +217,8 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error joining waitlist", e);
                     String message = e.getMessage();
-                    if (message != null && (message.contains("registration window has not yet started") || message.contains("registration window has ended"))) {
-                        if (message.contains("not yet started")) {
-                            Toast.makeText(getContext(), "Registration Window Not Started", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(getContext(), "Registration Window Ended", Toast.LENGTH_SHORT).show();
-                        }
+                    if (message != null && !message.isEmpty()) {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(getContext(), "Failed to join waitlist", Toast.LENGTH_SHORT).show();
                     }

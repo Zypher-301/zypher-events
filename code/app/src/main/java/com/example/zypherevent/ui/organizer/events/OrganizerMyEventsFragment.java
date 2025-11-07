@@ -292,7 +292,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 entry.getEntrant().getLastName() + " for this event?");
 
         confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-            // TODO: Add your database logic here to move entrant to accepted list
+            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant());
             Toast.makeText(getContext(),
                     entry.getEntrant().getFirstName() + " accepted!",
                     Toast.LENGTH_SHORT).show();

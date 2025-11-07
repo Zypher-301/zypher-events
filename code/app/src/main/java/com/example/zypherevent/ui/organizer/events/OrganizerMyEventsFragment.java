@@ -7,22 +7,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.zypherevent.Database;
-import com.example.zypherevent.Event;
-import com.example.zypherevent.OrganizerActivity;
 import com.example.zypherevent.R;
 import com.example.zypherevent.Utils;
 import com.example.zypherevent.userTypes.Entrant;
@@ -35,17 +24,13 @@ import java.util.List;
 
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 
-    private static final String TAG = "OrganizerMyEvents";
-
-    private Database db;
-    private RecyclerView recyclerView;
-    private SwipeRefreshLayout swipeRefreshLayout;
-    private TextView emptyOrganizer;
-    private OrganizerEventsAdapter adapter;
-    private List<Event> eventList = new ArrayList<>();
-    private Organizer organizerUser;
-
-    private Button fabCreateEvent;
+/**
+ * @author Elliot Chrystal
+ *
+ * @version 1.0
+ * Basic Organizer "My Events" fragment: inflates fragment_organizer_my_events layout.
+ */
+public class OrganizerMyEventsFragment extends Fragment {
 
     public OrganizerMyEventsFragment() {
         // public no-arg constructor required
@@ -56,6 +41,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
+        // Inflate the simple Organizer "My Events" layout
         return inflater.inflate(R.layout.fragment_organizer_my_events, container, false);
     }
 

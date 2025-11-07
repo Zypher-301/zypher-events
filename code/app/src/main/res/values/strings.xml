@@ -6,7 +6,13 @@
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
-
+    <!-- sorting options in waitlist view -->
+    <string-array name="waitlist_sort_options">
+        <item>Newest First</item>
+        <item>Oldest First</item>
+        <item>Name A-Z</item>
+        <item>Name Z-A</item>
+    </string-array>
     <string name="menu_home">Home</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>

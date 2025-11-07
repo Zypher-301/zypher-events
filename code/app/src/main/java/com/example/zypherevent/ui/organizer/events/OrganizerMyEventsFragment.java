@@ -187,9 +187,30 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
-        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(waitlistEntrants);
+
+        // Create adapter with accept listener
+        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(waitlistEntrants,
+                new WaitlistEntrantAdapter.OnAcceptClickListener() {
+                    @Override
+                    public void onAcceptClick(WaitlistEntry entry, int position) {
+                        handleAcceptEntrant(event, entry, position);
+                    }
+                });
+
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         waitlistRecyclerView.setAdapter(waitlistAdapter);
+
+        // Sort buttons
+        Button btnSortNewest = dialogView.findViewById(R.id.btnSortNewest);
+        Button btnSortOldest = dialogView.findViewById(R.id.btnSortOldest);
+        Button btnSortName = dialogView.findViewById(R.id.btnSortName);
+
+        btnSortNewest.setOnClickListener(v -> waitlistAdapter.sortByNewest());
+        btnSortOldest.setOnClickListener(v -> waitlistAdapter.sortByOldest());
+        btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
+
+        // Default to newest first
+        waitlistAdapter.sortByNewest();
 
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
         runLotteryButton.setVisibility(View.GONE);
@@ -199,6 +220,29 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    /**
+     * Handle accepting an entrant from the waitlist
+     */
+    private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+        confirmBuilder.setTitle("Accept Entrant");
+        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
+                entry.getEntrant().getLastName() + " for this event?");
+
+        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+            // TODO: Add your database logic here to move entrant to accepted list
+            Toast.makeText(getContext(),
+                    entry.getEntrant().getFirstName() + " accepted!",
+                    Toast.LENGTH_SHORT).show();
+
+            // Refresh the waitlist
+            loadEvents();
+        });
+
+        confirmBuilder.setNegativeButton("Cancel", null);
+        confirmBuilder.show();
     }
 
     private void showCreateEventDialog() {
@@ -645,41 +689,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         } catch (Exception e) {
             Log.e(TAG, "Error sharing QR code", e);
             Toast.makeText(getContext(), "Failed to share QR code", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.ViewHolder> {
-        private List<WaitlistEntry> entrants;
-
-        public WaitlistEntrantAdapter(List<WaitlistEntry> entrants) {
-            this.entrants = entrants;
-        }
-
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            TextView tv = new TextView(parent.getContext());
-            tv.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            tv.setPadding(16, 16, 16, 16);
-            tv.setTextSize(16f);
-            return new ViewHolder(tv);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            WaitlistEntry entrant = entrants.get(position);
-            ((TextView) holder.itemView).setText(entrant.getEntrant().getFirstName() + " " + entrant.getEntrant().getLastName());
-        }
-
-        @Override
-        public int getItemCount() {
-            return entrants.size();
-        }
-
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public ViewHolder(@NonNull View itemView) {
-                super(itemView);
-            }
         }
     }
 }

@@ -445,4 +445,123 @@ public class DatabaseTests {
         assertNull("Non-existent user should be null", user);
         assertNull("Non-existent event should be null", evt);
     }
+
+    // WAITLIST LIMIT TESTS
+
+    /**
+     * Tests that waitlist limit is enforced in database transactions.
+     */
+    @Test
+    public void testWaitlistLimitEnforcementInDatabase() throws ExecutionException, InterruptedException, ParseException {
+        Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        testEvent = new Event(
+                newEventID,
+                "Limited Event",
+                "Test event with waitlist limit",
+                Utils.createWholeDayDate("2025-12-01"),
+                "Test Location",
+                Utils.createWholeDayDate("2025-01-01"),
+                Utils.createWholeDayDate("2025-12-31"),
+                testOrganizer.getHardwareID()
+        );
+        testEvent.setWaitlistLimit(1);
+        Tasks.await(testDatabase.setEventData(newEventID, testEvent));
+
+        // Add first entrant - should succeed
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), testEntrant));
+
+        // Try to add second entrant - should fail
+        Entrant secondEntrant = new Entrant("test-entrant-2", "Jane", "Doe", "jane@test.com", "555-0002", false);
+        try {
+            Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), secondEntrant));
+            fail("Should throw RuntimeException when waitlist is full");
+        } catch (Exception e) {
+            assertTrue("Exception should mention waitlist is full",
+                    e.getMessage() != null && e.getMessage().contains("Waitlist is full"));
+        }
+    }
+
+    /**
+     * Tests that events with null waitlist limit allow unlimited entrants.
+     */
+    @Test
+    public void testUnlimitedWaitlistInDatabase() throws ExecutionException, InterruptedException, ParseException {
+        Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        testEvent = new Event(
+                newEventID,
+                "Unlimited Event",
+                "Test event without waitlist limit",
+                Utils.createWholeDayDate("2025-12-01"),
+                "Test Location",
+                Utils.createWholeDayDate("2025-01-01"),
+                Utils.createWholeDayDate("2025-12-31"),
+                testOrganizer.getHardwareID()
+        );
+        // No limit set (null)
+        Tasks.await(testDatabase.setEventData(newEventID, testEvent));
+
+        // Add multiple entrants - all should succeed
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), testEntrant));
+        Entrant secondEntrant = new Entrant("test-entrant-2", "Jane", "Doe", "jane@test.com", "555-0002", false);
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), secondEntrant));
+
+        Event fetchedEvent = Tasks.await(testDatabase.getEvent(newEventID));
+        assertEquals("Should have 2 entrants", 2, fetchedEvent.getWaitListEntrants().size());
+    }
+
+    // REGISTRATION PERIOD TESTS
+
+    /**
+     * Tests that registration period is enforced before start time.
+     */
+    @Test
+    public void testRegistrationNotStartedInDatabase() throws ExecutionException, InterruptedException, ParseException {
+        Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        testEvent = new Event(
+                newEventID,
+                "Future Event",
+                "Registration hasn't started",
+                Utils.createWholeDayDate("2030-12-01"),
+                "Test Location",
+                Utils.createWholeDayDate("2030-11-01"),  // Future start
+                Utils.createWholeDayDate("2030-11-30"),
+                testOrganizer.getHardwareID()
+        );
+        Tasks.await(testDatabase.setEventData(newEventID, testEvent));
+
+        try {
+            Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), testEntrant));
+            fail("Should throw RuntimeException when registration hasn't started");
+        } catch (Exception e) {
+            assertTrue("Exception should mention registration window",
+                    e.getMessage() != null && e.getMessage().contains("Registration window has not yet started"));
+        }
+    }
+
+    /**
+     * Tests that registration period is enforced after end time.
+     */
+    @Test
+    public void testRegistrationEndedInDatabase() throws ExecutionException, InterruptedException, ParseException {
+        Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
+        testEvent = new Event(
+                newEventID,
+                "Past Event",
+                "Registration has ended",
+                Utils.createWholeDayDate("2020-12-01"),
+                "Test Location",
+                Utils.createWholeDayDate("2020-11-01"),
+                Utils.createWholeDayDate("2020-11-30"),  // Past end
+                testOrganizer.getHardwareID()
+        );
+        Tasks.await(testDatabase.setEventData(newEventID, testEvent));
+
+        try {
+            Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(newEventID), testEntrant));
+            fail("Should throw RuntimeException when registration has ended");
+        } catch (Exception e) {
+            assertTrue("Exception should mention registration window",
+                    e.getMessage() != null && e.getMessage().contains("Registration window has ended"));
+        }
+    }
 }

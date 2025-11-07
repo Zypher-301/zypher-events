@@ -1,7 +1,13 @@
 package com.example.zypherevent.ui.organizer.events;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -31,8 +38,10 @@ import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -85,9 +94,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            loadEvents();
-        });
+        swipeRefreshLayout.setOnRefreshListener(this::loadEvents);
 
         fabCreateEvent = view.findViewById(R.id.fabCreateEvent);
         fabCreateEvent.setOnClickListener(v -> showCreateEventDialog());
@@ -96,8 +103,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void loadEvents() {
-        Log.d(TAG, "Attempting to query events for organizer: " + organizerUser.getHardwareID());
-
         db.getEventsByOrganizer(organizerUser.getHardwareID()).addOnCompleteListener(task -> {
             if (swipeRefreshLayout != null) {
                 swipeRefreshLayout.setRefreshing(false);
@@ -140,17 +145,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     public void onMenuClick(Event event, View anchorView) {
         PopupMenu popup = new PopupMenu(getContext(), anchorView);
 
-        // Inflate your menu file
         popup.getMenuInflater().inflate(R.menu.fragment_organanizer_event_menu, popup.getMenu());
 
-        // Set a listener for menu item clicks
         popup.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_notifications) {
                 Toast.makeText(getContext(), "Notifications for " + event.getEventName(), Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.action_view_qr) {
-                Toast.makeText(getContext(), "View QR for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                showQRCodeDialog(event);
                 return true;
             } else if (id == R.id.action_export_csv) {
                 Toast.makeText(getContext(), "Export CSV for " + event.getEventName(), Toast.LENGTH_SHORT).show();
@@ -162,9 +165,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return false;
         });
 
-        // Show the menu
         popup.show();
     }
+
     private void showWaitlistDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -180,18 +183,117 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
-        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(waitlistEntrants);
+
+        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(
+                waitlistEntrants,
+                (entry, position) -> handleAcceptEntrant(event, entry, position)
+        );
+
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         waitlistRecyclerView.setAdapter(waitlistAdapter);
 
-        Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
-        runLotteryButton.setVisibility(View.GONE);
+        Button btnSortNewest = dialogView.findViewById(R.id.btnSortNewest);
+        Button btnSortOldest = dialogView.findViewById(R.id.btnSortOldest);
+        Button btnSortName = dialogView.findViewById(R.id.btnSortName);
 
+        if (btnSortNewest != null) {
+            btnSortNewest.setOnClickListener(v -> waitlistAdapter.sortByNewest());
+        }
+        if (btnSortOldest != null) {
+            btnSortOldest.setOnClickListener(v -> waitlistAdapter.sortByOldest());
+        }
+        if (btnSortName != null) {
+            btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
+        }
+
+        waitlistAdapter.sortByNewest();
+
+        Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
-        etSampleSize.setVisibility(View.GONE);
+
+        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
+
+        if (runLotteryButton != null && etSampleSize != null) {
+            runLotteryButton.setOnClickListener(v -> {
+                String input = etSampleSize.getText().toString().trim();
+                if (input.isEmpty()) {
+                    Toast.makeText(getContext(), "Please enter a number to sample", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int sampleSize;
+                try {
+                    sampleSize = Integer.parseInt(input);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(getContext(), "Invalid number", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (sampleSize <= 0) {
+                    Toast.makeText(getContext(), "Sample size must be greater than 0", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (finalWaitlistEntrants.isEmpty()) {
+                    Toast.makeText(getContext(), "No entrants in waitlist", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int n = Math.min(sampleSize, finalWaitlistEntrants.size());
+
+                List<WaitlistEntry> shuffled = new ArrayList<>(finalWaitlistEntrants);
+                Collections.shuffle(shuffled);
+
+                List<WaitlistEntry> selected = shuffled.subList(0, n);
+
+                StringBuilder sb = new StringBuilder();
+                for (WaitlistEntry entry : selected) {
+                    Entrant e = entry.getEntrant();
+                    String name;
+                    if (e != null) {
+                        String first = e.getFirstName() != null ? e.getFirstName() : "";
+                        String last = e.getLastName() != null ? e.getLastName() : "";
+                        name = (first + " " + last).trim();
+                        if (name.isEmpty()) {
+                            name = "Unnamed entrant";
+                        }
+                    } else {
+                        name = "Unknown entrant";
+                    }
+
+                    if (sb.length() > 0) sb.append(", ");
+                    sb.append(name);
+                }
+
+                Toast.makeText(
+                        getContext(),
+                        "Selected " + n + " entrant(s): " + sb.toString(),
+                        Toast.LENGTH_LONG
+                ).show();
+            });
+        }
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+        confirmBuilder.setTitle("Accept Entrant");
+        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
+                entry.getEntrant().getLastName() + " for this event?");
+
+        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+            // TODO: Add your database logic here to move entrant to accepted list
+            Toast.makeText(getContext(),
+                    entry.getEntrant().getFirstName() + " accepted!",
+                    Toast.LENGTH_SHORT).show();
+
+            loadEvents();
+        });
+
+        confirmBuilder.setNegativeButton("Cancel", null);
+        confirmBuilder.show();
     }
 
     private void showCreateEventDialog() {
@@ -213,14 +315,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Create Event");
 
-        // Initially hide limit_num if switch is off
         limitNum.setVisibility(switchLimit.isChecked() ? View.VISIBLE : View.GONE);
-        
-        // Add listener to show/hide limit field based on switch
+
         switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             if (!isChecked) {
-                limitNum.setText(""); // Clear the field when unchecked
+                limitNum.setText("");
             }
         });
 
@@ -312,7 +412,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
     private void createEvent(String eventName, String description, Date startTime, String location,
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
-        Log.d(TAG, "Creating new event: " + eventName);
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -377,7 +476,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Edit Event");
 
-        // Populate fields with existing event data
         editName.setText(event.getEventName());
         if (event.getStartTime() != null) {
             editTime.setText(Utils.formatDateForDisplay(event.getStartTime()));
@@ -390,8 +488,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
         }
         editDetails.setText(event.getEventDescription());
-        
-        // Set waitlist limit fields
+
         Integer currentLimit = event.getWaitlistLimit();
         if (currentLimit != null) {
             switchLimit.setChecked(true);
@@ -401,12 +498,11 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             switchLimit.setChecked(false);
             limitNum.setVisibility(View.GONE);
         }
-        
-        // Add listener to show/hide limit field based on switch
+
         switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             if (!isChecked) {
-                limitNum.setText(""); // Clear the field when unchecked
+                limitNum.setText("");
             }
         });
 
@@ -480,7 +576,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                         Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    // Check if new limit is less than current waitlist size
                     int currentWaitlistSize = event.getWaitListEntrants() != null ? event.getWaitListEntrants().size() : 0;
                     if (limit < currentWaitlistSize) {
                         Toast.makeText(getContext(), "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")", Toast.LENGTH_LONG).show();
@@ -533,29 +628,85 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
     }
 
-    private class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.ViewHolder> {
-        private List<WaitlistEntry> entrants;
-        public WaitlistEntrantAdapter(List<WaitlistEntry> entrants) { this.entrants = entrants; }
+    private void saveQRCodeToDownloads(Bitmap bitmap, String eventName) {
+        try {
+            String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + ".png";
 
-        @NonNull @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            TextView tv = new TextView(parent.getContext());
-            tv.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            tv.setPadding(16, 16, 16, 16);
-            tv.setTextSize(16f);
-            return new ViewHolder(tv);
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, "image/png");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+            Uri uri = requireContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                OutputStream outputStream = requireContext().getContentResolver().openOutputStream(uri);
+                if (outputStream != null) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                    outputStream.close();
+                    Toast.makeText(getContext(), "QR code saved to Downloads", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving QR code", e);
+            Toast.makeText(getContext(), "Failed to save QR code", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showQRCodeDialog(Event event) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_qr_code, null);
+
+        TextView title = dialogView.findViewById(R.id.tvQRTitle);
+        ImageView qrImageView = dialogView.findViewById(R.id.ivQRCode);
+        TextView eventIdText = dialogView.findViewById(R.id.tvEventId);
+        Button downloadButton = dialogView.findViewById(R.id.btnDownloadQR);
+        Button shareButton = dialogView.findViewById(R.id.btnShareQR);
+
+        title.setText("QR Code: " + event.getEventName());
+        eventIdText.setText("Event ID: " + event.getUniqueEventID());
+
+        Bitmap qrBitmap = Utils.generateQRCode(event.getUniqueEventID(), 512, 512);
+        if (qrBitmap != null) {
+            qrImageView.setImageBitmap(qrBitmap);
+        } else {
+            Toast.makeText(getContext(), "Failed to generate QR code", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            WaitlistEntry entrant = entrants.get(position);
-            ((TextView) holder.itemView).setText(entrant.getEntrant().getFirstName() + " " + entrant.getEntrant().getLastName());
-        }
+        downloadButton.setOnClickListener(v -> saveQRCodeToDownloads(qrBitmap, event.getEventName()));
+        shareButton.setOnClickListener(v -> shareQRCode(qrBitmap, event.getEventName()));
 
-        @Override public int getItemCount() { return entrants.size(); }
+        builder.setView(dialogView);
+        builder.setPositiveButton("Close", null);
+        builder.create().show();
+    }
 
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public ViewHolder(@NonNull View itemView) { super(itemView); }
+    private void shareQRCode(Bitmap bitmap, String eventName) {
+        try {
+            String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + ".png";
+
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+
+            Uri uri = requireContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                OutputStream outputStream = requireContext().getContentResolver().openOutputStream(uri);
+                if (outputStream != null) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                    outputStream.close();
+
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("image/png");
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, "QR Code for event: " + eventName);
+                    startActivity(Intent.createChooser(shareIntent, "Share QR Code"));
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error sharing QR code", e);
+            Toast.makeText(getContext(), "Failed to share QR code", Toast.LENGTH_SHORT).show();
         }
     }
 }

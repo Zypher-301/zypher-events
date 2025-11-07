@@ -186,11 +186,9 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
-        // Add entrant to the event's 'waitListEntrants' array
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create a version of the event to save to the user's profile.
                     Event eventForHistory = new Event(
                             event.getUniqueEventID(),
                             event.getEventName(),
@@ -203,10 +201,8 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getPosterURL()
                     );
 
-                    // Add the clean event to the user's local history
                     currentUser.addEventToRegisteredEventHistory(eventForHistory);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated with new event.");
@@ -257,18 +253,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
-        // Remove entrant from the event's 'waitListEntrants' array
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create an event object to find and remove
                     Event eventToRemove = new Event();
                     eventToRemove.setUniqueEventID(event.getUniqueEventID());
 
-                    // Remove the event from the user's local history
                     currentUser.removeEventFromRegisteredEventHistory(eventToRemove);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated, event removed.");

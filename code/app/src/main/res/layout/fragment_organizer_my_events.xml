@@ -37,15 +37,16 @@
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <Button
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabCreateEvent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_margin="16dp"
-        android:text="+"
-        android:textSize="24sp"
-        android:contentDescription="Create New Event" />
+        android:contentDescription="Create New Event"
+        app:srcCompat="@drawable/ic_add"
+        app:tint="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary" />
 
 </RelativeLayout>

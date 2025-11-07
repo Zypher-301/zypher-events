@@ -28,6 +28,7 @@ import com.example.zypherevent.R;
 import com.example.zypherevent.Utils;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     private OrganizerEventsAdapter adapter;
     private List<Event> eventList = new ArrayList<>();
     private Organizer organizerUser;
-    private Button fabCreateEvent;
+    private FloatingActionButton fabCreateEvent;
 
     public OrganizerMyEventsFragment() {
         // public no-arg constructor required

@@ -763,10 +763,9 @@ public class Database {
 
         // Run a transaction to perform server-side checks and add the entrant
         return db.runTransaction(transaction -> {
-            // Read the event document within the transaction
             DocumentSnapshot snapshot = transaction.get(eventRef);
 
-            if (snapshot == null || !snapshot.exists()) {
+            if (!snapshot.exists()) {
                 try {
                     throw new Exception("Event not found!");
                 } catch (Exception e) {
@@ -774,11 +773,26 @@ public class Database {
                 }
             }
 
-            // Get the date strings
             Date registrationStartTime = snapshot.getDate("registrationStartTime");
             Date registrationEndTime = snapshot.getDate("registrationEndTime");
+            Date now = new Date();
 
-            // Get waitlist limit
+            if (registrationStartTime != null && now.before(registrationStartTime)) {
+                try {
+                    throw new Exception("This event's registration window has not yet started");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (registrationEndTime != null && now.after(registrationEndTime)) {
+                try {
+                    throw new Exception("This event's registration window has ended");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             Integer limit = null;
             if (snapshot.contains("waitlistLimit")) {
                 Long limitLong = snapshot.getLong("waitlistLimit");
@@ -787,7 +801,6 @@ public class Database {
                 }
             }
 
-            // Get current waitlist size
             int waitlistSize = 0;
             if (snapshot.contains("waitListEntrants")) {
                 List<?> rawList = (List<?>) snapshot.get("waitListEntrants");
@@ -796,7 +809,6 @@ public class Database {
                 }
             }
 
-            // Perform server-side checks
             if (limit != null && waitlistSize >= limit) {
                 try {
                     throw new Exception("Waitlist is full");
@@ -805,24 +817,8 @@ public class Database {
                 }
             }
 
-            Date now = new Date(); // Server's current time
-            if (registrationEndTime != null && now.after(registrationEndTime)) {
-                try {
-                    throw new Exception("This event's registration window has ended");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (registrationStartTime != null && now.before(registrationStartTime)) {
-                try {
-                    throw new Exception("This event's registration window has not yet started");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            // All checks passed, add the entrant to the waitlist
             transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
-            return null; // Return null on success
+            return null;
         });
     }
 
@@ -859,10 +855,9 @@ public class Database {
 
         // Run a transaction to perform server-side checks and remove the entrant
         return db.runTransaction(transaction -> {
-            // Read the current state of the event
             DocumentSnapshot snapshot = transaction.get(eventRef);
 
-            if (snapshot == null || !snapshot.exists()) {
+            if (!snapshot.exists()) {
                 try {
                     throw new Exception("Event not found!");
                 } catch (Exception e) {
@@ -870,13 +865,9 @@ public class Database {
                 }
             }
 
-
-            // Get the date strings
-            Date registrationStartTime = snapshot.getDate("registrationStartTime");
             Date registrationEndTime = snapshot.getDate("registrationEndTime");
+            Date now = new Date();
 
-            // Perform server-side checks
-            Date now = new Date(); // Server's current time
             if (registrationEndTime != null && now.after(registrationEndTime)) {
                 try {
                     throw new Exception("This event's registration window has ended");
@@ -884,17 +875,9 @@ public class Database {
                     throw new RuntimeException(e);
                 }
             }
-            if (registrationStartTime != null && now.before(registrationStartTime)) {
-                try {
-                    throw new Exception("This event's registration window has not yet started");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
 
-            // All checks passed, proceed to remove the entrant from the waitlist
             transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
-            return null; // Return null on success
+            return null;
         });
     }
 

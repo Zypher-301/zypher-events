@@ -19,6 +19,7 @@ import com.example.zypherevent.Database;
 import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.MainActivity;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.databinding.FragmentEntrantSettingsBinding;
 import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.gms.tasks.Task;
@@ -225,8 +226,19 @@ public class EntrantSettingsFragment extends Fragment {
             db.getEvent(eventID)
                     .addOnSuccessListener(eventFromDB -> {
                         if (eventFromDB != null) {
-                            // Remove entrant from all lists
-                            eventFromDB.removeEntrantFromWaitList(entrant);
+                            // Remove entrant from waitlist - find and remove the entry containing this entrant
+                            WaitlistEntry entryToRemove = null;
+                            for (WaitlistEntry entry : eventFromDB.getWaitListEntrants()) {
+                                if (entry.getEntrant().equals(entrant)) {
+                                    entryToRemove = entry;
+                                    break;
+                                }
+                            }
+                            if (entryToRemove != null) {
+                                eventFromDB.removeEntrantFromWaitList(entryToRemove);
+                            }
+
+                            // Remove entrant from other lists
                             eventFromDB.removeEntrantFromAcceptedList(entrant);
                             eventFromDB.removeEntrantFromDeclinedList(entrant);
 

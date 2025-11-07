@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
@@ -182,7 +183,15 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             slotActions.setVisibility(View.VISIBLE);
 
             // Check if the current user is on the waitlist.
-            if (event.getWaitListEntrants().contains(currentUser)) {
+            boolean isOnWaitlist = false;
+            for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                if (entry.getEntrant().equals(currentUser)) {
+                    isOnWaitlist = true;
+                    break;
+                }
+            }
+            
+            if (isOnWaitlist) {
                 // User is ON the waitlist: Show "Leave"
                 btnJoinWaitlist.setVisibility(View.GONE);
                 btnLeaveWaitlist.setVisibility(View.VISIBLE);

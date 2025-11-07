@@ -14,6 +14,7 @@ import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 
@@ -213,7 +214,12 @@ public class SendNotificationFragment extends AppCompatActivity {
     private ArrayList<Entrant> getEntrantListByStatus(Event event, String selectedStatus) {
         switch (selectedStatus) {
             case "Waitlisted":
-                return event.getWaitListEntrants();
+                // Extract Entrant objects from WaitlistEntry list
+                ArrayList<Entrant> waitlistedEntrants = new ArrayList<>();
+                for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                    waitlistedEntrants.add(entry.getEntrant());
+                }
+                return waitlistedEntrants;
             case "Accepted":
                 return event.getAcceptedEntrants();
             case "Denied":

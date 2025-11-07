@@ -26,6 +26,7 @@ import com.example.zypherevent.Event;
 import com.example.zypherevent.OrganizerActivity;
 import com.example.zypherevent.R;
 import com.example.zypherevent.Utils;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -173,7 +174,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Waitlist: " + event.getEventName());
 
-        List<Entrant> waitlistEntrants = event.getWaitListEntrants();
+        List<WaitlistEntry> waitlistEntrants = event.getWaitListEntrants();
         if (waitlistEntrants == null) {
             waitlistEntrants = new ArrayList<>();
         }
@@ -347,8 +348,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.ViewHolder> {
-        private List<Entrant> entrants;
-        public WaitlistEntrantAdapter(List<Entrant> entrants) { this.entrants = entrants; }
+        private List<WaitlistEntry> entrants;
+        public WaitlistEntrantAdapter(List<WaitlistEntry> entrants) { this.entrants = entrants; }
 
         @NonNull @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -361,8 +362,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Entrant entrant = entrants.get(position);
-            ((TextView) holder.itemView).setText(entrant.getFirstName() + " " + entrant.getLastName());
+            WaitlistEntry entrant = entrants.get(position);
+            ((TextView) holder.itemView).setText(entrant.getEntrant().getFirstName() + " " + entrant.getEntrant().getLastName());
         }
 
         @Override public int getItemCount() { return entrants.size(); }

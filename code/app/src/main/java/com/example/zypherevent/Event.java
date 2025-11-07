@@ -75,7 +75,7 @@ public class Event implements Serializable {
     /**
      * A list of entrants currently on the event's waitlist.
      */
-    private ArrayList<Entrant> waitListEntrants;
+    private ArrayList<WaitlistEntry> waitListEntrants;
 
     /**
      * A list of entrants who have been accepted into the event.
@@ -322,7 +322,7 @@ public class Event implements Serializable {
      *
      * @return the list of waitlisted entrants
      */
-    public ArrayList<Entrant> getWaitListEntrants() {
+    public ArrayList<WaitlistEntry> getWaitListEntrants() {
         return waitListEntrants;
     }
 
@@ -363,8 +363,17 @@ public class Event implements Serializable {
         if (now.before(this.registrationStartTime)) {
             throw new IllegalStateException("This event's registration window has not yet started");
         }
-        if (!waitListEntrants.contains(entrant)) {
-            waitListEntrants.add(entrant);
+        // Check if entrant is already on waitlist by comparing entrants (not WaitlistEntry which includes timestamp)
+        boolean alreadyOnWaitlist = false;
+        for (WaitlistEntry existingEntry : waitListEntrants) {
+            if (existingEntry.getEntrant().equals(entrant)) {
+                alreadyOnWaitlist = true;
+                break;
+            }
+        }
+        if (!alreadyOnWaitlist) {
+            WaitlistEntry entry = new WaitlistEntry(entrant);
+            waitListEntrants.add(entry);
         }
     }
 
@@ -372,21 +381,21 @@ public class Event implements Serializable {
      * Removes an entrant from the event's waitlist.
      * If the entrant is not present, no changes are made.
      *
-     * @param entrant the entrant to remove from the waitlist
+     * @param entry the entrant to remove from the waitlist
      */
-    public void removeEntrantFromWaitList(Entrant entrant) {
-        waitListEntrants.remove(entrant);
+    public void removeEntrantFromWaitList(WaitlistEntry entry) {
+        waitListEntrants.remove(entry);
     }
 
     /**
      * Adds an entrant to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entrant the entrant to add to the accepted list
+     * @param entry the entrant to add to the accepted list
      */
-    public void addEntrantToAcceptedList(Entrant entrant) {
-        if (!acceptedEntrants.contains(entrant)) {
-            acceptedEntrants.add(entrant);
+    public void addEntrantToAcceptedList(WaitlistEntry entry) {
+        if (!acceptedEntrants.contains(entry.getEntrant())) {
+            acceptedEntrants.add(entry.getEntrant());
         }
     }
 
@@ -448,7 +457,7 @@ public class Event implements Serializable {
      *
      * @param waitListEntrants the new list of waitlisted entrants
      */
-    public void setWaitListEntrants(ArrayList<Entrant> waitListEntrants) {
+    public void setWaitListEntrants(ArrayList<WaitlistEntry> waitListEntrants) {
         this.waitListEntrants = Objects.requireNonNullElseGet(waitListEntrants, ArrayList::new);
     }
 

@@ -11,6 +11,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
@@ -200,7 +201,53 @@ public class Database {
                         return null;
                     }
 
-                    return doc.toObject(Event.class);
+                    // Manual parsing to handle WaitlistEntry objects correctly
+                    try {
+                        Long uniqueEventID = doc.getLong("uniqueEventID");
+                        String eventName = doc.getString("eventName");
+                        String eventDescription = doc.getString("eventDescription");
+                        String location = doc.getString("location");
+                        String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
+                        String posterURL = doc.getString("posterURL");
+                        
+                        Date startTime = doc.getDate("startTime");
+                        Date registrationStartTime = doc.getDate("registrationStartTime");
+                        Date registrationEndTime = doc.getDate("registrationEndTime");
+                        
+                        Event event = new Event(
+                                uniqueEventID,
+                                eventName,
+                                eventDescription,
+                                startTime,
+                                location,
+                                registrationStartTime,
+                                registrationEndTime,
+                                eventOrganizerHardwareID,
+                                posterURL
+                        );
+                        
+                        // Parse optional fields
+                        if (doc.contains("waitlistLimit")) {
+                            Long limitLong = doc.getLong("waitlistLimit");
+                            if (limitLong != null) {
+                                event.setWaitlistLimit(limitLong.intValue());
+                            }
+                        }
+                        
+                        // Parse entrant lists using helper methods
+                        ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
+                        ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
+                        ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+                        
+                        event.setWaitListEntrants(waitList);
+                        event.setAcceptedEntrants(acceptedList);
+                        event.setDeclinedEntrants(declinedList);
+                        
+                        return event;
+                    } catch (Exception e) {
+                        Log.e("Database", "Failed to parse event for eventID: " + eventID, e);
+                        return null;
+                    }
                 });
     }
 
@@ -535,7 +582,7 @@ public class Database {
                                 }
                             }
 
-                            ArrayList<Entrant> waitList = parseEntrantList(doc.get("waitListEntrants"));
+                            ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
                             ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
                             ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
 
@@ -617,7 +664,7 @@ public class Database {
                                 }
                             }
 
-                            ArrayList<Entrant> waitList = parseEntrantList(doc.get("waitListEntrants"));
+                            ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
                             ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
                             ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
 
@@ -820,8 +867,21 @@ public class Database {
                     throw new RuntimeException(e);
                 }
             }
-            // All checks passed, add the entrant to the waitlist
-            transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayUnion(entrant));
+            // Check if entrant already exists on waitlist (arrayUnion won't work correctly with null timestamp)
+            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+            boolean alreadyExists = false;
+            for (WaitlistEntry existingEntry : currentWaitlist) {
+                if (existingEntry.getEntrant() != null && existingEntry.getEntrant().equals(entrant)) {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+            
+            if (!alreadyExists) {
+                WaitlistEntry entry = new WaitlistEntry(entrant);
+                // Add the entry to the waitlist
+                transaction.update(eventRef, "waitListEntrants", FieldValue.arrayUnion(entry));
+            }
             return null; // Return null on success
         });
     }
@@ -832,8 +892,11 @@ public class Database {
      * Removes an entrant from the waitlist of a specific event using a secure transaction.
      * <p>
      * This method atomically removes the provided entrant from the {@code waitListEntrants} array
-     * in the specified event's Firestore document. It is typically used when an entrant chooses
-     * to leave an event they were waitlisted for.
+     * in the specified event's Firestore document. Since the waitlist stores {@link WaitlistEntry}
+     * objects (which include timestamps), this method manually parses the waitlist, finds the
+     * entry containing the specified entrant, removes it, and writes the modified list back.
+     * It is typically used when an entrant chooses to leave an event they were waitlisted for.
+     * </p>
      * <p>
      * To ensure data integrity and prevent race conditions, the operation is wrapped in a
      * Firestore transaction. This transaction enforces critical server-side business logic:
@@ -841,17 +904,20 @@ public class Database {
      *   <li>It verifies that the event exists before attempting any modification.</li>
      *   <li>It checks that the current server time is within the event's active registration window,
      *   preventing users from leaving the waitlist after the registration period has closed.</li>
-     *   <li>It manually parses date strings from Firestore using the {@code Utils} class to
-     *   avoid crashes related to date formatting.</li>
+     *   <li>It manually parses the {@link WaitlistEntry} list using {@link #parseWaitlistEntryList(Object)}.</li>
+     *   <li>It finds the entry by comparing the nested {@link Entrant} objects (not the WaitlistEntry itself).</li>
      * </ul>
      * If any of these checks fail, the transaction is aborted, and the task will fail with an exception,
      * ensuring the database remains in a consistent state.
+     * </p>
      *
      * @param eventId The unique identifier of the event from which the entrant will be removed.
      * @param entrant The {@link Entrant} object to be removed from the event's waitlist.
      * @return A {@code Task<Void>} that completes when the transaction is successfully committed.
      *         The task will fail with an exception if the event is not found, the registration
      *         window is closed, or any other database error occurs.
+     * @see WaitlistEntry
+     * @see #parseWaitlistEntryList(Object)
      */ // Used by "Leave" button
     public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
         // Get reference to the event document
@@ -892,11 +958,109 @@ public class Database {
                 }
             }
 
-            // All checks passed, proceed to remove the entrant from the waitlist
-            transaction.update(eventRef, "waitListEntrants", com.google.firebase.firestore.FieldValue.arrayRemove(entrant));
+            // All checks passed, remove matching WaitlistEntry (by entrant) and write back the list
+            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+            int indexToRemove = -1;
+            for (int i = 0; i < currentWaitlist.size(); i++) {
+                Entrant e = currentWaitlist.get(i).getEntrant();
+                if (e != null && e.equals(entrant)) {
+                    indexToRemove = i;
+                    break;
+                }
+            }
+            if (indexToRemove != -1) {
+                currentWaitlist.remove(indexToRemove);
+                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
+            }
             return null; // Return null on success
         });
     }
 
+    public Task<Void> moveEntrantToAccepted(String eventId, Entrant entrant) {
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
 
+        return db.runTransaction(transaction -> {
+            DocumentSnapshot snapshot = transaction.get(eventRef);
+            if (!snapshot.exists()) {
+                try {
+                    throw new Exception("Event not found!");
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // Get the current waitlist using our new parser
+            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+
+            // Find and remove the entrant
+            Entrant entrantToMove = null;
+            for (int i = 0; i < currentWaitlist.size(); i++) {
+                if (currentWaitlist.get(i).getEntrant().equals(entrant)) {
+                    // Get the entrant from the entry and remove the entry from the list
+                    entrantToMove = currentWaitlist.remove(i).getEntrant();
+                    break;
+                }
+            }
+
+            if (entrantToMove != null) {
+                // Write the modified waitlist back to the DB
+                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
+                // Add the plain Entrant object to the accepted list
+                transaction.update(eventRef, "acceptedEntrants", FieldValue.arrayUnion(entrantToMove));
+            } else {
+                // Entrant wasn't on the waitlist, maybe they were already moved
+                Log.w("Database", "Entrant not found on waitlist, could not move.");
+            }
+
+            return null; // Transaction success
+        });
+    }
+
+    /**
+     * Manually parses a list of HashMaps from Firestore into a proper ArrayList of WaitlistEntry.
+     * @return the list of waitlist entries parsed into java objects
+     */
+    public ArrayList<WaitlistEntry> parseWaitlistEntryList(Object rawList) {
+        ArrayList<WaitlistEntry> entryList = new ArrayList<>();
+        if (!(rawList instanceof List)) {
+            return entryList;
+        }
+
+        List<?> rawEntryList = (List<?>) rawList;
+        for (Object item : rawEntryList) {
+            if (item instanceof HashMap) {
+                try {
+                    HashMap<String, Object> map = (HashMap<String, Object>) item;
+
+                    // Firestore nests the Entrant object as another HashMap
+                    HashMap<String, Object> entrantMap = (HashMap<String, Object>) map.get("entrant");
+
+                    // Manually build the Entrant
+                    String hardwareID = (String) entrantMap.get("hardwareID");
+                    String firstName = (String) entrantMap.get("firstName");
+                    String lastName = (String) entrantMap.get("lastName");
+                    String email = (String) entrantMap.get("email");
+                    String phone = (String) entrantMap.get("phoneNumber");
+                    boolean useGeo = entrantMap.containsKey("useGeolocation") ? (Boolean) entrantMap.get("useGeolocation") : false;
+                    boolean wantsNotifs = entrantMap.containsKey("wantsNotifications") ? (Boolean) entrantMap.get("wantsNotifications") : true;
+
+                    Entrant entrant = new Entrant(hardwareID, firstName, lastName, email, phone, useGeo);
+                    entrant.setWantsNotifications(wantsNotifs);
+
+                    // Get the timeJoined
+                    com.google.firebase.Timestamp timestamp = (com.google.firebase.Timestamp) map.get("timeJoined");
+                    Date timeJoined = (timestamp != null) ? timestamp.toDate() : null;
+
+                    // the final WaitlistEntry object
+                    WaitlistEntry entry = new WaitlistEntry(entrant);
+                    entry.setTimeJoined(timeJoined); // Manually set the time
+                    entryList.add(entry);
+
+                } catch (Exception e) {
+                    Log.e("Database", "Failed to parse one waitlist entry", e);
+                }
+            }
+        }
+        return entryList;
+    }
 }

@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 
 import java.util.List;
@@ -23,14 +24,14 @@ import java.util.List;
  */
 public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.EntrantViewHolder> {
 
-    private List<Entrant> entrantList;
+    private List<WaitlistEntry> entrantList;
 
     /**
      * Constructs a WaitlistEntrantAdapter.
      *
      * @param entrantList The list of entrants to be displayed.
      */
-    public WaitlistEntrantAdapter(List<Entrant> entrantList) {
+    public WaitlistEntrantAdapter(List<WaitlistEntry> entrantList) {
         this.entrantList = entrantList;
     }
 
@@ -59,9 +60,7 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
     /**
      * Called by RecyclerView to display the data at the specified position.
      * This method updates the contents of the {@link EntrantViewHolder#itemView} to reflect the
-     * entrant at the given position in the list. It retrieves the specific {@link Entrant} object
-     * for the given position and calls the {@link EntrantViewHolder#bind(Entrant)} method to
-     * populate the views with the entrant's data.
+     * entrant at the given position in the list.
      *
      * @param holder   The ViewHolder which should be updated to represent the contents of the
      *                 item at the given position in the data set.
@@ -69,10 +68,12 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
      */
     @Override
     public void onBindViewHolder(@NonNull EntrantViewHolder holder, int position) {
-        // Get the specific entrant for this row
-        Entrant entrant = entrantList.get(position);
-        // Bind the entrant data to the views in that row
-        holder.bind(entrant);
+        // Get the specific waitlist entry for this row
+        WaitlistEntry entry = entrantList.get(position);
+        // Extract the entrant from the entry
+        Entrant entrant = entry.getEntrant();
+        // Bind the entrant data and timestamp to the views in that row
+        holder.bind(entrant, entry.getTimeJoined());
     }
 
     /**
@@ -93,7 +94,7 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
     public static class EntrantViewHolder extends RecyclerView.ViewHolder {
 
         // Declare the views from the layout
-        TextView userName, userEmail, userPhone;
+        TextView userName, userEmail, userPhone, timeJoined;
 
         /**
          * Constructs an instance of the {@code EntrantViewHolder}.
@@ -110,16 +111,18 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
             userName = itemView.findViewById(R.id.user_name);
             userEmail = itemView.findViewById(R.id.user_email);
             userPhone = itemView.findViewById(R.id.user_phone);
+            timeJoined = itemView.findViewById(R.id.tvTimeJoined);
         }
 
         /**
-         * Binds data from an {@link Entrant} object to the views in the ViewHolder.
+         * Binds data from an {@link Entrant} object and join timestamp to the views in the ViewHolder.
          * <p>
-         * This method populates the entrant's name, email, and phone number.
+         * This method populates the entrant's name, email, phone number, and the time they joined the waitlist.
          *
          * @param entrant The {@link Entrant} object containing the data to be displayed.
+         * @param joinTime The {@link java.util.Date} when the entrant joined the waitlist, or null if not available.
          */
-        public void bind(Entrant entrant) {
+        public void bind(Entrant entrant, java.util.Date joinTime) {
             // Set name
             String fullName = entrant.getFirstName() + " " + entrant.getLastName();
             userName.setText("Name: " + fullName);
@@ -139,7 +142,16 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
             } else {
                 userPhone.setText("Phone: N/A");
             }
+
+            // Set join time
+            if (joinTime != null) {
+                java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault());
+                timeJoined.setText("Joined: " + dateFormat.format(joinTime));
+            } else {
+                timeJoined.setText("Joined: N/A");
+            }
         }
     }
 }
+
 

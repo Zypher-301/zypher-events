@@ -21,21 +21,12 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
     private List<Event> eventList;
     private OnItemClickListener listener;
 
-    /**
-     * Interface definition for callbacks to be invoked when an item in this
-     * adapter has been clicked.
-     */
+    // The interface now has two methods
     public interface OnItemClickListener {
-        // This is the only click we need for the text-only layout
         void onViewEntrantsClick(Event event);
+        void onMenuClick(Event event, View anchorView);
     }
 
-    /**
-     * Constructs an OrganizerEventsAdapter.
-     *
-     * @param eventList The list of events to be displayed.
-     * @param listener  A listener for handling clicks on events.
-     */
     public OrganizerEventsAdapter(List<Event> eventList, OnItemClickListener listener) {
         this.eventList = eventList;
         this.listener = listener;
@@ -60,35 +51,24 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
         return eventList.size();
     }
 
-    /**
-     * ViewHolder class for an event item in the RecyclerView.
-     */
     public static class EventViewHolder extends RecyclerView.ViewHolder {
 
-        // Declare the views from the new layout
         TextView tvTitle, tvMeta;
         Button btnViewEntrants;
+        Button btnMenu;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Find all the views by their ID
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvMeta = itemView.findViewById(R.id.tvMeta);
             btnViewEntrants = itemView.findViewById(R.id.btnViewEntrants);
+            btnMenu = itemView.findViewById(R.id.btnMenu);
         }
 
-        /**
-         * Binds data from an {@link Event} object to the views in the ViewHolder.
-         *
-         * @param event    The {@link Event} object containing the data to be displayed.
-         * @param listener The {@link OnItemClickListener} that will handle clicks on the item view.
-         */
         public void bind(final Event event, final OnItemClickListener listener) {
             tvTitle.setText(event.getEventName());
 
-            // Format metadata: date, time, location
             StringBuilder meta = new StringBuilder();
-
             Date startTime = event.getStartTime();
             if (startTime != null) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
@@ -108,8 +88,9 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
 
             tvMeta.setText(meta.toString());
 
-            // Set the click listener for the button
+            // Set both listeners
             btnViewEntrants.setOnClickListener(v -> listener.onViewEntrantsClick(event));
+            btnMenu.setOnClickListener(v -> listener.onMenuClick(event, v));
         }
     }
 }

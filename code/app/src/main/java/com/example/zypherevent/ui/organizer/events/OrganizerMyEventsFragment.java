@@ -7,11 +7,23 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.PopupMenu;
+import android.widget.Switch;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.example.zypherevent.Database;
+import com.example.zypherevent.Event;
+import com.example.zypherevent.OrganizerActivity;
 import com.example.zypherevent.R;
 import com.example.zypherevent.Utils;
 import com.example.zypherevent.userTypes.Entrant;
@@ -24,13 +36,16 @@ import java.util.List;
 
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 
-/**
- * @author Elliot Chrystal
- *
- * @version 1.0
- * Basic Organizer "My Events" fragment: inflates fragment_organizer_my_events layout.
- */
-public class OrganizerMyEventsFragment extends Fragment {
+    private static final String TAG = "OrganizerMyEvents";
+
+    private Database db;
+    private RecyclerView recyclerView;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private TextView emptyOrganizer;
+    private OrganizerEventsAdapter adapter;
+    private List<Event> eventList = new ArrayList<>();
+    private Organizer organizerUser;
+    private Button fabCreateEvent;
 
     public OrganizerMyEventsFragment() {
         // public no-arg constructor required
@@ -41,8 +56,6 @@ public class OrganizerMyEventsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-
-        // Inflate the simple Organizer "My Events" layout
         return inflater.inflate(R.layout.fragment_organizer_my_events, container, false);
     }
 
@@ -74,7 +87,6 @@ public class OrganizerMyEventsFragment extends Fragment {
             loadEvents();
         });
 
-        // Find the Button
         fabCreateEvent = view.findViewById(R.id.fabCreateEvent);
         fabCreateEvent.setOnClickListener(v -> showCreateEventDialog());
 
@@ -122,6 +134,35 @@ public class OrganizerMyEventsFragment extends Fragment {
         showWaitlistDialog(event);
     }
 
+    @Override
+    public void onMenuClick(Event event, View anchorView) {
+        PopupMenu popup = new PopupMenu(getContext(), anchorView);
+
+        // Inflate your menu file
+        popup.getMenuInflater().inflate(R.menu.fragment_organanizer_event_menu, popup.getMenu());
+
+        // Set a listener for menu item clicks
+        popup.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.action_notifications) {
+                Toast.makeText(getContext(), "Notifications for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_view_qr) {
+                Toast.makeText(getContext(), "View QR for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_export_csv) {
+                Toast.makeText(getContext(), "Export CSV for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_edit_event) {
+                Toast.makeText(getContext(), "Edit " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            return false;
+        });
+
+        // Show the menu
+        popup.show();
+    }
     private void showWaitlistDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -247,11 +288,9 @@ public class OrganizerMyEventsFragment extends Fragment {
                 }
             }
 
-            // All checks passed, now create the event
             createEvent(eventName, description, startTime, location,
                     registrationStartTime, registrationEndTime, waitlistLimit);
 
-            // Dismiss dialog
             dialog.dismiss();
         });
 
@@ -262,7 +301,6 @@ public class OrganizerMyEventsFragment extends Fragment {
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
         Log.d(TAG, "Creating new event: " + eventName);
 
-        // Get unique event ID
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 Log.e(TAG, "Error getting unique event ID", task.getException());
@@ -277,7 +315,6 @@ public class OrganizerMyEventsFragment extends Fragment {
                 return;
             }
 
-            // Create Event object
             Event newEvent = new Event(
                     eventID,
                     eventName,
@@ -289,17 +326,14 @@ public class OrganizerMyEventsFragment extends Fragment {
                     organizerUser.getHardwareID()
             );
 
-            // Set waitlist limit if provided
             if (waitlistLimit != null) {
                 newEvent.setWaitlistLimit(waitlistLimit);
             }
 
-            // Save event to database
             db.setEventData(eventID, newEvent).addOnCompleteListener(saveTask -> {
                 if (saveTask.isSuccessful()) {
                     Log.d(TAG, "Event created successfully with ID: " + eventID);
                     Toast.makeText(getContext(), "Event created successfully!", Toast.LENGTH_SHORT).show();
-                    // Refresh the events list
                     loadEvents();
                 } else {
                     Log.e(TAG, "Error saving event to database", saveTask.getException());

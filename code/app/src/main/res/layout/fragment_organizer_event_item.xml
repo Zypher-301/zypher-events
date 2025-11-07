@@ -31,11 +31,24 @@
         android:ellipsize="end"
         tools:text="Nov 10 · 7:00 PM · Convention Center" />
 
-    <Button
-        android:id="@+id/btnViewEntrants"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="View Entrants" />
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btnViewEntrants"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View Entrants" />
+
+        <Button
+            android:id="@+id/btnMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Menu" />
+    </LinearLayout>
 
 </LinearLayout>

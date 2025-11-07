@@ -41,6 +41,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -188,35 +189,94 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
 
-        // Create adapter with accept listener
-        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(waitlistEntrants,
-                new WaitlistEntrantAdapter.OnAcceptClickListener() {
-                    @Override
-                    public void onAcceptClick(WaitlistEntry entry, int position) {
-                        handleAcceptEntrant(event, entry, position);
-                    }
-                });
+        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(
+                waitlistEntrants,
+                (entry, position) -> handleAcceptEntrant(event, entry, position)
+        );
 
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         waitlistRecyclerView.setAdapter(waitlistAdapter);
 
-        // Sort buttons
         Button btnSortNewest = dialogView.findViewById(R.id.btnSortNewest);
         Button btnSortOldest = dialogView.findViewById(R.id.btnSortOldest);
         Button btnSortName = dialogView.findViewById(R.id.btnSortName);
 
-        btnSortNewest.setOnClickListener(v -> waitlistAdapter.sortByNewest());
-        btnSortOldest.setOnClickListener(v -> waitlistAdapter.sortByOldest());
-        btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
+        if (btnSortNewest != null) {
+            btnSortNewest.setOnClickListener(v -> waitlistAdapter.sortByNewest());
+        }
+        if (btnSortOldest != null) {
+            btnSortOldest.setOnClickListener(v -> waitlistAdapter.sortByOldest());
+        }
+        if (btnSortName != null) {
+            btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
+        }
 
-        // Default to newest first
         waitlistAdapter.sortByNewest();
 
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
-        runLotteryButton.setVisibility(View.GONE);
-
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
-        etSampleSize.setVisibility(View.GONE);
+
+        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
+
+        if (runLotteryButton != null && etSampleSize != null) {
+            runLotteryButton.setOnClickListener(v -> {
+                String input = etSampleSize.getText().toString().trim();
+                if (input.isEmpty()) {
+                    Toast.makeText(getContext(), "Please enter a number to sample", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int sampleSize;
+                try {
+                    sampleSize = Integer.parseInt(input);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(getContext(), "Invalid number", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (sampleSize <= 0) {
+                    Toast.makeText(getContext(), "Sample size must be greater than 0", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (finalWaitlistEntrants.isEmpty()) {
+                    Toast.makeText(getContext(), "No entrants in waitlist", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int n = Math.min(sampleSize, finalWaitlistEntrants.size());
+
+                List<WaitlistEntry> shuffled = new ArrayList<>(finalWaitlistEntrants);
+                Collections.shuffle(shuffled);
+
+                List<WaitlistEntry> selected = shuffled.subList(0, n);
+
+                StringBuilder sb = new StringBuilder();
+                for (WaitlistEntry entry : selected) {
+                    Entrant e = entry.getEntrant();
+                    String name;
+                    if (e != null) {
+                        String first = e.getFirstName() != null ? e.getFirstName() : "";
+                        String last = e.getLastName() != null ? e.getLastName() : "";
+                        name = (first + " " + last).trim();
+                        if (name.isEmpty()) {
+                            name = "Unnamed entrant";
+                        }
+                    } else {
+                        name = "Unknown entrant";
+                    }
+
+                    if (sb.length() > 0) sb.append(", ");
+                    sb.append(name);
+                }
+
+                Toast.makeText(
+                        getContext(),
+                        "Selected " + n + " entrant(s): " + sb.toString(),
+                        Toast.LENGTH_LONG
+                ).show();
+            });
+        }
 
         AlertDialog dialog = builder.create();
         dialog.show();

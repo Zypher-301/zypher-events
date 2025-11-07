@@ -479,7 +479,33 @@ public class Event implements Serializable {
         this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
     }
 
-    // Comparison functions!
+    /**
+     * Checks if registration is currently open for this event.
+     * Registration is open if the current time is between registrationStartTime and registrationEndTime.
+     *
+     * @return true if registration is open, false otherwise
+     */
+    public boolean isRegistrationOpen() {
+        Date now = new Date();
+        boolean afterStart = registrationStartTime == null || !now.before(registrationStartTime);
+        boolean beforeEnd = registrationEndTime == null || !now.after(registrationEndTime);
+        return afterStart && beforeEnd;
+    }
+
+    /**
+     * Gets a user-friendly status message about the registration window.
+     *
+     * @return a status message like "Registration opens soon" or "Registration closed", or empty string if open
+     */
+    public String getRegistrationStatus() {
+        Date now = new Date();
+        if (registrationStartTime != null && now.before(registrationStartTime)) {
+            return "Registration opens soon";
+        } else if (registrationEndTime != null && now.after(registrationEndTime)) {
+            return "Registration closed";
+        }
+        return ""; // Registration is open
+    }
 
     /**
      * Checks if this Event is equal to another object.

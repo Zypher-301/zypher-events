@@ -182,6 +182,10 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             // Make the button area visible
             slotActions.setVisibility(View.VISIBLE);
 
+            // Check registration window status
+            boolean registrationOpen = event.isRegistrationOpen();
+            String registrationStatus = event.getRegistrationStatus();
+
             // Check if the current user is on the waitlist.
             boolean isOnWaitlist = false;
             for (WaitlistEntry entry : event.getWaitListEntrants()) {
@@ -192,19 +196,38 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             }
             
             if (isOnWaitlist) {
-                // User is ON the waitlist: Show "Leave"
+                // User is ON the waitlist: Show "Leave" (only enabled during registration window)
                 btnJoinWaitlist.setVisibility(View.GONE);
                 btnLeaveWaitlist.setVisibility(View.VISIBLE);
+                btnLeaveWaitlist.setEnabled(registrationOpen);
             } else {
-                // User is NOT on the waitlist: Show "Join"
-                btnJoinWaitlist.setVisibility(View.VISIBLE);
+                // User is NOT on the waitlist
                 btnLeaveWaitlist.setVisibility(View.GONE);
+                btnJoinWaitlist.setVisibility(View.VISIBLE);
+                
+                if (registrationOpen) {
+                    // Registration is open: Show enabled "Join" button
+                    btnJoinWaitlist.setEnabled(true);
+                    btnJoinWaitlist.setText("Join Waitlist");
+                } else {
+                    // Registration is closed/not started: Show disabled button with status
+                    btnJoinWaitlist.setEnabled(false);
+                    btnJoinWaitlist.setText(registrationStatus);
+                }
             }
 
             // Set the click listeners to call the methods in the fragment
-            btnJoinWaitlist.setOnClickListener(v -> listener.onJoinClick(event));
+            btnJoinWaitlist.setOnClickListener(v -> {
+                if (registrationOpen) {
+                    listener.onJoinClick(event);
+                }
+            });
             // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
-            btnLeaveWaitlist.setOnClickListener(v -> listener.onLeaveClick(event));
+            btnLeaveWaitlist.setOnClickListener(v -> {
+                if (registrationOpen) {
+                    listener.onLeaveClick(event);
+                }
+            });
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }
     }

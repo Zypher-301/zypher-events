@@ -512,13 +512,9 @@ public class Database {
                             String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
                             String posterURL = doc.getString("posterURL");
 
-                            String startTimeStr = doc.getString("startTime");
-                            String regStartTimeStr = doc.getString("registrationStartTime");
-                            String regEndTimeStr = doc.getString("registrationEndTime");
-
-                            Date startTime = Utils.createWholeDayDate(startTimeStr);
-                            Date registrationStartTime = Utils.createWholeDayDate(regStartTimeStr);
-                            Date registrationEndTime = Utils.createWholeDayDate(regEndTimeStr);
+                            Date startTime = doc.getDate("startTime");
+                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationEndTime = doc.getDate("registrationEndTime");
 
                             Event event = new Event(
                                     uniqueEventID,
@@ -551,6 +547,87 @@ public class Database {
 
                         } catch (Exception e) {
 
+                            Log.e("Database", "Failed to parse event: " + doc.getId(), e);
+                        }
+                    }
+                    return eventList;
+                });
+    }
+
+    /**
+     * Retrieves all event documents from the Firestore "events" collection that were created
+     * by a specific organizer, identified by their hardware ID.
+     * <p>
+     * This method queries the events collection for events where the {@code eventOrganizerHardwareID}
+     * field matches the provided organizer hardware ID. It manually parses each event document
+     * following the same robust pattern as {@link #getAllEventsList()} to handle:
+     * <ul>
+     * <li><b>Date Handling:</b> Converts date strings (yyyy-MM-dd) to Date objects using {@link Utils#createWholeDayDate(String)}</li>
+     * <li><b>Casting Safety:</b> Uses {@link #parseEntrantList(Object)} to safely convert entrant lists from HashMaps</li>
+     * <li><b>Error Isolation:</b> Skips malformed documents and continues processing valid ones</li>
+     * </ul>
+     *
+     * @param organizerHardwareID The hardware ID of the organizer whose events should be retrieved
+     * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
+     *         of all valid {@code Event} objects created by the specified organizer. The list will
+     *         be empty if the organizer has no events or if no events could be successfully parsed.
+     *         The task will fail if the initial query fails.
+     */
+    public Task<List<Event>> getEventsByOrganizer(String organizerHardwareID) {
+        return eventsCollection
+                .whereEqualTo("eventOrganizerHardwareID", organizerHardwareID)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("Database", "Error getting organizer events", task.getException());
+                        throw task.getException();
+                    }
+
+                    ArrayList<Event> eventList = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                        try {
+                            Long uniqueEventID = doc.getLong("uniqueEventID");
+                            String eventName = doc.getString("eventName");
+                            String eventDescription = doc.getString("eventDescription");
+                            String location = doc.getString("location");
+                            String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
+                            String posterURL = doc.getString("posterURL");
+
+                            Date startTime = doc.getDate("startTime");
+                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationEndTime = doc.getDate("registrationEndTime");
+
+                            Event event = new Event(
+                                    uniqueEventID,
+                                    eventName,
+                                    eventDescription,
+                                    startTime,
+                                    location,
+                                    registrationStartTime,
+                                    registrationEndTime,
+                                    eventOrganizerHardwareID,
+                                    posterURL
+                            );
+
+                            if (doc.contains("waitlistLimit")) {
+                                Long limitLong = doc.getLong("waitlistLimit");
+                                if (limitLong != null) {
+                                    event.setWaitlistLimit(limitLong.intValue());
+                                }
+                            }
+
+                            ArrayList<Entrant> waitList = parseEntrantList(doc.get("waitListEntrants"));
+                            ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
+                            ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+
+                            event.setWaitListEntrants(waitList);
+                            event.setAcceptedEntrants(acceptedList);
+                            event.setDeclinedEntrants(declinedList);
+
+                            eventList.add(event);
+
+                        } catch (Exception e) {
                             Log.e("Database", "Failed to parse event: " + doc.getId(), e);
                         }
                     }
@@ -698,22 +775,8 @@ public class Database {
             }
 
             // Get the date strings
-            String regStartTimeStr = snapshot.getString("registrationStartTime");
-            String regEndTimeStr = snapshot.getString("registrationEndTime");
-
-            // Convert strings to Date objects
-            Date registrationStartTime = null;
-            try {
-                registrationStartTime = Utils.createWholeDayDate(regStartTimeStr);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            Date registrationEndTime = null;
-            try {
-                registrationEndTime = Utils.createWholeDayDate(regEndTimeStr);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
+            Date registrationStartTime = snapshot.getDate("registrationStartTime");
+            Date registrationEndTime = snapshot.getDate("registrationEndTime");
 
             // Get waitlist limit
             Integer limit = null;
@@ -809,23 +872,8 @@ public class Database {
 
 
             // Get the date strings
-            String regStartTimeStr = snapshot.getString("registrationStartTime");
-            String regEndTimeStr = snapshot.getString("registrationEndTime");
-
-            // Use Utils.java to convert them
-            Date registrationStartTime = null;
-            try {
-                registrationStartTime = Utils.createWholeDayDate(regStartTimeStr);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            Date registrationEndTime = null;
-            try {
-                registrationEndTime = Utils.createWholeDayDate(regEndTimeStr);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-
+            Date registrationStartTime = snapshot.getDate("registrationStartTime");
+            Date registrationEndTime = snapshot.getDate("registrationEndTime");
 
             // Perform server-side checks
             Date now = new Date(); // Server's current time

@@ -75,7 +75,7 @@ public class Event implements Serializable {
     /**
      * A list of entrants currently on the event's waitlist.
      */
-    private ArrayList<Entrant> waitListEntrants;
+    private ArrayList<WaitlistEntry> waitListEntrants;
 
     /**
      * A list of entrants who have been accepted into the event.
@@ -322,7 +322,7 @@ public class Event implements Serializable {
      *
      * @return the list of waitlisted entrants
      */
-    public ArrayList<Entrant> getWaitListEntrants() {
+    public ArrayList<WaitlistEntry> getWaitListEntrants() {
         return waitListEntrants;
     }
 
@@ -353,7 +353,7 @@ public class Event implements Serializable {
      * @param entrant the entrant to add to the waitlist
      */
     public void addEntrantToWaitList(Entrant entrant) {
-        if (this.waitListEntrants.size() >= this.waitlistLimit) {
+        if (this.waitlistLimit != null && this.waitListEntrants.size() >= this.waitlistLimit) {
             throw new IllegalStateException("Waitlist is full");
         }
         Date now = new Date();
@@ -363,8 +363,17 @@ public class Event implements Serializable {
         if (now.before(this.registrationStartTime)) {
             throw new IllegalStateException("This event's registration window has not yet started");
         }
-        if (!waitListEntrants.contains(entrant)) {
-            waitListEntrants.add(entrant);
+        // Check if entrant is already on waitlist by comparing entrants (not WaitlistEntry which includes timestamp)
+        boolean alreadyOnWaitlist = false;
+        for (WaitlistEntry existingEntry : waitListEntrants) {
+            if (existingEntry.getEntrant().equals(entrant)) {
+                alreadyOnWaitlist = true;
+                break;
+            }
+        }
+        if (!alreadyOnWaitlist) {
+            WaitlistEntry entry = new WaitlistEntry(entrant);
+            waitListEntrants.add(entry);
         }
     }
 
@@ -372,21 +381,21 @@ public class Event implements Serializable {
      * Removes an entrant from the event's waitlist.
      * If the entrant is not present, no changes are made.
      *
-     * @param entrant the entrant to remove from the waitlist
+     * @param entry the entrant to remove from the waitlist
      */
-    public void removeEntrantFromWaitList(Entrant entrant) {
-        waitListEntrants.remove(entrant);
+    public void removeEntrantFromWaitList(WaitlistEntry entry) {
+        waitListEntrants.remove(entry);
     }
 
     /**
      * Adds an entrant to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entrant the entrant to add to the accepted list
+     * @param entry the entrant to add to the accepted list
      */
-    public void addEntrantToAcceptedList(Entrant entrant) {
-        if (!acceptedEntrants.contains(entrant)) {
-            acceptedEntrants.add(entrant);
+    public void addEntrantToAcceptedList(WaitlistEntry entry) {
+        if (!acceptedEntrants.contains(entry.getEntrant())) {
+            acceptedEntrants.add(entry.getEntrant());
         }
     }
 
@@ -448,7 +457,7 @@ public class Event implements Serializable {
      *
      * @param waitListEntrants the new list of waitlisted entrants
      */
-    public void setWaitListEntrants(ArrayList<Entrant> waitListEntrants) {
+    public void setWaitListEntrants(ArrayList<WaitlistEntry> waitListEntrants) {
         this.waitListEntrants = Objects.requireNonNullElseGet(waitListEntrants, ArrayList::new);
     }
 
@@ -470,7 +479,33 @@ public class Event implements Serializable {
         this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
     }
 
-    // Comparison functions!
+    /**
+     * Checks if registration is currently open for this event.
+     * Registration is open if the current time is between registrationStartTime and registrationEndTime.
+     *
+     * @return true if registration is open, false otherwise
+     */
+    public boolean isRegistrationOpen() {
+        Date now = new Date();
+        boolean afterStart = registrationStartTime == null || !now.before(registrationStartTime);
+        boolean beforeEnd = registrationEndTime == null || !now.after(registrationEndTime);
+        return afterStart && beforeEnd;
+    }
+
+    /**
+     * Gets a user-friendly status message about the registration window.
+     *
+     * @return a status message like "Registration opens soon" or "Registration closed", or empty string if open
+     */
+    public String getRegistrationStatus() {
+        Date now = new Date();
+        if (registrationStartTime != null && now.before(registrationStartTime)) {
+            return "Registration opens soon";
+        } else if (registrationEndTime != null && now.after(registrationEndTime)) {
+            return "Registration closed";
+        }
+        return ""; // Registration is open
+    }
 
     /**
      * Checks if this Event is equal to another object.

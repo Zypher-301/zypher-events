@@ -14,18 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a fragment for administrators to view a log of all notifications sent through the app.
- *
- * This class extends {@link AdminBaseListFragment} to provide a standard list layout.
- * It fetches notification data from the Firestore database and displays it using a
- * {@link androidx.recyclerview.widget.RecyclerView} with a custom {@link AdminNotificationLogAdapter}.
- * The fragment includes a refresh button to manually reload the notification logs from the database.
- * This class fulfills the following user stories:
- * <ul>
- *     <li><b>US 03.08.01 As an administrator, I want to review logs of all notifications sent to entrants by organizers.</li>
- * </ul>
  * @author Arunavo Dutta
- * @version 2.0
+ * @version 2.1 (Added lifecycle checks to prevent crashes)
  * @see AdminBaseListFragment
  * @see Notification
  * @see AdminNotificationLogAdapter
@@ -66,6 +56,7 @@ public class AdminNotificationLogFragment extends AdminBaseListFragment {
         // --- REFRESH BUTTON LOGIC ---
         refreshButton = view.findViewById(R.id.refresh_button);
         refreshButton.setOnClickListener(v -> {
+            // Safe to use getContext(), this is an immediate user click
             Toast.makeText(getContext(), "Refreshing list...", Toast.LENGTH_SHORT).show();
             loadLogs();
         });
@@ -89,6 +80,14 @@ public class AdminNotificationLogFragment extends AdminBaseListFragment {
         Log.d(TAG, "Attempting to query 'notifications' collection...");
 
         db.getAllNotifications().addOnCompleteListener(task -> {
+
+            // This prevents a crash if the user navigates away
+            // before the server responds.
+            if (!isAdded() || getContext() == null) {
+                Log.w(TAG, "loadLogs callback received, but fragment is detached.");
+                return;
+            }
+
             if (task.isSuccessful()) {
                 List<Notification> fetchedLogs = task.getResult();
 

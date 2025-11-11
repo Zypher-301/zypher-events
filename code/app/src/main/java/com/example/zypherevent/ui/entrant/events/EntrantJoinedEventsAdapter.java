@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.material.chip.Chip;
 
@@ -137,8 +138,13 @@ public class EntrantJoinedEventsAdapter extends RecyclerView.Adapter<EntrantJoin
             return "Accepted";
         } else if (event.getDeclinedEntrants() != null && event.getDeclinedEntrants().contains(user)) {
             return "Declined";
-        } else if (event.getWaitListEntrants() != null && event.getWaitListEntrants().contains(user)) {
-            return "Waitlisted";
+        } else if (event.getWaitListEntrants() != null) {
+            // Check if user is in waitlist by iterating through WaitlistEntry objects
+            for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                if (entry.getEntrant().equals(user)) {
+                    return "Waitlisted";
+                }
+            }
         }
         return "Joined";
     }

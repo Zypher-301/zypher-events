@@ -7,10 +7,14 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.example.zypherevent.model.AdminEvent;
 import com.example.zypherevent.model.AdminImage;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Arunavo Dutta
@@ -30,8 +34,16 @@ public class AdminImagesFragment extends AdminBaseListFragment {
         super.onViewCreated(view, savedInstanceState);
 
         List<AdminImage> images = new ArrayList<>();
-        images.add(new AdminImage("amy.mcd@email.com", "23rd June, 2025"));
-        images.add(new AdminImage("swim.center@email.com", "24th June, 2025"));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+
+        try {
+            images.add(new AdminImage("img1", "https://picsum.photos/seed/amy/400/300", "amy.mcd@email.com", formatter.parse("2025-06-23")));
+            images.add(new AdminImage("img2", "https://picsum.photos/seed/swim/400/300", "swim.center@email.com", formatter.parse("2025-06-24")));
+        } catch (ParseException e) {
+            // TODO: Handle exception, perhaps show an error message to the user
+            e.printStackTrace();
+        }
+
 
         AdminImagesAdapter adapter = new AdminImagesAdapter(images, image -> {
             Toast.makeText(getContext(), "Deleting image from " + image.getUploader(), Toast.LENGTH_SHORT).show();

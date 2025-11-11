@@ -1,20 +1,21 @@
 package com.example.zypherevent.ui.admin.events;
 
 import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.View;import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import com.example.zypherevent.R;
-import com.example.zypherevent.model.AdminEvent;
 import com.example.zypherevent.model.AdminImage;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Arunavo Dutta
- * @version 1.0
+ * @version 1.1
  * @see AdminImage
  * @see res/layout/fragment_admin_item_image_card.xml
  */
@@ -44,11 +45,17 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
         AdminImage image = imageList.get(position);
-        holder.imageUploader.setText("Uploaded by: " + image.getUploader());
-        holder.imageUploadDate.setText("Upload date: " + image.getUploadDate());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, yyyy", Locale.getDefault());
 
-        // TODO: Load image from Firebase Storage into holder.imagePreview
-        // holder.imagePreview.setImageResource(R.drawable.ic_images); // Placeholder
+        holder.imageUploader.setText("Uploaded by: " + image.getUploader());
+        holder.imageUploadDate.setText("Upload date: " + dateFormat.format(image.getUploadDate()));
+
+        Glide.with(holder.itemView.getContext())
+                .load(image.getImageUrl())
+                .placeholder(R.drawable.ic_entrant_profile) // A placeholder drawable
+                .error(R.drawable.ic_trash_bin) // An error drawable
+                .into(holder.imagePreview);
+
 
         holder.deleteButton.setOnClickListener(v -> {
             deleteListener.onDelete(image);

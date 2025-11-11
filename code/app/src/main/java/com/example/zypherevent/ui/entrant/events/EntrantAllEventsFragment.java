@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.entrant.events;
 
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * A fragment that displays a comprehensive list of all available events to an Entrant.
  * It provides the functionality for users to join or leave the waitlist for an event.
  * This class is responsible for fetching event data from the database, displaying it in a
@@ -31,8 +33,8 @@ import java.util.List;
  * <p>
  * This class implements the following user stories:
  * <ul>
- *   <li>US 01.01.01: As an Entrant, I want to join the waitlist for an event.</li>
- *   <li>US 01.01.02: As an Entrant, I want to leave the waitlist for an event.</li>
+ * <li>US 01.01.01: As an Entrant, I want to join the waitlist for an event.</li>
+ * <li>US 01.01.02: As an Entrant, I want to leave the waitlist for an event.</li>
  * </ul>
  *
  * @author Elliot Chrystal
@@ -50,6 +52,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     private List<Event> eventList = new ArrayList<>();
     private Button refreshButton;
     private Entrant currentUser;
+    private Long highlightEventId = null;
 
     public EntrantAllEventsFragment() { }
 
@@ -106,6 +109,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
             return;
         }
 
+        // Check if we need to highlight a specific event from QR scan
+        if (getArguments() != null) {
+            highlightEventId = getArguments().getLong("highlightEventId", -1L);
+            if (highlightEventId == -1L) {
+                highlightEventId = null;
+            }
+        }
+
         recyclerView = view.findViewById(R.id.recycler_view);
         refreshButton = view.findViewById(R.id.refresh_button);
         adapter = new EntrantEventAdapter(eventList, currentUser, this);
@@ -138,6 +149,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                 eventList.clear();
                 eventList.addAll(fetchedEvents);
                 adapter.notifyDataSetChanged();
+                
+                // Scroll to and highlight the scanned event if specified
+                if (highlightEventId != null) {
+                    scrollToEvent(highlightEventId);
+                    highlightEventId = null; // Clear after use
+                }
             } else {
                 Log.e(TAG, "Error running query: ", task.getException());
             }
@@ -154,11 +171,47 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      *
      * @param event The {@link Event} object corresponding to the clicked item.
      */
-    // Can be used to show event details in future
     @Override
     public void onItemClick(Event event) {
         Toast.makeText(getContext(), "Clicked on: " + event.getEventName(), Toast.LENGTH_SHORT).show();
     }
+
+    /**
+     * Scrolls to and highlights a specific event in the list.
+     * Called after scanning a QR code to show the user which event was scanned.
+     * 
+     * @param eventId The unique ID of the event to highlight
+     */
+    private void scrollToEvent(Long eventId) {
+        if (eventId == null) {
+            Toast.makeText(getContext(), "Invalid event ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Find the event position
+        int position = -1;
+        for (int i = 0; i < eventList.size(); i++) {
+            if (eventList.get(i).getUniqueEventID().equals(eventId)) {
+                position = i;
+                break;
+            }
+        }
+
+        // Scroll to it or show not found message
+        if (position != -1) {
+            final int finalPosition = position;
+            recyclerView.post(() -> {
+                recyclerView.smoothScrollToPosition(finalPosition);
+                Toast.makeText(getContext(),
+                        "Found: " + eventList.get(finalPosition).getEventName(),
+                        Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            Toast.makeText(getContext(), "Event not found in current list",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     /**
      * Added by Arunavo Dutta
@@ -167,13 +220,13 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      * This method orchestrates the process of an entrant joining an event. It performs a sequence
      * of asynchronous database operations:
      * <ol>
-     *     <li>Adds the current user to the specified event's waitlist in the database.</li>
-     *     <li>Upon success, creates a simplified "clean" version of the event object to avoid
-     *         nested data issues in Firestore when saving to the user's profile.</li>
-     *     <li>Adds this clean event to the user's local list of registered events.</li>
-     *     <li>Saves the updated user object (with the new event history) back to the database.</li>
-     *     <li>Finally, refreshes the event list to update the UI, typically changing the
-     *         "Join" button to a "Leave" button.</li>
+     * <li>Adds the current user to the specified event's waitlist in the database.</li>
+     * <li>Upon success, creates a simplified "clean" version of the event object to avoid
+     * nested data issues in Firestore when saving to the user's profile.</li>
+     * <li>Adds this clean event to the user's local list of registered events.</li>
+     * <li>Saves the updated user object (with the new event history) back to the database.</li>
+     * <li>Finally, refreshes the event list to update the UI, typically changing the
+     * "Join" button to a "Leave" button.</li>
      * </ol>
      * Error handling is implemented at each step to log failures and provide feedback to the user
      * via a {@link Toast}.
@@ -184,11 +237,9 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
-        // Add entrant to the event's 'waitListEntrants' array
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create a version of the event to save to the user's profile.
                     Event eventForHistory = new Event(
                             event.getUniqueEventID(),
                             event.getEventName(),
@@ -201,10 +252,8 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getPosterURL()
                     );
 
-                    // Add the clean event to the user's local history
                     currentUser.addEventToRegisteredEventHistory(eventForHistory);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated with new event.");
@@ -213,49 +262,52 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after joining: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to save to your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error saving to profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error joining waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not join waitlist.", Toast.LENGTH_SHORT).show();
+                    String message = e.getMessage();
+                    if (message != null && !message.isEmpty()) {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Failed to join waitlist", Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 
     /**
      * Added by Arunavo Dutta
+     * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
      * Handles the "Leave Waitlist" button click for an event.
      * <p>
      * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
      * It performs the following sequential, asynchronous operations:
      * <ol>
-     *     <li>Calls the database to remove the current user from the specified event's waitlist.</li>
-     *     <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
-     *         local list of registered events.</li>
-     *     <li>Saves the updated user object back to the database to persist the change in their event history.</li>
-     *     <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
+     * <li>Calls the database to remove the current user from the specified event's waitlist.</li>
+     * <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
+     * local list of registered events.</li>
+     * <li>Saves the updated user object back to the database to persist the change in their event history.</li>
+     * <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
      * </ol>
      * Each step includes error handling. If a database operation fails, an error is logged, and a
      * {@link Toast} message is shown to the user to inform them of the failure. A success message is shown upon completion.
      *
      * @param event The {@link Event} object from which the user is leaving the waitlist.
      */
+    // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
     @Override
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
-        // Remove entrant from the event's 'waitListEntrants' array
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    // Create an event object to find and remove
                     Event eventToRemove = new Event();
                     eventToRemove.setUniqueEventID(event.getUniqueEventID());
 
-                    // Remove the event from the user's local history
                     currentUser.removeEventFromRegisteredEventHistory(eventToRemove);
 
-                    // Save the updated user object
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated, event removed.");
@@ -264,12 +316,12 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after leaving: ", e);
-                                Toast.makeText(getContext(), "Error: Failed to update your profile.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error leaving waitlist", e);
-                    Toast.makeText(getContext(), "Error: Could not leave waitlist.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Error leaving waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 }

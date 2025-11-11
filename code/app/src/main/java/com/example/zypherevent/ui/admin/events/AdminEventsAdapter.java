@@ -11,7 +11,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * An adapter for displaying a list of {@link Event} objects in a {@link RecyclerView}
@@ -105,16 +108,18 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
      */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-        Event event = eventList.get(position);
 
-        // Event Name
+        Event event = eventList.get(position);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
         holder.eventName.setText(event.getEventName());
 
-        // Registration Start Time
-        holder.eventTime.setText("Registration Opens: " + event.getRegistrationStartTime());
+        String regStart = (event.getRegistrationStartTime() != null) ? formatter.format(event.getRegistrationStartTime()) : "N/A";
+        String regEnd = (event.getRegistrationEndTime() != null) ? formatter.format(event.getRegistrationEndTime()) : "N/A";
 
-        // Registration End Time
-        holder.eventLotteryDetails.setText("Registration Closes: " + event.getRegistrationEndTime());
+        holder.eventTime.setText("Registration Opens: " + regStart);
+        holder.eventLotteryDetails.setText("Registration Closes: " + regEnd);
+
 
         // Description, Location, and Organizer ID
         // Combining these into the 'details' text view.

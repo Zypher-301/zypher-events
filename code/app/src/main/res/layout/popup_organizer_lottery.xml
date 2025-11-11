@@ -15,13 +15,58 @@
         android:textSize="45sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        android:layout_marginBottom="20dp" />
+        android:layout_marginBottom="12dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnSortNewest"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Newest"
+            android:layout_marginEnd="4dp"
+            style="?attr/borderlessButtonStyle"/>
+
+        <Button
+            android:id="@+id/btnSortOldest"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Oldest"
+            android:layout_marginEnd="4dp"
+            style="?attr/borderlessButtonStyle"/>
+
+        <Button
+            android:id="@+id/btnSortName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Name"
+            style="?attr/borderlessButtonStyle"/>
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/entrant_waitlist"
         android:layout_width="300dp"
         android:layout_height="500dp"
         android:layout_marginBottom="20dp" />
+
+    <EditText
+        android:id="@+id/etSampleSize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Number to sample"
+        android:inputType="number"
+        android:layout_marginBottom="12dp"
+        android:minWidth="150dp"
+        android:gravity="center" />
 
     <Button
         android:id="@+id/run_lottery"

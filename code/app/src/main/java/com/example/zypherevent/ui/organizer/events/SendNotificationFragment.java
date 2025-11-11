@@ -1,38 +1,50 @@
 package com.example.zypherevent.ui.organizer.events;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * @author Tom Yang
- * @version 1.0
+ * @version 2.0
  *
  * Activity for sending notifications to entrants based on their event status.
  * Allows organizers to select a status category (Waitlisted, Accepted, or Denied)
  * and send appropriate notifications to all entrants in that category.
+ *
+ * Updated to:
+ *  - Clearly invite "Accepted" entrants to sign up for the event
+ *  - Prevent duplicate notifications to the same entrant (by hardware ID)
+ *
  * @see Notification
  * @see Database
  * @see Organizer
  * @see Entrant
  * @see Event
  */
-public class SendNotificationFragment extends AppCompatActivity {
+public class SendNotificationFragment extends Fragment {
+
     /** Spinner for selecting the target status group (Waitlisted, Accepted, or Denied) */
     private Spinner statusSpinner;
 
@@ -48,33 +60,61 @@ public class SendNotificationFragment extends AppCompatActivity {
     /** The organizer who is sending the notification */
     private Organizer organizer;
 
-    /** The event ID for which notifications are being sent to */
+    /** The event ID for which notifications are being sent */
     private Long eventID;
 
     /** The event name stored for notification */
     private String eventName;
 
+    public SendNotificationFragment() {
+        // Required empty public constructor
+    }
+
+    /**
+     * Sets the organizer for this notification fragment
+     *
+     * @param organizer the organizer sending notifications
+     */
+    public void setOrganizer(Organizer organizer) {
+        this.organizer = organizer;
+    }
+
+    /**
+     * Sets the event ID for this notification fragment
+     *
+     * @param eventID the unique ID for this event
+     */
+    public void setEventID(Long eventID) {
+        this.eventID = eventID;
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.popup_organizer_notifications_to_entrant);
-
-        // Initialize Database
         database = new Database();
+    }
 
-        // Get organizer and event ID from intent
-        organizer = (Organizer) getIntent().getSerializableExtra("organizer");
-        eventID = getIntent().getLongExtra("eventID", -1L);
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.popup_organizer_notifications_to_entrant, container, false);
+    }
 
-        if (organizer == null || eventID == -1L) {
-            Toast.makeText(this, "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
-            finish();
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        if (organizer == null || eventID == null || eventID == -1L) {
+            Toast.makeText(getContext(), "Error: missing organizer or event information", Toast.LENGTH_SHORT).show();
+            if (getActivity() != null) {
+                getActivity().getSupportFragmentManager().popBackStack();
+            }
             return;
         }
 
-        //Initialize ui
-        statusSpinner = findViewById(R.id.dropdown);
-        sendButton = findViewById(R.id.send_button);
+        // Initialize UI
+        statusSpinner = view.findViewById(R.id.dropdown);
+        sendButton = view.findViewById(R.id.send_button);
 
         // Setup spinner with status options
         setupSpinner();
@@ -85,14 +125,15 @@ public class SendNotificationFragment extends AppCompatActivity {
 
     /**
      * Configures the status spinner with available options (Waitlisted, Accepted, Denied)
-     * Sets up the adapter and selection listener to track the currently selected status
+     * Sets up the adapter and selection listener to track the currently selected status.
      */
     private void setupSpinner() {
         // Create array of status options
         String[] statusOptions = {"Waitlisted", "Accepted", "Denied"};
 
         // Create adapter for spinner
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         // Set adapter to spinner
@@ -104,13 +145,8 @@ public class SendNotificationFragment extends AppCompatActivity {
         // Set the listener for spinner selection
         statusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             /**
-             * Called when an item in the spinner in selected.
+             * Called when an item in the spinner is selected.
              * Updates the selected status based on the position in the array.
-             *
-             * @param parent The AdapterView where the selection happened
-             * @param view The view within the AdapterView that was clicked
-             * @param position The position of the view in the adapter
-             * @param id The row id of the item that is selected
              */
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -118,10 +154,8 @@ public class SendNotificationFragment extends AppCompatActivity {
             }
 
             /**
-             * Called when nothing has been selected int he spinner.
-             * Clears the selected status
-             *
-             * @param parent The AdapterView that now contains no selected item.
+             * Called when nothing has been selected in the spinner.
+             * Clears the selected status.
              */
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
@@ -131,10 +165,12 @@ public class SendNotificationFragment extends AppCompatActivity {
     }
 
     /**
-     * Queries FireBase for all entrants with the selected status for the current event and sends a notification to each one.
+     * Queries Firestore for all entrants with the selected status for the current event
+     * and sends a notification to each one.
+     *
      * Validates that a status has been selected and shows an AlertDialog if not.
      * The notification content is automatically generated based on status.
-     * Uses the Database class to generate unique notification IDs and store notification (for future user story)
+     * Uses the Database class to generate unique notification IDs and store the notification.
      * Provides user feedback through toast messages for success or failure.
      * Disables the send button during processing to prevent duplicate sends.
      */
@@ -150,70 +186,76 @@ public class SendNotificationFragment extends AppCompatActivity {
 
         // Query the event to get entrants with selected status
         database.getEvent(eventID).addOnSuccessListener(event -> {
-            if (event == null) {
-                Toast.makeText(this, "Event not found", Toast.LENGTH_SHORT).show();
-                sendButton.setEnabled(true);
-                return;
-            }
+                    if (event == null) {
+                        Toast.makeText(getContext(), "Event not found", Toast.LENGTH_SHORT).show();
+                        sendButton.setEnabled(true);
+                        return;
+                    }
 
-            eventName = event.getEventName();
-            // Get notification content based on status and event name
-            String header = getNotificationHeader(selectedStatus, eventName);
-            String body = getNotificationBody(selectedStatus);
+                    eventName = event.getEventName();
 
-            ArrayList<Entrant> targetEntrants = getEntrantListByStatus(event, selectedStatus);
+                    // Get notification content based on status and event name
+                    String header = getNotificationHeader(selectedStatus, eventName);
+                    String body = getNotificationBody(selectedStatus);
 
-            if (targetEntrants == null || targetEntrants.isEmpty()) {
-                showNoEntrantDialog(selectedStatus);
-                sendButton.setEnabled(true);
-                return;
-            }
+                    ArrayList<Entrant> targetEntrants = getEntrantListByStatus(event, selectedStatus);
 
-            //Send notification to all entrants to the target list
-            sendNotificationToEntrants(targetEntrants, header, body);
-        })
+                    if (targetEntrants == null || targetEntrants.isEmpty()) {
+                        showNoEntrantDialog(selectedStatus);
+                        sendButton.setEnabled(true);
+                        return;
+                    }
+
+                    // Send notification to all entrants in the target list
+                    sendNotificationToEntrants(targetEntrants, header, body);
+                })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to retrieve event " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to retrieve event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     sendButton.setEnabled(true);
-        });
+                });
     }
 
     /**
      * Displays an AlertDialog informing the organizer they must select a group from the dropdown
-     * before sending notification.
+     * before sending notifications.
      */
     private void showSelectionRequireDialog() {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(getContext())
                 .setTitle("No Group Selected")
-                .setMessage("Please select a group from the dropdown menu before sending notifications")
+                .setMessage("Please select a group from the dropdown menu before sending notifications.")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
     /**
-     * Displays an AlertDialog informing the organizer that there are no entrants in the selected group
+     * Displays an AlertDialog informing the organizer that there are no entrants in the selected group.
      *
      * @param selectedStatus The status group that has no entrants (waitlisted, accepted, denied)
      */
     private void showNoEntrantDialog(String selectedStatus) {
-        new android.app.AlertDialog.Builder(this)
+        new android.app.AlertDialog.Builder(getContext())
                 .setTitle("No Entrant Found")
-                .setMessage("There are currently no " + selectedStatus + " entrants for this event")
+                .setMessage("There are currently no " + selectedStatus + " entrants for this event.")
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
     /**
-     * Retrieves the appropriate list of entrant Hardware Ids based on the selected status
+     * Retrieves the appropriate list of entrants based on the selected status.
      *
-     * @param event The event containing the entrant lists
+     * @param event          The event containing the entrant lists
      * @param selectedStatus The selected status (waitlisted, accepted, denied)
-     * @return The list of entrant Hardware IDs matching the selectedStatus, or null is status is invalid
+     * @return The list of entrants matching the selectedStatus, or null if status is invalid
      */
     private ArrayList<Entrant> getEntrantListByStatus(Event event, String selectedStatus) {
         switch (selectedStatus) {
             case "Waitlisted":
-                return event.getWaitListEntrants();
+                // Extract Entrant objects from WaitlistEntry list
+                ArrayList<Entrant> waitlistedEntrants = new ArrayList<>();
+                for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                    waitlistedEntrants.add(entry.getEntrant());
+                }
+                return waitlistedEntrants;
             case "Accepted":
                 return event.getAcceptedEntrants();
             case "Denied":
@@ -225,18 +267,46 @@ public class SendNotificationFragment extends AppCompatActivity {
 
     /**
      * Sends notifications to a list of entrants.
-     * For each entrant, generate a unique notification ID using the Database class and stores notification in Firebase
+     * For each entrant, generate a unique notification ID using the Database class
+     * and store the notification in Firebase.
      *
-     * @param entrants The list of entrant objects to notify
-     * @param header The notification header text
-     * @param body The notification body text
+     * This version also prevents duplicate notifications to the same entrant by
+     * de-duplicating based on hardware ID.
+     *
+     * @param entrants The list of entrant objects to notify (may contain duplicates)
+     * @param header   The notification header text
+     * @param body     The notification body text
      */
     private void sendNotificationToEntrants(ArrayList<Entrant> entrants, String header, String body) {
-        int totalEntrants = entrants.size();
+        //  First, remove duplicates based on hardwareID
+        ArrayList<Entrant> uniqueEntrants = new ArrayList<>();
+        HashSet<String> seenHardwareIds = new HashSet<>();
+
+        for (Entrant entrant : entrants) {
+            if (entrant == null) continue;
+
+            String entrantHardwareID = entrant.getHardwareID();
+            if (entrantHardwareID == null || entrantHardwareID.isEmpty()) {
+                continue; // skip invalid / missing IDs
+            }
+
+            // Only add the entrant the first time we see this hardwareID
+            if (seenHardwareIds.add(entrantHardwareID)) {
+                uniqueEntrants.add(entrant);
+            }
+        }
+
+        int totalEntrants = uniqueEntrants.size();
         final int[] successCount = {0};
         final int[] failureCount = {0};
 
-        for (Entrant entrant : entrants) {
+        if (totalEntrants == 0) {
+            Toast.makeText(getContext(), "No valid entrants to notify", Toast.LENGTH_SHORT).show();
+            sendButton.setEnabled(true);
+            return;
+        }
+
+        for (Entrant entrant : uniqueEntrants) {
             // Get hardware ID from the Entrant object
             String entrantHardwareID = entrant.getHardwareID();
 
@@ -244,8 +314,13 @@ public class SendNotificationFragment extends AppCompatActivity {
             database.getUniqueNotificationID()
                     .addOnSuccessListener(notificationID -> {
                         // Create notification
-                        Notification notification = new Notification(notificationID, organizer.getHardwareID(),
-                                entrantHardwareID, header, body);
+                        Notification notification = new Notification(
+                                notificationID,
+                                organizer.getHardwareID(),
+                                entrantHardwareID,
+                                header,
+                                body
+                        );
 
                         // Store notification to database
                         database.setNotificationData(notificationID, notification)
@@ -266,40 +341,43 @@ public class SendNotificationFragment extends AppCompatActivity {
     }
 
     /**
-     * Checks if all notification have been processed and displays the appropriate message.
+     * Checks if all notifications have been processed and displays the appropriate message.
      * Re-enables the send button once all operations are finished.
      *
-     * @param successCount The number of notifications sent successfully
-     * @param failureCount The number of notifications that failed to send
+     * @param successCount  The number of notifications sent successfully
+     * @param failureCount  The number of notifications that failed to send
      * @param totalEntrants The total number of notification-sends attempted
      */
     private void checkCompletionAndNotify(int successCount, int failureCount, int totalEntrants) {
         if (successCount + failureCount == totalEntrants) {
             String message;
             if (failureCount == 0) {
-                message = "Successfully sent " + successCount + " notification(s) to " + selectedStatus + " entrants ";
+                message = "Successfully sent " + successCount + " notification(s) to "
+                        + selectedStatus + " entrants.";
             } else {
-                message = "Send " + successCount + " notification(s), " + failureCount + " failed";
+                message = "Sent " + successCount + " notification(s), "
+                        + failureCount + " failed.";
             }
 
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
             sendButton.setEnabled(true);
         }
     }
 
     /**
-     * Generates a notification header based on the entrant's status
+     * Generates a notification header based on the entrant's status.
      *
      * @param selectedStatus The selected status (waitlisted, accepted, denied)
-     * @param eventName The name of the event
+     * @param eventName      The name of the event
      * @return A formatted header string appropriate for the given status
      */
     private String getNotificationHeader(String selectedStatus, String eventName) {
-        switch (selectedStatus){
+        switch (selectedStatus) {
             case "Accepted":
-                return "Accepted: " + eventName;
+                // Explicit invitation to sign up for the event
+                return "You're invited to sign up: " + eventName;
             case "Waitlisted":
-                return "Waitlisted: " + eventName;
+                return "Waitlist update: " + eventName;
             case "Denied":
                 return "Update: " + eventName;
             default:
@@ -308,19 +386,23 @@ public class SendNotificationFragment extends AppCompatActivity {
     }
 
     /**
-     * Generates a notification body based on the entrant's status
+     * Generates a notification body based on the entrant's status.
      *
      * @param selectedStatus The selected status (waitlisted, accepted, denied)
      * @return A formatted body message appropriate for the given status
      */
     private String getNotificationBody(String selectedStatus) {
-        switch (selectedStatus){
+        switch (selectedStatus) {
             case "Accepted":
-                return "Great news! You have been accepted. Please check the event details for next steps.";
+                // Clear invite to sign up for event
+                return "Great news! You have been selected for this event. " +
+                        "Tap this notification in the app to review details and complete your sign-up.";
             case "Waitlisted":
-                return "You are currently on the waitlist for this event. We will notify you for status updates.";
+                return "You are currently on the waitlist for this event. " +
+                        "We will notify you if your status changes.";
             case "Denied":
-                return "Unfortunately, you were not selected at this time. We will notify you for status updates.";
+                return "Unfortunately, you were not selected at this time. " +
+                        "Thank you for your interest — please watch for future opportunities.";
             default:
                 return "Your event status has been updated. Please check the event for more details.";
         }

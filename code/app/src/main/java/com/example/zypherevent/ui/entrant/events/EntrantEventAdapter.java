@@ -12,10 +12,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
+ * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * An adapter to display a list of {@link Event} objects for an {@link Entrant} in a {@link RecyclerView}.
  * <p>
  * This adapter is responsible for creating views for each event, binding event data to those views,
@@ -24,9 +26,9 @@ import java.util.List;
  * <p>
  * This implementation addresses the following user stories:
  * <ul>
- *     <li>US 01.01.01: Allows an entrant to join an event's waitlist.</li>
- *     <li>US 01.01.02: Allows an entrant to leave an event's waitlist.</li>
- *     <li>US 01.05.04: Displays the current count of users on the waitlist for an event.</li>
+ * <li>US 01.01.01: Allows an entrant to join an event's waitlist.</li>
+ * <li>US 01.01.02: Allows an entrant to leave an event's waitlist.</li>
+ * <li>US 01.05.04: Displays the current count of users on the waitlist for an event.</li>
  * </ul>
  *
  * @see Event
@@ -77,9 +79,9 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
      * LayoutManager.
      *
      * @param parent   The ViewGroup into which the new View will be added after it is bound to
-     *                 an adapter position. This is the RecyclerView itself.
+     * an adapter position. This is the RecyclerView itself.
      * @param viewType The view type of the new View. This is not used in this adapter as there
-     *                 is only one type of item view.
+     * is only one type of item view.
      * @return A new {@code EventViewHolder} that holds the View for a single event item.
      */
     @NonNull
@@ -99,7 +101,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
      * method to populate the views with the event's data.
      *
      * @param holder   The ViewHolder which should be updated to represent the contents of the
-     *                 item at the given position in the data set.
+     * item at the given position in the data set.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
@@ -140,8 +142,8 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
          * ({@code item_event.xml}) that are used to display the event data.
          *
          * @param itemView The view for a single item in the RecyclerView, inflated from
-         *                 the {@code item_event.xml} layout. This view contains all the
-         *                 UI elements for one event.
+         * the {@code item_event.xml} layout. This view contains all the
+         * UI elements for one event.
          */
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -167,7 +169,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
          * @param event       The {@link Event} object containing the data to be displayed.
          * @param currentUser The current {@link Entrant} user, used to determine their waitlist status.
          * @param listener    The {@link OnItemClickListener} that will handle clicks on the item view,
-         *                    join button, and leave button.
+         * join button, and leave button.
          */
         public void bind(final Event event, Entrant currentUser, final OnItemClickListener listener) {
             tvTitle.setText(event.getEventName());
@@ -180,20 +182,52 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             // Make the button area visible
             slotActions.setVisibility(View.VISIBLE);
 
+            // Check registration window status
+            boolean registrationOpen = event.isRegistrationOpen();
+            String registrationStatus = event.getRegistrationStatus();
+
             // Check if the current user is on the waitlist.
-            if (event.getWaitListEntrants().contains(currentUser)) {
-                // User is ON the waitlist: Show "Leave"
+            boolean isOnWaitlist = false;
+            for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                if (entry.getEntrant().equals(currentUser)) {
+                    isOnWaitlist = true;
+                    break;
+                }
+            }
+            
+            if (isOnWaitlist) {
+                // User is ON the waitlist: Show "Leave" (only enabled during registration window)
                 btnJoinWaitlist.setVisibility(View.GONE);
                 btnLeaveWaitlist.setVisibility(View.VISIBLE);
+                btnLeaveWaitlist.setEnabled(registrationOpen);
             } else {
-                // User is NOT on the waitlist: Show "Join"
-                btnJoinWaitlist.setVisibility(View.VISIBLE);
+                // User is NOT on the waitlist
                 btnLeaveWaitlist.setVisibility(View.GONE);
+                btnJoinWaitlist.setVisibility(View.VISIBLE);
+                
+                if (registrationOpen) {
+                    // Registration is open: Show enabled "Join" button
+                    btnJoinWaitlist.setEnabled(true);
+                    btnJoinWaitlist.setText("Join Waitlist");
+                } else {
+                    // Registration is closed/not started: Show disabled button with status
+                    btnJoinWaitlist.setEnabled(false);
+                    btnJoinWaitlist.setText(registrationStatus);
+                }
             }
 
             // Set the click listeners to call the methods in the fragment
-            btnJoinWaitlist.setOnClickListener(v -> listener.onJoinClick(event));
-            btnLeaveWaitlist.setOnClickListener(v -> listener.onLeaveClick(event));
+            btnJoinWaitlist.setOnClickListener(v -> {
+                if (registrationOpen) {
+                    listener.onJoinClick(event);
+                }
+            });
+            // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
+            btnLeaveWaitlist.setOnClickListener(v -> {
+                if (registrationOpen) {
+                    listener.onLeaveClick(event);
+                }
+            });
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }
     }

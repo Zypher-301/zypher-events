@@ -121,8 +121,9 @@ public class EntrantSettingsFragment extends Fragment {
         });
 
         // Switch listeners
-        binding.switchNotifications.setOnCheckedChangeListener((btn, checked) ->
-                currentUser.setWantsNotifications(checked));
+        binding.switchNotifications.setOnCheckedChangeListener((btn, checked) -> {
+            currentUser.setWantsNotifications(checked);
+        });
 
         binding.switchGeo.setOnCheckedChangeListener((btn, checked) -> {
             currentUser.setUseGeolocation(checked);
@@ -164,6 +165,11 @@ public class EntrantSettingsFragment extends Fragment {
      * @return a {@link Task} representing the asynchronous save operation
      */
     private Task<Void> saveChanges(Entrant userToSave) {
+
+        // Set the notification visibility in EntrantActivity
+        EntrantActivity host = (EntrantActivity) requireActivity();
+        host.showOrHideNotifications(currentUser.getWantsNotifications());
+
         return db.setUserData(userToSave.getHardwareID(), userToSave)
                 .addOnSuccessListener(aVoid ->
                         Toast.makeText(requireContext(), "Changes saved!", Toast.LENGTH_SHORT).show());

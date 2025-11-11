@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -58,8 +59,14 @@ public class EntrantActivity extends AppCompatActivity {
     /** Activity result launcher for requesting location permission. */
     private ActivityResultLauncher<String> requestLocationPerm;
 
+    /** Callbacks for use after permission/result. */
     private Runnable pendingOnSuccess;
     private Runnable pendingOnFail;
+
+    /** Navigation drawer components. */
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private NavController navController;
 
     /**
      * Initializes the activity, inflates the layout, and sets up navigation.
@@ -111,21 +118,43 @@ public class EntrantActivity extends AppCompatActivity {
         setSupportActionBar(binding.entrantBarMain.toolbar);
 
         // Initialize DrawerLayout and NavigationView (entrant_main.xml)
-        DrawerLayout drawer = binding.entrantDrawerLayout;
-        NavigationView navigationView = binding.entrantNavView;
+        drawerLayout = binding.entrantDrawerLayout;
+        navigationView = binding.entrantNavView;
 
         // Configure the top-level destinations for the entrant drawer menu (entrant_main_drawer.xml)
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.nav_all_events, R.id.nav_joined_events, R.id.nav_qr_scanner, R.id.nav_notifications, R.id.nav_settings)
-                .setOpenableLayout(drawer)
+                .setOpenableLayout(drawerLayout)
                 .build();
 
         // Find the NavController using the ID from content_entrant.xml
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_entrant);
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_entrant);
 
         // Set up the ActionBar and NavigationView with the NavController
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
+        // Show or hide the notifications navigation item based on the entrant's notification preferences
+        showOrHideNotifications(entrantUser.getWantsNotifications());
+    }
+
+    /**
+     * Show or hide the notifications navigation item based on the entrant's notification preferences
+     *
+     * @param show true to show the item, false to hide it
+     */
+    public void showOrHideNotifications(boolean show) {
+        Menu menu = navigationView.getMenu();
+        MenuItem notificationsItem = menu.findItem(R.id.nav_notifications);
+        if (notificationsItem != null) {
+            notificationsItem.setVisible(show);
+        }
+        // if the notifications page is hidden and currently displayed, redirect user
+        if (!show &&
+                navController.getCurrentDestination() != null &&
+                navController.getCurrentDestination().getId() == R.id.nav_notifications) {
+            navController.navigate(R.id.nav_all_events);
+        }
     }
 
     /**

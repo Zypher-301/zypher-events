@@ -1,5 +1,7 @@
 package com.example.zypherevent;
 
+import android.os.Parcelable;
+
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.UserType;

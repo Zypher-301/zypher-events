@@ -1,7 +1,15 @@
 package com.example.zypherevent.userTypes;
 
-import com.example.zypherevent.Event;
+import android.os.Parcel;
+import android.os.Parcelable;
 
+import com.example.zypherevent.Event;
+import com.google.firebase.firestore.GeoPoint;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -17,7 +25,7 @@ import java.util.Objects;
  * This class also tracks the entrant’s registered event history.
  *
  */
-public class Entrant extends User {
+public class Entrant extends User implements Serializable {
 
     /** The entrant's email address. */
     private String email;
@@ -27,6 +35,9 @@ public class Entrant extends User {
 
     /** Whether the entrant has opted into geolocation. */
     private boolean useGeolocation;
+
+    /** The entrant's location (optional). */
+    private transient GeoPoint location;   // Firestore-native location
 
     /** Whether the entrant wants notifications. */
     private boolean wantsNotifications;
@@ -65,6 +76,66 @@ public class Entrant extends User {
         super(UserType.ENTRANT, hardwareID, firstName, lastName);
         this.email = email;
         this.registeredEventHistory = new ArrayList<Event>();
+    }
+
+    /**
+     * Writes the object to the output stream.
+     *
+     * @param out the output stream to write to
+     * @throws IOException if an I/O error occurs
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        // write all non-transient fields
+        out.defaultWriteObject();
+
+        // then manually write location
+        if (location != null) {
+            out.writeBoolean(true);
+            out.writeDouble(location.getLatitude());
+            out.writeDouble(location.getLongitude());
+        } else {
+            out.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the object from the input stream.
+     *
+     * @param in the input stream to read from
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException if the class of a serialized object cannot be found
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        // read all non-transient fields
+        in.defaultReadObject();
+
+        // then manually read location
+        boolean hasLocation = in.readBoolean();
+        if (hasLocation) {
+            double lat = in.readDouble();
+            double lng = in.readDouble();
+            location = new GeoPoint(lat, lng);
+        } else {
+            location = null;
+        }
+    }
+
+    /**
+     * Returns the entrant's location (optional).
+     *
+     * @return the entrant's location
+     */
+    public GeoPoint getLocation() {
+        return location;
+    }
+
+    /**
+     * Updates the entrant's location.
+     *
+     * @param location the new location to set
+     */
+    public void setLocation(GeoPoint location) {
+        this.location = location;
     }
 
     /**
@@ -138,7 +209,6 @@ public class Entrant extends User {
         // No contains check needed, as .remove already checks for existence internally
         registeredEventHistory.remove(event);
     }
-
 
     /**
      * Checks if this Entrant is equal to another object.

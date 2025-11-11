@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.LocationRequest;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -32,6 +33,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.zypherevent.databinding.ActivityMainBinding;
 import com.example.zypherevent.userTypes.UserType;
 import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.Priority;
@@ -171,11 +173,6 @@ public class MainActivity extends AppCompatActivity {
         EditText editTextPhone = findViewById(R.id.etPhone);
         Switch switchGeolocation = findViewById(R.id.switchGeo);
         Button btnSaveProfile = findViewById(R.id.btnSaveProfile);
-
-//        // Listener for geolocation switch to prompt permission request
-//        switchGeolocation.setOnCheckedChangeListener((buttonView, isChecked) -> {
-//
-//        });
 
         // Listener for save button
         btnSaveProfile.setOnClickListener(v -> {

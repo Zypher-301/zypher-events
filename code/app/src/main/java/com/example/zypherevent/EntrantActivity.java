@@ -1,9 +1,19 @@
 package com.example.zypherevent;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -14,6 +24,10 @@ import com.example.zypherevent.databinding.EntrantMainBinding;
 import com.example.zypherevent.userTypes.Administrator;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.User;
+import com.example.zypherevent.userTypes.UserType;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -39,6 +53,21 @@ public class EntrantActivity extends AppCompatActivity {
     /** The entrant user passed in from MainActivity. */
     private Entrant entrantUser;
 
+    /** Fused location client for getting current location. */
+    private FusedLocationProviderClient fused;
+
+    /** Activity result launcher for requesting location permission. */
+    private ActivityResultLauncher<String> requestLocationPerm;
+
+    /** Callbacks for use after permission/result. */
+    private Runnable pendingOnSuccess;
+    private Runnable pendingOnFail;
+
+    /** Navigation drawer components. */
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private NavController navController;
+
     /**
      * Initializes the activity, inflates the layout, and sets up navigation.
      *
@@ -51,9 +80,35 @@ public class EntrantActivity extends AppCompatActivity {
         // create new instance of database
         db = new Database();
 
+        // create fused location client
+        fused = LocationServices.getFusedLocationProviderClient(this);
+
+        requestLocationPerm = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        fetchOnceAndSaveLocation();   // after save, we’ll run pendingOnSuccess
+                    } else {
+                        if (pendingOnFail != null) pendingOnFail.run();
+                        pendingOnFail = null;
+                        pendingOnSuccess = null;
+                        Log.w("EntrantActivity", "Location permission denied");
+                    }
+                }
+        );
+
         // Get the entrant user object that was passed along from MainActivity
         entrantUser = (Entrant) getIntent().getSerializableExtra("entrantUser");
         Log.d("EntrantActivityLogic", "Got Entrant from MainActivity");
+
+        // If user opted in and we don’t have a location yet → get one
+        if (entrantUser.getUseGeolocation() && entrantUser.getLocation() == null) {
+            if (hasLocationPermission()) {
+                fetchOnceAndSaveLocation();
+            } else {
+                requestLocationPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        }
 
         // Inflate the entrant layout using its binding class (entrant_main.xml)
         binding = EntrantMainBinding.inflate(getLayoutInflater());
@@ -63,21 +118,150 @@ public class EntrantActivity extends AppCompatActivity {
         setSupportActionBar(binding.entrantBarMain.toolbar);
 
         // Initialize DrawerLayout and NavigationView (entrant_main.xml)
-        DrawerLayout drawer = binding.entrantDrawerLayout;
-        NavigationView navigationView = binding.entrantNavView;
+        drawerLayout = binding.entrantDrawerLayout;
+        navigationView = binding.entrantNavView;
 
         // Configure the top-level destinations for the entrant drawer menu (entrant_main_drawer.xml)
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.nav_all_events, R.id.nav_joined_events, R.id.nav_qr_scanner, R.id.nav_notifications, R.id.nav_settings)
-                .setOpenableLayout(drawer)
+                .setOpenableLayout(drawerLayout)
                 .build();
 
         // Find the NavController using the ID from content_entrant.xml
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_entrant);
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_entrant);
 
         // Set up the ActionBar and NavigationView with the NavController
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
+        // Show or hide the notifications navigation item based on the entrant's notification preferences
+        showOrHideNotifications(entrantUser.getWantsNotifications());
+    }
+
+    /**
+     * Show or hide the notifications navigation item based on the entrant's notification preferences
+     *
+     * @param show true to show the item, false to hide it
+     */
+    public void showOrHideNotifications(boolean show) {
+        Menu menu = navigationView.getMenu();
+        MenuItem notificationsItem = menu.findItem(R.id.nav_notifications);
+        if (notificationsItem != null) {
+            notificationsItem.setVisible(show);
+        }
+        // if the notifications page is hidden and currently displayed, redirect user
+        if (!show &&
+                navController.getCurrentDestination() != null &&
+                navController.getCurrentDestination().getId() == R.id.nav_notifications) {
+            navController.navigate(R.id.nav_all_events);
+        }
+    }
+
+    /**
+     * Requests the entrant's location from the device if it is missing from their profile.
+     * If geolocation is enabled for the current entrant and no saved location exists,
+     * this method checks for location permission. If granted, it fetches the location once
+     * and saves it to Firestore. If permission is missing, it launches a permission request.
+     * Otherwise, the success callback is run immediately since no action is required.
+     *
+     * @param onSuccess callback to run after a successful location update
+     * @param onFail    callback to run if the location could not be fetched or saved
+     */
+    public void requestEntrantLocationIfMissing(@Nullable Runnable onSuccess,
+                                                @Nullable Runnable onFail) {
+        // save callbacks for use after permission/result
+        pendingOnSuccess = onSuccess;
+        pendingOnFail = onFail;
+
+        if (entrantUser.getUseGeolocation() && entrantUser.getLocation() == null) {
+            if (hasLocationPermission()) {
+                fetchOnceAndSaveLocation();   // will call pendingOnSuccess later
+            } else {
+                requestLocationPerm.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        } else {
+            // Nothing to do; call success immediately if you want
+            if (pendingOnSuccess != null) pendingOnSuccess.run();
+            pendingOnSuccess = null;
+            pendingOnFail = null;
+        }
+    }
+
+    /**
+     * Checks whether the app currently has either fine or coarse location permission.
+     *
+     * @return true if at least one location permission is granted. false otherwise
+     */
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Attempts to retrieve the device's current location once and save it to the entrant profile.
+     * If a fresh fix is unavailable, falls back to the last known location. Updates the entrant's
+     * Firestore record with the retrieved coordinates and triggers success or failure callbacks.
+     */
+    private void fetchOnceAndSaveLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Location permission not granted.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Notify user that we’re starting the location fetch
+        Toast.makeText(this, "Fetching your location, this may take a moment...", Toast.LENGTH_SHORT).show();
+
+        fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                .addOnSuccessListener(loc -> {
+                    if (loc != null) {
+                        saveEntrantLocation(loc);
+                    } else {
+                        // Fallback to last known if no fresh fix available
+                        fused.getLastLocation()
+                                .addOnSuccessListener(last -> {
+                                    if (last != null) {
+                                        Toast.makeText(this, "Location found. Saving to profile!", Toast.LENGTH_SHORT).show();
+                                        saveEntrantLocation(last);
+                                    } else {
+                                        Toast.makeText(this, "Unable to get your location. Please try again later.", Toast.LENGTH_LONG).show();
+                                        Log.w("EntrantActivity", "No location available");
+                                    }
+                                })
+                                .addOnFailureListener(e -> Log.e("EntrantActivity", "LastLocation failed", e));
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("EntrantActivity", "getCurrentLocation failed", e);
+                    Toast.makeText(this, "Error getting location: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    /**
+     * Saves the entrant's location to Firestore and updates their profile object.
+     *
+     * @param loc the retrieved Android android.location.Location to save
+     */
+    private void saveEntrantLocation(android.location.Location loc) {
+        com.google.firebase.firestore.GeoPoint gp =
+                new com.google.firebase.firestore.GeoPoint(loc.getLatitude(), loc.getLongitude());
+
+        entrantUser.setLocation(gp);
+
+        db.setUserData(entrantUser.getHardwareID(), entrantUser)
+                .addOnSuccessListener(v -> {
+                    Log.d("EntrantActivity", "Saved location for entrant");
+                    if (pendingOnSuccess != null) pendingOnSuccess.run();
+                    pendingOnSuccess = null;
+                    pendingOnFail = null;
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("EntrantActivity", "Failed to save location", e);
+                    if (pendingOnFail != null) pendingOnFail.run();
+                    pendingOnSuccess = null;
+                    pendingOnFail = null;
+                });
     }
 
     /**

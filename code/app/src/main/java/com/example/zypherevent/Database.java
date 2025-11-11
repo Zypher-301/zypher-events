@@ -213,6 +213,8 @@ public class Database {
                         Date startTime = doc.getDate("startTime");
                         Date registrationStartTime = doc.getDate("registrationStartTime");
                         Date registrationEndTime = doc.getDate("registrationEndTime");
+
+                        boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
                         
                         Event event = new Event(
                                 uniqueEventID,
@@ -223,7 +225,8 @@ public class Database {
                                 registrationStartTime,
                                 registrationEndTime,
                                 eventOrganizerHardwareID,
-                                posterURL
+                                posterURL,
+                                requiresGeolocation
                         );
                         
                         // Parse optional fields
@@ -563,6 +566,8 @@ public class Database {
                             Date registrationStartTime= doc.getDate("registrationStartTime");
                             Date registrationEndTime = doc.getDate("registrationEndTime");
 
+                            boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
+
                             Event event = new Event(
                                     uniqueEventID,
                                     eventName,
@@ -572,7 +577,8 @@ public class Database {
                                     registrationStartTime,
                                     registrationEndTime,
                                     eventOrganizerHardwareID,
-                                    posterURL
+                                    posterURL,
+                                    requiresGeolocation
                             );
 
                             if (doc.contains("waitlistLimit")) {
@@ -645,6 +651,8 @@ public class Database {
                             Date registrationStartTime= doc.getDate("registrationStartTime");
                             Date registrationEndTime = doc.getDate("registrationEndTime");
 
+                            boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
+
                             Event event = new Event(
                                     uniqueEventID,
                                     eventName,
@@ -654,7 +662,8 @@ public class Database {
                                     registrationStartTime,
                                     registrationEndTime,
                                     eventOrganizerHardwareID,
-                                    posterURL
+                                    posterURL,
+                                    requiresGeolocation
                             );
 
                             if (doc.contains("waitlistLimit")) {

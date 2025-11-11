@@ -1,5 +1,8 @@
 package com.example.zypherevent.userTypes;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.io.Serializable;
 
 /**
@@ -8,7 +11,7 @@ import java.io.Serializable;
  *
  * This class describes the shared features of Entrants, Organizers, and Administrators (For code
  * reusability). Users are identified primarily by their hardware ID.
- * This class implements serializable so that It can be passed around with intent.
+ * This class implements parcelable so that It can be passed around with intent.
  */
 public class User implements Serializable {
     /**

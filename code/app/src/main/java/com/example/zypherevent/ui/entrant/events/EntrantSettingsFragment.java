@@ -91,7 +91,7 @@ public class EntrantSettingsFragment extends Fragment {
         binding.etLastName.setText(currentUser.getLastName());
         binding.etEmail.setText(currentUser.getEmail());
         binding.etPhone.setText(currentUser.getPhoneNumber());
-        binding.switchGeo.setChecked(currentUser.isUseGeolocation());
+        binding.switchGeo.setChecked(currentUser.getUseGeolocation());
         binding.switchNotifications.setChecked(currentUser.getWantsNotifications());
 
         // Listen for changes, and update the user object accordingly

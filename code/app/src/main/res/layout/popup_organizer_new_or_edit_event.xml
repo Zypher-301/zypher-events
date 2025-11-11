@@ -83,6 +83,14 @@
             android:hint="Waitlist Size"
             android:inputType="number" />
 
+        <Switch
+            android:id="@+id/require_geolocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Require Geolocation for Entry"
+            android:textSize="16sp" />
+
         <Button
             android:id="@+id/save"
             android:layout_width="wrap_content"

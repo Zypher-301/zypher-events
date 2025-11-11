@@ -346,6 +346,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String description = editDetails.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
+            Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -375,6 +376,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             Date startTime;
             Date registrationStartTime;
             Date registrationEndTime;
+
+            boolean requiresGeolocation = switchGeolocation.isChecked();
 
             try {
                 startTime = Utils.createWholeDayDate(startTimeStr);
@@ -413,7 +416,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             createEvent(eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit);
+                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
 
             dialog.dismiss();
         });
@@ -422,7 +425,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void createEvent(String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -446,7 +449,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     location,
                     registrationStartTime,
                     registrationEndTime,
-                    organizerUser.getHardwareID()
+                    organizerUser.getHardwareID(),
+                    requiresGeolocation
             );
 
             if (waitlistLimit != null) {
@@ -482,6 +486,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editDetails = dialogView.findViewById(R.id.edit_details);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
+        Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
         Button saveButton = dialogView.findViewById(R.id.save);
 
         TextView label = dialogView.findViewById(R.id.label1);
@@ -498,6 +503,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
         if (event.getRegistrationEndTime() != null) {
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
+        }
+        if (event.getRequiresGeolocation()) {
+            switchGeolocation.setChecked(true);
         }
         editDetails.setText(event.getEventDescription());
 
@@ -531,6 +539,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String description = editDetails.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
+            boolean requiresGeolocation = switchGeolocation.isChecked();
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -604,7 +613,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit);
+                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
 
             dialog.dismiss();
         });
@@ -613,7 +622,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
         Event updatedEvent = new Event(
@@ -624,7 +633,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 location,
                 registrationStartTime,
                 registrationEndTime,
-                organizerUser.getHardwareID()
+                organizerUser.getHardwareID(),
+                requiresGeolocation
         );
 
         updatedEvent.setWaitlistLimit(waitlistLimit);

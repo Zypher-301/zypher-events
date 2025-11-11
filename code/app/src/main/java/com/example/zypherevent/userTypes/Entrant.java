@@ -174,7 +174,7 @@ public class Entrant extends User {
      *
      * @return true if geolocation is enabled, false otherwise
      */
-    public boolean isUseGeolocation() {
+    public boolean getUseGeolocation() {
         return useGeolocation;
     }
 

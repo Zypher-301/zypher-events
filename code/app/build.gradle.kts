@@ -58,10 +58,8 @@ dependencies {
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
-
-
-
-
+    // For Location functionality
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // For Firestore
     // Import the Firebase BoM

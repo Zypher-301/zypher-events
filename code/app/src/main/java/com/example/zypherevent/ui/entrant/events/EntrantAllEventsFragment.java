@@ -24,6 +24,11 @@ import com.example.zypherevent.userTypes.Entrant;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.AlertDialog;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 /**
  * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * A fragment that displays a comprehensive list of all available events to an Entrant.
@@ -53,6 +58,16 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     private Button refreshButton;
     private Entrant currentUser;
     private Long highlightEventId = null;
+
+
+    /**
+     * A date formatter to present event start and registration times in a detailed,
+     * human-readable format for the event details dialog.
+     * Example format: "Wed, Mar 13, 2024 at 5:00 PM".
+     */
+    private final SimpleDateFormat detailDateFormatter =
+            new SimpleDateFormat("EEE, MMM d, yyyy 'at' h:mm a", Locale.getDefault());
+
 
     public EntrantAllEventsFragment() { }
 
@@ -142,6 +157,10 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     private void loadEvents() {
         Log.d(TAG, "Attempting to query 'events' collection...");
         db.getAllEventsList().addOnCompleteListener(task -> {
+            if (!isAdded() || getContext() == null) {
+                Log.w(TAG, "loadEvents callback received, but fragment is detached.");
+                return;
+            }
             if (task.isSuccessful()) {
                 List<Event> fetchedEvents = task.getResult();
                 if (fetchedEvents == null) { return; }
@@ -167,13 +186,41 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      * This is triggered when a user taps on an event card.
      * Currently, it displays a Toast message with the name of the clicked event.
      * <p>
-     * This method can be expanded in the future to navigate to a detailed view of the event.
+     * This method has been expanded to navigate to a detailed view of the event.
+     *
+     * @param event The {@link Event} object corresponding to the clicked item.
+     */
+    /**
+     * Handles the click event for an item in the RecyclerView by showing a details dialog.
      *
      * @param event The {@link Event} object corresponding to the clicked item.
      */
     @Override
     public void onItemClick(Event event) {
-        Toast.makeText(getContext(), "Clicked on: " + event.getEventName(), Toast.LENGTH_SHORT).show();
+        // Check if context is available before creating a dialog
+        if (getContext() == null) {
+            Log.e(TAG, "onItemClick: Context is null, cannot show dialog.");
+            return;
+        }
+
+        // Build the details string
+        StringBuilder details = new StringBuilder();
+        details.append("Description:\n").append(event.getEventDescription()).append("\n\n");
+        details.append("Location: ").append(event.getLocation()).append("\n\n");
+        details.append("Event Starts: ")
+                .append(formatDate(event.getStartTime())).append("\n\n");
+        details.append("Registration Opens: ")
+                .append(formatDate(event.getRegistrationStartTime())).append("\n");
+        details.append("Registration Closes: ")
+                .append(formatDate(event.getRegistrationEndTime())).append("\n\n");
+        details.append("Organizer: ").append(event.getEventOrganizerHardwareID());
+
+        // Show the details in an AlertDialog
+        new AlertDialog.Builder(getContext())
+                .setTitle(event.getEventName()) // Set the event name as the title
+                .setMessage(details.toString()) // Set the built string as the message
+                .setPositiveButton("Close", (dialog, which) -> dialog.dismiss()) // Close button
+                .show(); // Display the dialog
     }
 
     /**
@@ -332,5 +379,22 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                     Log.e(TAG, "Error leaving waitlist", e);
                     Toast.makeText(getContext(), "Error leaving waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    /**
+     * Added by Arunavo Dutta
+     * Helper method to safely format a Date object.
+     * Returns "N/A" if the date is null.
+     */
+    private String formatDate(Date date) {
+        if (date == null) {
+            return "N/A";
+        }
+        try {
+            return detailDateFormatter.format(date);
+        } catch (Exception e) {
+            Log.e(TAG, "Error formatting date", e);
+            return "N/A";
+        }
     }
 }

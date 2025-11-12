@@ -91,7 +91,7 @@ public class EntrantSettingsFragment extends Fragment {
         binding.etLastName.setText(currentUser.getLastName());
         binding.etEmail.setText(currentUser.getEmail());
         binding.etPhone.setText(currentUser.getPhoneNumber());
-        binding.switchGeo.setChecked(currentUser.isUseGeolocation());
+        binding.switchGeo.setChecked(currentUser.getUseGeolocation());
         binding.switchNotifications.setChecked(currentUser.getWantsNotifications());
 
         // Listen for changes, and update the user object accordingly
@@ -121,16 +121,40 @@ public class EntrantSettingsFragment extends Fragment {
         });
 
         // Switch listeners
-        binding.switchGeo.setOnCheckedChangeListener((btn, checked) ->
-                currentUser.setUseGeolocation(checked));
+        binding.switchNotifications.setOnCheckedChangeListener((btn, checked) -> {
+            currentUser.setWantsNotifications(checked);
+        });
 
-        binding.switchNotifications.setOnCheckedChangeListener((btn, checked) ->
-                currentUser.setWantsNotifications(checked));
+        binding.switchGeo.setOnCheckedChangeListener((btn, checked) -> {
+            currentUser.setUseGeolocation(checked);
+//            Toast.makeText(requireContext(), "Gathering location data... (This may take a moment)", Toast.LENGTH_SHORT).show();
+
+            if (checked && currentUser.getLocation() == null) {
+                EntrantActivity host = (EntrantActivity) requireActivity();
+
+                host.requestEntrantLocationIfMissing(
+                        // onSuccess:
+                        () -> {
+//                            Toast.makeText(requireContext(), "Location saved to profile", Toast.LENGTH_SHORT).show();
+                            // Persist flag
+                             db.setUserData(currentUser.getHardwareID(), currentUser);
+                        },
+                        // onFail or denied:
+                        () -> {
+//                            Toast.makeText(requireContext(), "Couldn’t get location. Turning off geolocation.", Toast.LENGTH_SHORT).show();
+                            btn.setChecked(false);
+                            currentUser.setUseGeolocation(false);
+                            // Persist reverted flag
+                             db.setUserData(currentUser.getHardwareID(), currentUser);
+                        }
+                );
+            }
+        });
 
         // Persist changes
         binding.btnSaveChanges.setOnClickListener(v -> saveChanges(currentUser));
 
-        // Delete profile (stub)
+        // Delete profile
         binding.btnDeleteProfile.setOnClickListener(v -> showDeleteConfirmationDialog());
     }
 
@@ -141,6 +165,11 @@ public class EntrantSettingsFragment extends Fragment {
      * @return a {@link Task} representing the asynchronous save operation
      */
     private Task<Void> saveChanges(Entrant userToSave) {
+
+        // Set the notification visibility in EntrantActivity
+        EntrantActivity host = (EntrantActivity) requireActivity();
+        host.showOrHideNotifications(currentUser.getWantsNotifications());
+
         return db.setUserData(userToSave.getHardwareID(), userToSave)
                 .addOnSuccessListener(aVoid ->
                         Toast.makeText(requireContext(), "Changes saved!", Toast.LENGTH_SHORT).show());

@@ -1,5 +1,7 @@
 package com.example.zypherevent;
 
+import android.os.Parcelable;
+
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.UserType;
@@ -67,6 +69,11 @@ public class Event implements Serializable {
     private String eventOrganizerHardwareID;
 
     /**
+     * True or false depending on if the event is only avaliable to Entrants with GeoLocation enabled
+     */
+    private boolean requiresGeolocation;
+
+    /**
      * The maximum number of entrants in the waitlist.
      * Can be null so we use Integer class instead of int primitive
      */
@@ -102,7 +109,7 @@ public class Event implements Serializable {
      */
     public Event(Long uniqueEventID, String eventName, String eventDescription, Date startTime, String location,
                  Date registrationStartTime, Date registrationEndTime,
-                 String eventOrganizerHardwareID, String posterURL) {
+                 String eventOrganizerHardwareID, String posterURL, boolean requiresGeolocation) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
@@ -112,6 +119,7 @@ public class Event implements Serializable {
         this.registrationEndTime = registrationEndTime;
         this.posterURL = posterURL;
         this.eventOrganizerHardwareID = eventOrganizerHardwareID;
+        this.requiresGeolocation = requiresGeolocation;
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
@@ -133,7 +141,7 @@ public class Event implements Serializable {
      */
     public Event(Long uniqueEventID, String eventName, String eventDescription, Date startTime, String location,
                  Date registrationStartTime, Date registrationEndTime,
-                 String eventOrganizerHardwareID) {
+                 String eventOrganizerHardwareID, boolean requiresGeolocation) {
         this.uniqueEventID = uniqueEventID;
         this.eventName = eventName;
         this.eventDescription = eventDescription;
@@ -142,6 +150,7 @@ public class Event implements Serializable {
         this.registrationStartTime = registrationStartTime;
         this.registrationEndTime = registrationEndTime;
         this.eventOrganizerHardwareID = eventOrganizerHardwareID;
+        this.requiresGeolocation = requiresGeolocation;
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
@@ -505,6 +514,24 @@ public class Event implements Serializable {
             return "Registration closed";
         }
         return ""; // Registration is open
+    }
+
+    /**
+     * Checks if this Event requires Geolocation
+     *
+     * @return true if this Event requires Geolocation, false otherwise
+     */
+    public boolean getRequiresGeolocation() {
+        return requiresGeolocation;
+    }
+
+    /**
+     * Sets if this Event requires Geolocation
+     *
+     * @param requiresGeolocation true if this Event requires Geolocation, false otherwise
+     */
+    public void setRequiresGeolocation(boolean requiresGeolocation) {
+        this.requiresGeolocation = requiresGeolocation;
     }
 
     /**

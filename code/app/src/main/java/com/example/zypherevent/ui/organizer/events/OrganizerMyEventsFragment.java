@@ -59,7 +59,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     private FloatingActionButton fabCreateEvent;
 
     public OrganizerMyEventsFragment() {
-        // public no-arg constructor required
     }
 
     @Nullable
@@ -94,9 +93,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            loadEvents();
-        });
+        swipeRefreshLayout.setOnRefreshListener(this::loadEvents);
 
         fabCreateEvent = view.findViewById(R.id.fabCreateEvent);
         fabCreateEvent.setOnClickListener(v -> showCreateEventDialog());
@@ -146,11 +143,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     @Override
     public void onMenuClick(Event event, View anchorView) {
         PopupMenu popup = new PopupMenu(getContext(), anchorView);
-
-        // Inflate your menu file
         popup.getMenuInflater().inflate(R.menu.fragment_organanizer_event_menu, popup.getMenu());
 
-        // Set a listener for menu item clicks
         popup.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_notifications) {
@@ -169,7 +163,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return false;
         });
 
-        // Show the menu
         popup.show();
     }
 
@@ -188,10 +181,33 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
+        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
 
         WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(
-                waitlistEntrants,
-                (entry, position) -> handleAcceptEntrant(event, entry, position)
+                finalWaitlistEntrants,
+                (entry, position) -> {
+                    AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+                    confirmBuilder.setTitle("Accept Entrant");
+                    confirmBuilder.setMessage("Accept "
+                            + entry.getEntrant().getFirstName() + " "
+                            + entry.getEntrant().getLastName()
+                            + " for this event?");
+
+                    confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                        finalWaitlistEntrants.remove(position);
+                        if (waitlistRecyclerView.getAdapter() != null) {
+                            waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
+                        }
+                        Toast.makeText(
+                                getContext(),
+                                entry.getEntrant().getFirstName() + " accepted!",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    });
+
+                    confirmBuilder.setNegativeButton("Cancel", null);
+                    confirmBuilder.show();
+                }
         );
 
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -215,8 +231,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
-
-        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
 
         if (runLotteryButton != null && etSampleSize != null) {
             runLotteryButton.setOnClickListener(v -> {
@@ -282,29 +296,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         dialog.show();
     }
 
-    /**
-     * Handle accepting an entrant from the waitlist
-     */
-    private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
-        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
-        confirmBuilder.setTitle("Accept Entrant");
-        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
-                entry.getEntrant().getLastName() + " for this event?");
-
-        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant());
-            Toast.makeText(getContext(),
-                    entry.getEntrant().getFirstName() + " accepted!",
-                    Toast.LENGTH_SHORT).show();
-
-            // Refresh the waitlist
-            loadEvents();
-        });
-
-        confirmBuilder.setNegativeButton("Cancel", null);
-        confirmBuilder.show();
-    }
-
     private void showCreateEventDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -324,14 +315,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Create Event");
 
-        // Initially hide limit_num if switch is off
         limitNum.setVisibility(switchLimit.isChecked() ? View.VISIBLE : View.GONE);
 
-        // Add listener to show/hide limit field based on switch
         switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             if (!isChecked) {
-                limitNum.setText(""); // Clear the field when unchecked
+                limitNum.setText("");
             }
         });
 
@@ -346,6 +335,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String description = editDetails.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
+            Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -375,6 +365,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             Date startTime;
             Date registrationStartTime;
             Date registrationEndTime;
+
+            boolean requiresGeolocation = switchGeolocation.isChecked();
 
             try {
                 startTime = Utils.createWholeDayDate(startTimeStr);
@@ -413,7 +405,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             createEvent(eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit);
+                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
 
             dialog.dismiss();
         });
@@ -422,7 +414,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void createEvent(String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -446,7 +438,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     location,
                     registrationStartTime,
                     registrationEndTime,
-                    organizerUser.getHardwareID()
+                    organizerUser.getHardwareID(),
+                    requiresGeolocation
             );
 
             if (waitlistLimit != null) {
@@ -482,12 +475,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editDetails = dialogView.findViewById(R.id.edit_details);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
+        Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
         Button saveButton = dialogView.findViewById(R.id.save);
 
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Edit Event");
 
-        // Populate fields with existing event data
         editName.setText(event.getEventName());
         if (event.getStartTime() != null) {
             editTime.setText(Utils.formatDateForDisplay(event.getStartTime()));
@@ -499,9 +492,11 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         if (event.getRegistrationEndTime() != null) {
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
         }
+        if (event.getRequiresGeolocation()) {
+            switchGeolocation.setChecked(true);
+        }
         editDetails.setText(event.getEventDescription());
 
-        // Set waitlist limit fields
         Integer currentLimit = event.getWaitlistLimit();
         if (currentLimit != null) {
             switchLimit.setChecked(true);
@@ -512,11 +507,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             limitNum.setVisibility(View.GONE);
         }
 
-        // Add listener to show/hide limit field based on switch
         switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             if (!isChecked) {
-                limitNum.setText(""); // Clear the field when unchecked
+                limitNum.setText("");
             }
         });
 
@@ -531,6 +525,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String description = editDetails.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
+            boolean requiresGeolocation = switchGeolocation.isChecked();
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -590,7 +585,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                         Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    // Check if new limit is less than current waitlist size
                     int currentWaitlistSize = event.getWaitListEntrants() != null ? event.getWaitListEntrants().size() : 0;
                     if (limit < currentWaitlistSize) {
                         Toast.makeText(getContext(), "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")", Toast.LENGTH_LONG).show();
@@ -604,7 +598,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit);
+                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
 
             dialog.dismiss();
         });
@@ -613,7 +607,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
         Event updatedEvent = new Event(
@@ -624,7 +618,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 location,
                 registrationStartTime,
                 registrationEndTime,
-                organizerUser.getHardwareID()
+                organizerUser.getHardwareID(),
+                requiresGeolocation
         );
 
         updatedEvent.setWaitlistLimit(waitlistLimit);
@@ -643,14 +638,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
     }
 
-
-    /**
-     * Saves the QR code bitmap to device Downloads folder.
-     * Uses MediaStore API for Android 10+ compatibility.
-     *
-     * @param bitmap    The QR code bitmap to save
-     * @param eventName The event name used for the filename
-     */
     private void saveQRCodeToDownloads(Bitmap bitmap, String eventName) {
         try {
             String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + ".png";
@@ -675,17 +662,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
     }
 
-    /**
-     * Displays a dialog showing the event's QR code with download and share options.
-     * QR code encodes the event ID in format "EVENT:{id}" for scanning.
-     * <p>
-     * Flow:
-     * 1. Generates QR code bitmap using Utils.generateQRCode()
-     * 2. Displays in dialog with event name and ID
-     * 3. Provides Download and Share buttons
-     *
-     * @param event The event to generate a QR code for
-     */
     private void showQRCodeDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_qr_code, null);
@@ -699,7 +675,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         title.setText("QR Code: " + event.getEventName());
         eventIdText.setText("Event ID: " + event.getUniqueEventID());
 
-        // Generate QR code bitmap (512x512 pixels)
         Bitmap qrBitmap = Utils.generateQRCode(event.getUniqueEventID(), 512, 512);
         if (qrBitmap != null) {
             qrImageView.setImageBitmap(qrBitmap);
@@ -716,13 +691,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         builder.create().show();
     }
 
-    /**
-     * Opens Android share sheet to share QR code via any app (email, messaging, social media).
-     * Saves QR code to Pictures folder temporarily, then creates share intent.
-     *
-     * @param bitmap    The QR code bitmap to share
-     * @param eventName The event name used for the filename and share text
-     */
     private void shareQRCode(Bitmap bitmap, String eventName) {
         try {
             String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + ".png";

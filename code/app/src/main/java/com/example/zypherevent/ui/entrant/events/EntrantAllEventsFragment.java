@@ -237,6 +237,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
+        if (event.getRequiresGeolocation()) {
+            if (!currentUser.getUseGeolocation()) {
+                Log.d(TAG, "Geolocation is required for this event, but Entrant does not have it enabled.");
+                Toast.makeText(getContext(), "Geolocation is required for this event. Please enable it in your settings.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
@@ -249,7 +257,8 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getRegistrationStartTime(),
                             event.getRegistrationEndTime(),
                             event.getEventOrganizerHardwareID(),
-                            event.getPosterURL()
+                            event.getPosterURL(),
+                            event.getRequiresGeolocation()
                     );
 
                     currentUser.addEventToRegisteredEventHistory(eventForHistory);

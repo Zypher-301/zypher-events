@@ -541,6 +541,7 @@ public class Database {
      *
      * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
      * of all valid {@link Event} objects from the database. The list will be empty if the
+     * @author Arunavo Dutta
      */
     public Task<List<Event>> getAllEventsList() {
         return eventsCollection.get()
@@ -712,6 +713,7 @@ public class Database {
      *         all user objects from the database, each cast to its appropriate subclass. If the
      *         initial data fetch fails, the task will complete with an exception. Malformed
      *         individual documents will be logged and skipped.
+     * @author Arunavo Dutta
      */
     public Task<List<User>> getAllUsers() {
         return usersCollection
@@ -784,6 +786,7 @@ public class Database {
 
 
 
+
     /**
      * Added by Arunavo Dutta
      * Adds an entrant to the waitlist for a specific event using a Firestore transaction.
@@ -799,20 +802,21 @@ public class Database {
      *   <li>Verifies that the event exists.</li>
      *   <li>Ensures the current time is within the event's registration window (after start and before end).</li>
      *   <li>Checks if the waitlist has reached its capacity (if a {@code waitlistLimit} is set).</li>
+     *   <li>Ensures the entrant is not already on the waitlist to prevent duplicates.</li>
      * </ul>
-     * If all checks pass, it uses an {@code arrayUnion} operation to add the entrant, which also
-     * inherently prevents duplicate entries.
+     * If all checks pass, it creates a new {@link WaitlistEntry} with the current timestamp and
+     * adds it to the list. The entire modified list is then written back to Firestore.
      * <p>
-     * This method also robustly parses the event document from Firestore, correctly converting
-     * date strings to {@code Date} objects to avoid crashes from data type mismatches.
+     * This method robustly parses the event document from Firestore, safely converting the
+     * waitlist from a list of HashMaps into a list of {@code WaitlistEntry} objects.
      *
      * @param eventId The unique ID of the event to which the entrant will be added.
      * @param entrant The {@link Entrant} object to add to the waitlist.
      * @return A {@code Task<Void>} that completes when the transaction is successfully committed.
-     *         The task will fail with an exception if the event is not found, the registration window
-     *         is closed, the waitlist is full, or if any other transaction error occurs.
+     *         The task will fail with a {@link RuntimeException} if the event is not found,
+     *         the registration window is closed, the waitlist is full, or if any other transaction error occurs.
      * @author Arunavo Dutta
-     */ // Used by "Join" button
+     */
     public Task<Void> addEntrantToWaitlist(String eventId, Entrant entrant) {
         // Get reference to the event document
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
@@ -869,7 +873,7 @@ public class Database {
                     break;
                 }
             }
-            
+
             if (!alreadyExists) {
                 WaitlistEntry entry = new WaitlistEntry(entrant);
                 // Add the entry to the waitlist
@@ -911,6 +915,7 @@ public class Database {
      *         window is closed, or any other database error occurs.
      * @see WaitlistEntry
      * @see #parseWaitlistEntryList(Object)
+     * @author Arunavo Dutta
      */ // Used by "Leave" button
     public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
         // Get reference to the event document

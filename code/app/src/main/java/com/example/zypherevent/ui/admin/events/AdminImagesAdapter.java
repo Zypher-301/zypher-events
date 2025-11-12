@@ -28,7 +28,7 @@ import java.util.List;
  * <li><b>US 03.03.01:</b> As an administrator, I want to be able to remove images.</li>
  * </ul>
  *
- * @author Arunavo Dutta (Refactored)
+ * @author Arunavo Dutta
  * @version 2.0
  * @see Event
  * @see AdminImagesFragment
@@ -40,17 +40,19 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     private OnDeleteListener deleteListener;
 
     /**
-     * Interface for a callback to be invoked when an event's delete image button is clicked.
+     * Interface definition for a callback to be invoked when an image's delete button is clicked.
+     * The listener provides the specific {@link Event} object and its position in the adapter,
+     * allowing the calling fragment to handle the deletion logic.
      */
     public interface OnDeleteListener {
         void onDelete(Event event, int position);
     }
 
     /**
-     * Constructs a new AdminImagesAdapter.
+     * Constructs a new {@code AdminImagesAdapter}.
      *
-     * @param eventList      The list of {@link Event} objects (with posters) to display.
-     * @param deleteListener The listener that will be invoked when the delete button is clicked.
+     * @param eventList      The initial list of {@link Event} objects that have posters to display.
+     * @param deleteListener The listener to be invoked when an image's delete button is clicked.
      */
     public AdminImagesAdapter(List<Event> eventList, OnDeleteListener deleteListener) {
         this.eventList = eventList;
@@ -58,11 +60,16 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     }
 
     /**
-     * Inflates the layout for an individual image item and returns a new {@link ImageViewHolder} instance.
+     * Called when RecyclerView needs a new {@link ImageViewHolder} of the given type to represent
+     * an item.
+     * <p>
+     * This new ViewHolder is constructed with a new View that is inflated from the
+     * {@code R.layout.fragment_admin_item_image_card} layout resource.
      *
-     * @param parent   The ViewGroup into which the new View will be added.
+     * @param parent   The ViewGroup into which the new View will be added after it is bound to
+     *                 an adapter position.
      * @param viewType The view type of the new View.
-     * @return A new {@link ImageViewHolder} that holds the View for a single image item.
+     * @return A new {@link ImageViewHolder} that holds a View for a single image item.
      */
     @NonNull
     @Override
@@ -73,23 +80,26 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     }
 
     /**
-     * Called by RecyclerView to display the data at the specified position.
+     * Binds the data from an {@link Event} object to the views within an {@link ImageViewHolder}.
      * <p>
-     * This method updates the contents of the {@link ImageViewHolder#itemView} to reflect the
-     * event item at the given position. It binds the event's name and description, and uses
-     * {@link Glide} to load the {@code posterURL} into the {@link ImageView}.
+     * This method is called by the RecyclerView to display the data at a specified position.
+     * It sets the event's name and description. It uses the {@link Glide} library to load the
+     * event's poster image from its URL into the {@code imagePreview} ImageView. A placeholder
+     * and an error drawable are set for a better user experience during loading or if the image
+     * fails to load.
      * <p>
-     * It also sets an {@link View.OnClickListener} on the delete button, which invokes the
-     * {@link OnDeleteListener#onDelete(Event, int)} callback.
+     * It also attaches a click listener to the delete button. When clicked, this listener
+     * invokes the {@link OnDeleteListener#onDelete(Event, int)} callback, passing the specific
+     * event and its adapter position, allowing the hosting fragment to handle the deletion logic.
      *
-     * @param holder   The {@link ImageViewHolder} which should be updated.
+     * @param holder   The {@link ImageViewHolder} which should be updated to represent the contents
+     *                 of the item at the given position in the data set.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
         Event event = eventList.get(position);
 
-        // We re-use the text views from the layout to show the event name and description
         holder.eventName.setText(event.getEventName());
         holder.eventDescription.setText(event.getEventDescription());
 
@@ -98,17 +108,15 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
             Glide.with(holder.itemView.getContext())
                     .load(event.getPosterURL())
                     .placeholder(R.drawable.ic_images) // A generic placeholder
-                    .error(R.drawable.ic_delete)     // An error drawable
+                    .error(R.drawable.ic_delete) // Error placeholder
                     .into(holder.imagePreview);
         } else {
-            // Should not happen if fragment filters correctly, but good to have a fallback
             holder.imagePreview.setImageResource(R.drawable.ic_images);
         }
 
         // Set the click listener for the delete button
         holder.deleteButton.setOnClickListener(v -> {
             if (deleteListener != null) {
-                // Pass both the event and its position for efficient removal
                 deleteListener.onDelete(event, holder.getAdapterPosition());
             }
         });
@@ -117,7 +125,7 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     /**
      * Returns the total number of items in the data set held by the adapter.
      *
-     * @return The total number of events in the {@code eventList}.
+     * @return The total number of events with images to be displayed.
      */
     @Override
     public int getItemCount() {
@@ -125,9 +133,13 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     }
 
     /**
-     * Updates the data set with a new list of events and notifies the adapter.
+     * Updates the data set with a new list of events.
+     * <p>
+     * This method clears the existing list and replaces it with the new one,
+     * then notifies the adapter that the entire data set has changed. This is
+     * typically used when the underlying data source is completely refreshed.
      *
-     * @param newEventList The new list of events to display.
+     * @param newEventList The new list of {@link Event} objects to display.
      */
     public void updateData(List<Event> newEventList) {
         this.eventList.clear();
@@ -136,10 +148,13 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     }
 
     /**
-     * Removes an item from the list at a specific position.
-     * This is more efficient than reloading the entire list from the database.
+     * Removes an item from the adapter's data set at a specific position.
+     * <p>
+     * This method provides an efficient way to update the UI after an item has been
+     * deleted, as it avoids a full reload of the data. It safely checks if the
+     * position is valid before attempting to remove the item.
      *
-     * @param position The position of the item to remove.
+     * @param position The adapter position of the item to remove.
      */
     public void removeItem(int position) {
         if (position >= 0 && position < eventList.size()) {
@@ -149,11 +164,12 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
     }
 
     /**
-     * A {@link RecyclerView.ViewHolder} that describes an image item view.
+     * A {@link RecyclerView.ViewHolder} that describes an image item view and its metadata.
      * <p>
-     * It holds the UI components for a single image card, including {@link ImageView}s
-     * for the preview and delete button, and {@link TextView}s for the event's name
-     * and description.
+     * This ViewHolder holds the UI components for a single image card in the admin image browser.
+     * It includes an {@link ImageView} for the event poster, another {@link ImageView} that acts as a
+     * delete button, and {@link TextView}s to display the associated event's name and description.
+     * This provides administrators with the necessary context to manage images effectively.
      */
     public static class ImageViewHolder extends RecyclerView.ViewHolder {
         ImageView imagePreview, deleteButton;
@@ -162,7 +178,6 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
             imagePreview = itemView.findViewById(R.id.image_preview);
-            // Re-using the layout's TextViews to show event context
             eventName = itemView.findViewById(R.id.image_uploader);
             eventDescription = itemView.findViewById(R.id.image_upload_date);
             deleteButton = itemView.findViewById(R.id.delete_button);

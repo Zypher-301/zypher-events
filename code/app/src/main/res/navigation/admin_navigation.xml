@@ -19,6 +19,12 @@
         android:label="Profiles"
         tools:layout="@layout/fragment_admin_item_profile_card" />
 
+    <fragment
+        android:id="@+id/nav_organizers"
+        android:name="com.example.zypherevent.ui.admin.events.AdminOrganizerProfileFragment"
+        android:label="Organizer"
+        tools:layout="@layout/fragment_admin_item_profile_card" />
+
     <!-- Destination for the "Images" menu item -->
     <fragment
         android:id="@+id/nav_images"

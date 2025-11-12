@@ -1,36 +1,36 @@
 package com.example.zypherevent.ui.admin.events;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.View;import android.view.ViewGroup;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
-import com.example.zypherevent.model.AdminImage;
-import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * @author Arunavo Dutta
- * @version 1.1
- * @see AdminImage
+ * @version 1.2
+ * @see Event
  * @see res/layout/fragment_admin_item_image_card.xml
  */
 
 public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.ImageViewHolder> {
 
-    private List<AdminImage> imageList;
+    private List<Event> eventList;
     private OnDeleteListener deleteListener;
 
     public interface OnDeleteListener {
-        void onDelete(AdminImage image);
+        void onDelete(Event event);
     }
 
-    public AdminImagesAdapter(List<AdminImage> imageList, OnDeleteListener deleteListener) {
-        this.imageList = imageList;
+    public AdminImagesAdapter(List<Event> eventList, OnDeleteListener deleteListener) {
+        this.eventList = eventList;
         this.deleteListener = deleteListener;
     }
 
@@ -44,38 +44,49 @@ public class AdminImagesAdapter extends RecyclerView.Adapter<AdminImagesAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
-        AdminImage image = imageList.get(position);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, yyyy", Locale.getDefault());
+        Event event = eventList.get(position);
 
-        holder.imageUploader.setText("Uploaded by: " + image.getUploader());
-        holder.imageUploadDate.setText("Upload date: " + dateFormat.format(image.getUploadDate()));
+        holder.eventName.setText(event.getEventName());
+        holder.eventDescription.setText(event.getEventDescription());
 
-        Glide.with(holder.itemView.getContext())
-                .load(image.getImageUrl())
-                .placeholder(R.drawable.ic_entrant_profile) // A placeholder drawable
-                .error(R.drawable.ic_trash_bin) // An error drawable
-                .into(holder.imagePreview);
+        if (!TextUtils.isEmpty(event.getPosterURL())) {
+            Glide.with(holder.itemView.getContext())
+                    .load(event.getPosterURL())
+                    .placeholder(R.drawable.ic_entrant_profile) // A placeholder drawable
+                    .error(R.drawable.ic_trash_bin) // An error drawable
+                    .into(holder.imagePreview);
+        } else {
+            holder.imagePreview.setImageResource(R.drawable.ic_images); // Default image if no URL
+        }
 
 
         holder.deleteButton.setOnClickListener(v -> {
-            deleteListener.onDelete(image);
+            if (deleteListener != null) {
+                deleteListener.onDelete(event);
+            }
         });
     }
 
     @Override
     public int getItemCount() {
-        return imageList.size();
+        return eventList.size();
+    }
+
+    public void updateData(List<Event> newEventList) {
+        this.eventList.clear();
+        this.eventList.addAll(newEventList);
+        notifyDataSetChanged();
     }
 
     public static class ImageViewHolder extends RecyclerView.ViewHolder {
         ImageView imagePreview, deleteButton;
-        TextView imageUploader, imageUploadDate;
+        TextView eventName, eventDescription;
 
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
             imagePreview = itemView.findViewById(R.id.image_preview);
-            imageUploader = itemView.findViewById(R.id.image_uploader);
-            imageUploadDate = itemView.findViewById(R.id.image_upload_date);
+            eventName = itemView.findViewById(R.id.image_uploader); // Re-using this TextView
+            eventDescription = itemView.findViewById(R.id.image_upload_date); // Re-using this TextView
             deleteButton = itemView.findViewById(R.id.delete_button);
         }
     }

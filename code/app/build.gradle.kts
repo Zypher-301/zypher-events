@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.navigation.ui)
     implementation(libs.firebase.firestore)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.firebase.storage)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

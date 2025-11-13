@@ -1,6 +1,7 @@
 package com.example.zypherevent;
 
 import com.example.zypherevent.userTypes.User;
+import com.google.firebase.firestore.PropertyName;
 
 import java.util.Objects;
 
@@ -63,6 +64,7 @@ public class Notification {
      *
      * @return the notification ID
      */
+    @PropertyName("notificationID")
     public Long getUniqueNotificationID() {
         return notificationID;
     }
@@ -72,6 +74,7 @@ public class Notification {
      *
      * @param notificationID the new notification ID to set
      */
+    @PropertyName("notificationID")
     public void setUniqueNotificationID(Long notificationID) {
         this.notificationID = notificationID;
     }

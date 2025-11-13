@@ -70,14 +70,6 @@ public class MainActivity extends AppCompatActivity {
         // Initialize database
         db = new Database();
 
-        db.getEvent(12L).addOnSuccessListener(event -> {
-            List<WaitlistEntry> waitlist = event.getWaitListEntrants();
-
-            event.addEntrantToAcceptedList(waitlist.get(0));
-            event.addEntrantToDeclinedList(waitlist.get(1));
-        });
-
-
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);

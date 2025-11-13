@@ -405,11 +405,11 @@ public class Event implements Serializable {
      * Adds an entrant to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entry the entrant to add to the accepted list
+     * @param entrant the entrant to add to the accepted list
      */
-    public void addEntrantToAcceptedList(WaitlistEntry entry) {
-        if (!acceptedEntrants.contains(entry.getEntrant())) {
-            acceptedEntrants.add(entry.getEntrant());
+    public void addEntrantToAcceptedList(Entrant entrant) {
+        if (!acceptedEntrants.contains(entrant)) {
+            acceptedEntrants.add(entrant);
         }
     }
 

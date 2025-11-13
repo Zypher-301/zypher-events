@@ -183,7 +183,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void updateEventWIthLotteryResults(List<WaitlistEntry> selected, List<WaitlistEntry> denied) {
         for (WaitlistEntry entry : selected) {
-            currentEvent.addEntrantToAcceptedList(entry);
+            currentEvent.addEntrantToAcceptedList(entry.getEntrant());
             currentEvent.removeEntrantFromWaitList(entry);
         }
 

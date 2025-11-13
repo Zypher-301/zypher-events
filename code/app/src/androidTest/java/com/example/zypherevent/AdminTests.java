@@ -64,8 +64,6 @@ public class AdminTests {
 
     private static Database testDatabase;
     private static FirebaseFirestore firestoreDb;
-
-
     private List<User> usersToClean = new ArrayList<>();
     private List<Event> eventsToClean = new ArrayList<>();
     private List<Notification> notificationsToClean = new ArrayList<>();
@@ -87,15 +85,13 @@ public class AdminTests {
         testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION, TEST_EXTRAS_COLLECTION);
         firestoreDb = FirebaseFirestore.getInstance();
 
+        // Create/reset counters doc up-front
+        resetUniqueCounters();
 
-        DocumentReference uniqueRef = firestoreDb
-                .collection(TEST_EXTRAS_COLLECTION)
-                .document("uniqueIdentifierData");
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("curEvent", TEST_ID_START_VALUE);
-        data.put("curNotification", TEST_ID_START_VALUE);
-        Tasks.await(uniqueRef.set(data));
+        // Optional: also purge once at class start to guarantee a clean run
+        clearCollection(TEST_USERS_COLLECTION);
+        clearCollection(TEST_EVENTS_COLLECTION);
+        clearCollection(TEST_NOTIFICATIONS_COLLECTION);
     }
 
     /**
@@ -113,6 +109,11 @@ public class AdminTests {
                 .collection(TEST_EXTRAS_COLLECTION)
                 .document("uniqueIdentifierData");
         Tasks.await(uniqueRef.delete());
+
+        // really make sure its gone lol
+        clearCollection(TEST_USERS_COLLECTION);
+        clearCollection(TEST_EVENTS_COLLECTION);
+        clearCollection(TEST_NOTIFICATIONS_COLLECTION);
     }
 
     /**
@@ -122,11 +123,19 @@ public class AdminTests {
      * created by the upcoming test.
      */
     @Before
-    public void setUp() {
+    public void setUp() throws ExecutionException, InterruptedException {
         // Clear tracking lists
         usersToClean.clear();
         eventsToClean.clear();
         notificationsToClean.clear();
+
+        // Ensure clean slate for this test
+        clearCollection(TEST_USERS_COLLECTION);
+        clearCollection(TEST_EVENTS_COLLECTION);
+        clearCollection(TEST_NOTIFICATIONS_COLLECTION);
+
+        // Reset counters so IDs are predictable per test
+        resetUniqueCounters();
     }
 
     /**
@@ -151,6 +160,29 @@ public class AdminTests {
         for (Notification notification : notificationsToClean) {
             Tasks.await(testDatabase.removeNotificationData(notification.getUniqueNotificationID()));
         }
+    }
+
+    private static void clearCollection(String collection)
+            throws ExecutionException, InterruptedException {
+        QuerySnapshot qs = Tasks.await(firestoreDb.collection(collection).get());
+        if (qs.isEmpty()) return;
+        WriteBatch batch = firestoreDb.batch();
+        for (DocumentSnapshot doc : qs.getDocuments()) {
+            batch.delete(doc.getReference());
+        }
+        Tasks.await(batch.commit());
+    }
+
+    private static void resetUniqueCounters()
+            throws ExecutionException, InterruptedException {
+        DocumentReference uniqueRef = firestoreDb
+                .collection(TEST_EXTRAS_COLLECTION)
+                .document("uniqueIdentifierData");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("curEvent", TEST_ID_START_VALUE);
+        data.put("curNotification", TEST_ID_START_VALUE);
+        Tasks.await(uniqueRef.set(data));
     }
 
     // --- ADMIN BROWSE TESTS ---
@@ -435,7 +467,8 @@ public class AdminTests {
         Event event = new Event(
                 eventId, eventName, "Test Description", start,
                 "Location", registrationStart, registrationEnd,
-                organizerId
+                organizerId,
+                false
         );
         Tasks.await(testDatabase.setEventData(eventId, event));
         eventsToClean.add(event);

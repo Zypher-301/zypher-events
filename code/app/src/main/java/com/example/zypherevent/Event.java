@@ -1,15 +1,20 @@
 package com.example.zypherevent;
 
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.example.zypherevent.userTypes.User;
 import com.example.zypherevent.userTypes.UserType;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -400,11 +405,11 @@ public class Event implements Serializable {
      * Adds an entrant to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entry the entrant to add to the accepted list
+     * @param entrant the entrant to add to the accepted list
      */
-    public void addEntrantToAcceptedList(WaitlistEntry entry) {
-        if (!acceptedEntrants.contains(entry.getEntrant())) {
-            acceptedEntrants.add(entry.getEntrant());
+    public void addEntrantToAcceptedList(Entrant entrant) {
+        if (!acceptedEntrants.contains(entrant)) {
+            acceptedEntrants.add(entrant);
         }
     }
 
@@ -532,6 +537,92 @@ public class Event implements Serializable {
      */
     public void setRequiresGeolocation(boolean requiresGeolocation) {
         this.requiresGeolocation = requiresGeolocation;
+    }
+
+    public Task<Void> updateEntrantInformationInLists() {
+        Database db = new Database();
+        List<Task<?>> allTasks = new ArrayList<>();
+
+        // --- Update waitlisted entrants (WaitlistEntry contains Entrant) ---
+        if (waitListEntrants != null) {
+            for (WaitlistEntry entry : waitListEntrants) {
+                if (entry == null || entry.getEntrant() == null) continue;
+
+                final Entrant originalEntrant = entry.getEntrant();
+                final String hardwareID = originalEntrant.getHardwareID();
+
+                Task<User> t = db.getUser(hardwareID);
+                t.addOnSuccessListener(updated -> {
+                    if (updated instanceof Entrant) {
+                        entry.setEntrant((Entrant) updated);
+                    } else if (updated == null) {
+                        // user deleted? keep original entrant
+                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
+                    } else {
+                        // role changed; keep original entrant
+                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
+                                + "; keeping original Entrant in waitlist");
+                    }
+                }).addOnFailureListener(e ->
+                        Log.w("Event", "Failed to refresh waitlisted entrant " + hardwareID, e)
+                );
+                allTasks.add(t);
+            }
+        }
+
+        // --- Update accepted entrants ---
+        if (acceptedEntrants != null) {
+            for (int i = 0; i < acceptedEntrants.size(); i++) {
+                final int index = i;
+                final Entrant originalEntrant = acceptedEntrants.get(i);
+                if (originalEntrant == null) continue;
+
+                final String hardwareID = originalEntrant.getHardwareID();
+                Task<User> t = db.getUser(hardwareID);
+                t.addOnSuccessListener(updated -> {
+                    if (updated instanceof Entrant) {
+                        acceptedEntrants.set(index, (Entrant) updated);
+                    } else if (updated == null) {
+                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
+                    } else {
+                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
+                                + "; keeping original Entrant in accepted list");
+                    }
+                }).addOnFailureListener(e ->
+                        Log.w("Event", "Failed to refresh accepted entrant " + hardwareID, e)
+                );
+                allTasks.add(t);
+            }
+        }
+
+        // --- Update declined entrants ---
+        if (declinedEntrants != null) {
+            for (int i = 0; i < declinedEntrants.size(); i++) {
+                final int index = i;
+                final Entrant originalEntrant = declinedEntrants.get(i);
+                if (originalEntrant == null) continue;
+
+                final String hardwareID = originalEntrant.getHardwareID();
+                Task<User> t = db.getUser(hardwareID);
+                t.addOnSuccessListener(updated -> {
+                    if (updated instanceof Entrant) {
+                        declinedEntrants.set(index, (Entrant) updated);
+                    } else if (updated == null) {
+                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
+                    } else {
+                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
+                                + "; keeping original Entrant in declined list");
+                    }
+                }).addOnFailureListener(e ->
+                        Log.w("Event", "Failed to refresh declined entrant " + hardwareID, e)
+                );
+                allTasks.add(t);
+            }
+        }
+
+        if (allTasks.isEmpty()) return Tasks.forResult(null);
+
+        return Tasks.whenAllComplete(allTasks).continueWith(task -> null);
     }
 
     /**

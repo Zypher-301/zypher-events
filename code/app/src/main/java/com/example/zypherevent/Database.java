@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Elliot Chrystal
@@ -293,10 +294,14 @@ public class Database {
      * @return a Task representing the asynchronous database operation
      */
     public Task<Void> setNotificationData(Long notificationID, Notification notification) {
-        return notificationCollection
-                .document(String.valueOf(notificationID))
-                .set(notification);
-
+        Map<String, Object> data = new HashMap<>();
+        data.put("notificationID", notificationID);
+        data.put("sendingUserHardwareID", notification.getSendingUserHardwareID());
+        data.put("receivingUserHardwareID", notification.getReceivingUserHardwareID());
+        data.put("notificationHeader", notification.getNotificationHeader());
+        data.put("notificationBody", notification.getNotificationBody());
+        data.put("dismissed", notification.isDismissed());
+        return notificationCollection.document(String.valueOf(notificationID)).set(data);
     }
 
     /**

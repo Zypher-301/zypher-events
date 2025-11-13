@@ -235,7 +235,8 @@ public class DatabaseTests {
                 Utils.createWholeDayDate("2025-10-01"),
                 Utils.createWholeDayDate("2025-10-25"),
                 testOrganizer.getHardwareID(),
-                "http://example.com/poster.png"
+                "http://example.com/poster.png",
+                false
         );
 
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
@@ -273,7 +274,8 @@ public class DatabaseTests {
                 "Original Event Name", "Original Description", start,
                 "Original Location", registrationStart, registrationEnd,
                 testOrganizer.getHardwareID(),
-                "http://example.com/poster.png"
+                "http://example.com/poster.png",
+                false
         );
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
 
@@ -304,7 +306,8 @@ public class DatabaseTests {
         Date registrationEnd = Utils.createWholeDayDate("2025-10-25");
         testEvent = new Event(
                 newEventID, "Event To Delete", "...", start, "...", registrationStart, registrationEnd,
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                false
         );
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
 
@@ -462,7 +465,8 @@ public class DatabaseTests {
                 "Test Location",
                 Utils.createWholeDayDate("2025-01-01"),
                 Utils.createWholeDayDate("2025-12-31"),
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                false
         );
         testEvent.setWaitlistLimit(1);
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
@@ -495,7 +499,8 @@ public class DatabaseTests {
                 "Test Location",
                 Utils.createWholeDayDate("2025-01-01"),
                 Utils.createWholeDayDate("2025-12-31"),
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                false
         );
         // No limit set (null)
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
@@ -525,7 +530,8 @@ public class DatabaseTests {
                 "Test Location",
                 Utils.createWholeDayDate("2030-11-01"),  // Future start
                 Utils.createWholeDayDate("2030-11-30"),
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                false
         );
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 
@@ -552,7 +558,8 @@ public class DatabaseTests {
                 "Test Location",
                 Utils.createWholeDayDate("2020-11-01"),
                 Utils.createWholeDayDate("2020-11-30"),  // Past end
-                testOrganizer.getHardwareID()
+                testOrganizer.getHardwareID(),
+                false
         );
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 

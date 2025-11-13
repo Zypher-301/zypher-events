@@ -22,7 +22,7 @@ import java.util.Objects;
  * @version 1.0
  * @see Organizer
  * @see Entrant
- * <p>
+ *
  * Represents an event within the Zypher Event system. Each event has identifying details such as
  * name, description, start time, and location, along with registration start and end times. Events
  * are created and managed by an Organizer, and maintain lists of Entrants who have been waitlisted,
@@ -539,6 +539,17 @@ public class Event implements Serializable {
         this.requiresGeolocation = requiresGeolocation;
     }
 
+    /**
+     * Refreshes entrant information for all event lists from the database.
+     * This method updates the Entrant instances in the waitlist, accepted, and declined lists by
+     * retrieving the latest corresponding User records from the database using each
+     * entrant's hardware ID. If the retrieved user is still an Entrant, the list entry is
+     * replaced with the updated entrant. If the user cannot be found or their role has changed,
+     * the original entrant is retained and a warning is logged. If no entrants are present in any
+     * list, a completed task is returned immediately.
+     *
+     * @return a task that completes when all entrant refresh operations have finished
+     */
     public Task<Void> updateEntrantInformationInLists() {
         Database db = new Database();
         List<Task<?>> allTasks = new ArrayList<>();

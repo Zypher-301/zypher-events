@@ -1,46 +1,32 @@
 package com.example.zypherevent;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.IntentSender;
-import android.content.pm.PackageManager;
-import android.location.LocationRequest;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import com.example.zypherevent.userTypes.Administrator;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.User;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.content.ContextCompat;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.zypherevent.databinding.ActivityMainBinding;
 import com.example.zypherevent.userTypes.UserType;
-import com.google.android.gms.common.api.ResolvableApiException;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.Priority;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.Task;
 
 import androidx.appcompat.app.AlertDialog;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Elliot Chrystal
@@ -83,6 +69,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize database
         db = new Database();
+
+        db.getEvent(12L).addOnSuccessListener(event -> {
+            List<WaitlistEntry> waitlist = event.getWaitListEntrants();
+
+            event.addEntrantToAcceptedList(waitlist.get(0));
+            event.addEntrantToDeclinedList(waitlist.get(1));
+        });
+
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);

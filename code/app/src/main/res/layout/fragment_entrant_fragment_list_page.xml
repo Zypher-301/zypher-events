@@ -2,6 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -40,17 +41,44 @@
         android:padding="8dp"
         android:clipToPadding="false" />
 
-    <!-- Lottery guidelines for entrants -->
-    <TextView
-        android:id="@+id/tvLotteryGuidelines"
+    <!-- Lottery guidelines card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:text="How the lottery works: When registration closes, a random draw selects entrants from each event's waiting list. One entry per device. If a selected entrant declines, another entrant is randomly chosen."
-        android:textSize="14sp"
-        android:textColor="@android:color/black"
-        android:background="@android:color/holo_orange_light"
-        android:gravity="center"
-        android:lineSpacingExtra="2dp" />
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        app:cardCornerRadius="12dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="2dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvLotteryGuidelinesTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lottery guidelines"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvLotteryGuidelines"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="When registration closes, a random draw selects entrants from each event's waiting list. One entry per device. If a selected entrant declines, another entrant is randomly chosen."
+                android:textSize="13sp"
+                android:textColor="@android:color/secondary_text_light"
+                android:lineSpacingExtra="2dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

@@ -31,7 +31,7 @@
             android:layout_weight="1"
             android:text="Newest"
             android:layout_marginEnd="4dp"
-            style="?attr/borderlessButtonStyle"/>
+            style="?attr/borderlessButtonStyle" />
 
         <Button
             android:id="@+id/btnSortOldest"
@@ -40,7 +40,7 @@
             android:layout_weight="1"
             android:text="Oldest"
             android:layout_marginEnd="4dp"
-            style="?attr/borderlessButtonStyle"/>
+            style="?attr/borderlessButtonStyle" />
 
         <Button
             android:id="@+id/btnSortName"
@@ -48,31 +48,38 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Name"
-            style="?attr/borderlessButtonStyle"/>
-
+            style="?attr/borderlessButtonStyle" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/entrant_waitlist"
-        android:layout_width="300dp"
-        android:layout_height="500dp"
-        android:layout_marginBottom="20dp" />
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp" />
 
-    <EditText
-        android:id="@+id/etSampleSize"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Number to sample"
-        android:inputType="number"
-        android:layout_marginBottom="12dp"
-        android:minWidth="150dp"
-        android:gravity="center" />
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:paddingBottom="24dp">
 
-    <Button
-        android:id="@+id/run_lottery"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Run Lottery">
-    </Button>
+        <EditText
+            android:id="@+id/etSampleSize"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:hint="Number to sample"
+            android:inputType="number"
+            android:layout_marginBottom="12dp"
+            android:gravity="center" />
+
+        <Button
+            android:id="@+id/run_lottery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Run Lottery" />
+    </LinearLayout>
 
 </LinearLayout>

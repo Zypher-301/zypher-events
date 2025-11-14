@@ -67,6 +67,16 @@
             android:inputType="textMultiLine"
             android:minLines="3" />
 
+        <EditText
+            android:id="@+id/edit_lottery_criteria"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Lottery Criteria (e.g. ages 8-12 can swim 25m"
+            android:inputType="textMultiLine"
+            android:minLines="2"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+
         <Switch
             android:id="@+id/switchLimit"
             android:layout_width="match_parent"

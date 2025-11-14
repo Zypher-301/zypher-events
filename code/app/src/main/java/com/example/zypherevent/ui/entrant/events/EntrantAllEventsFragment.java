@@ -1,16 +1,21 @@
 package com.example.zypherevent.ui.entrant.events;
 
 
+import android.app.DatePickerDialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -54,11 +59,19 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     private Database db;
     private RecyclerView recyclerView;
     private EntrantEventAdapter adapter;
+
+    /** what is shown on the all events list after filters applied */
     private List<Event> eventList = new ArrayList<>();
+
+    /** all the events, unfiltered */
+    private List<Event> allEvents = new ArrayList<>();   // full dataset
+    private String filterQuery = "";
+    private Date filterStartDate = null;
+    private Date filterEndDate = null;
     private Button refreshButton;
+    private Button filterButton;
     private Entrant currentUser;
     private Long highlightEventId = null;
-
 
     /**
      * A date formatter to present event start and registration times in a detailed,
@@ -134,13 +147,21 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
         recyclerView = view.findViewById(R.id.recycler_view);
         refreshButton = view.findViewById(R.id.refresh_button);
+        filterButton = view.findViewById(R.id.filter_button);
+
         adapter = new EntrantEventAdapter(eventList, currentUser, this);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
+
+        // refresh button listener
         refreshButton.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Refreshing list...", Toast.LENGTH_SHORT).show();
             loadEvents();
         });
+
+        // filter button listener
+        filterButton.setOnClickListener(v -> showFilterDialog());
+
         loadEvents();
     }
 
@@ -149,10 +170,10 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      * Asynchronously loads all events from the Firestore database.
      * <p>
      * This method fetches the complete list of available events from the database.
-     * It first clears the local {@code eventList}, then populates it with the newly fetched data.
-     * Finally, it notifies the {@link EntrantEventAdapter} that the data set has changed,
-     * prompting the {@link RecyclerView} to refresh and display the updated list of events.
-     * If the database query fails, an error is logged.
+     * It first clears the local allEvents list, then populates it with the newly fetched data
+     * with the applied filters. Finally, it notifies the {@link EntrantEventAdapter} that the data
+     * set has changed, prompting the {@link RecyclerView} to refresh and display the updated list
+     * of events. If the database query fails, an error is logged.
      */
     private void loadEvents() {
         Log.d(TAG, "Attempting to query 'events' collection...");
@@ -165,19 +186,297 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                 List<Event> fetchedEvents = task.getResult();
                 if (fetchedEvents == null) { return; }
                 Log.d(TAG, "Firebase query successful. Found " + fetchedEvents.size() + " events.");
-                eventList.clear();
-                eventList.addAll(fetchedEvents);
-                adapter.notifyDataSetChanged();
-                
-                // Scroll to and highlight the scanned event if specified
+
+                allEvents.clear();
+                allEvents.addAll(fetchedEvents);
+
+                applyFilters();
+
                 if (highlightEventId != null) {
                     scrollToEvent(highlightEventId);
-                    highlightEventId = null; // Clear after use
+                    highlightEventId = null;
                 }
             } else {
                 Log.e(TAG, "Error running query: ", task.getException());
             }
         });
+    }
+
+    /**
+     * Temporary holder for filter values while the filter dialog is open.
+     * This class stores the in-progress query text and optional start and end dates so that the
+     * user can adjust filters in the dialog without immediately applying them to the main list.
+     * The values are copied back to the fragment's actual filter fields only when the user taps
+     * the Apply button.
+     */
+    private static class TempFilterState {
+
+        /** The search query entered in the filter dialog. */
+        String query;
+
+        /** The selected start date for filtering events, or null if none is set. */
+        Date startDate;
+
+        /** The selected end date for filtering events, or null if none is set. */
+        Date endDate;
+    }
+
+    /**
+     * Displays the filter dialog for refining the event list.
+     * The dialog allows the user to adjust the search query and optional start and end dates used
+     * to filter events. Changes are stored in a temporary state until the user taps Apply, at
+     * which point the fragment's filter fields are updated and applyFilters() is called.
+     * Tapping Clear resets the dialog fields to their default, and Cancel dismisses the dialog
+     * without applying any changes.
+     */
+    private void showFilterDialog() {
+        if (getContext() == null) return;
+
+        // inflate the dialog box
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        View dialogView = inflater.inflate(R.layout.dialog_event_filter, null);
+
+        // grab the views
+        EditText etSearch = dialogView.findViewById(R.id.et_search_events_dialog);
+        Button btnFrom = dialogView.findViewById(R.id.btn_date_from_dialog);
+        Button btnTo = dialogView.findViewById(R.id.btn_date_to_dialog);
+        Button btnClear = dialogView.findViewById(R.id.btn_clear_dialog);
+        Button btnApply = dialogView.findViewById(R.id.btn_apply_dialog);
+
+        // Mutable holder for dialog-local state
+        final TempFilterState temp = new TempFilterState();
+        temp.query = filterQuery;
+        temp.startDate = filterStartDate;
+        temp.endDate = filterEndDate;
+
+        // populate the dialog fields with the current filters
+        etSearch.setText(temp.query);
+
+        final SimpleDateFormat displayFormat =
+                new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+
+        if (temp.startDate != null) {
+            btnFrom.setText(displayFormat.format(temp.startDate));
+        }
+        if (temp.endDate != null) {
+            btnTo.setText(displayFormat.format(temp.endDate));
+        }
+
+        // Date pickers
+        btnFrom.setOnClickListener(v -> {
+            showDatePicker(temp.startDate, date -> {
+                temp.startDate = date;
+                btnFrom.setText(displayFormat.format(date));
+            });
+        });
+
+        btnTo.setOnClickListener(v -> {
+            showDatePicker(temp.endDate, date -> {
+                temp.endDate = date;
+                btnTo.setText(displayFormat.format(date));
+            });
+        });
+
+        // reset local filters and UI when clear button is pressed
+        btnClear.setOnClickListener(v -> {
+            temp.query = "";
+            temp.startDate = null;
+            temp.endDate = null;
+
+            etSearch.setText("");
+            btnFrom.setText("From date");
+            btnTo.setText("To date");
+        });
+
+        // create the dialog
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setTitle("Filter events")
+                .setView(dialogView)
+                .setNegativeButton("Cancel", (d, which) -> d.dismiss())
+                .create();
+
+        // copy temp into real filters and update list when apply is clicked
+        btnApply.setOnClickListener(v -> {
+            filterQuery = etSearch.getText().toString().trim();
+            filterStartDate = temp.startDate;
+            filterEndDate = temp.endDate;
+
+            applyFilters();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Updates the visual state of the filter button based on active filters.
+     * When any filter is applied (query, start date, or end date), the button text and background
+     * tint are adjusted to indicate that filters are active. If no filters are set, the button is
+     * reset to its default label and tint.
+     */
+    private void updateFilterButtonState() {
+        if (filterButton == null || getContext() == null) return;
+
+        boolean hasFilters =
+                (filterQuery != null && !filterQuery.isEmpty())
+                        || filterStartDate != null
+                        || filterEndDate != null;
+
+        if (hasFilters) {
+            filterButton.setText("Filter ✓");
+            // change tint to indicate active filters
+            filterButton.setBackgroundTintList(
+                    ContextCompat.getColorStateList(requireContext(), android.R.color.holo_orange_light)
+            );
+        } else {
+            filterButton.setText("Filter");
+
+            // default AppCompat theme colorPrimary
+            TypedValue tv = new TypedValue();
+            requireContext().getTheme().resolveAttribute(
+                    androidx.appcompat.R.attr.colorPrimary,
+                    tv,
+                    true
+            );
+
+            int defaultColor = tv.data;
+
+            filterButton.setBackgroundTintList(ColorStateList.valueOf(defaultColor));
+        }
+    }
+
+    /**
+     * Callback interface for receiving a date selected from a date picker.
+     * Implementations are notified when the user confirms a date. Allows the caller to update
+     * local state or UI elements with the chosen value.
+     */
+    private interface DateSelectedCallback {
+
+        /**
+         * Called when the user selects a date.
+         *
+         * @param date the date chosen by the user
+         */
+        void onDateSelected(Date date);
+    }
+
+    /**
+     * Shows a date picker dialog and returns the selected date via callback.
+     * The dialog is optionally initialized with the provided initialDate. When the user
+     * confirms a date, the result is normalized to midnight in the current timezone and passed to
+     * the supplied callback. If the context is unavailable, the dialog is not shown.
+     *
+     * @param initialDate an optional initial date to pre-select in the picker, or null for today
+     * @param callback    the callback to invoke when a date is selected
+     */
+    private void showDatePicker(@Nullable Date initialDate, @NonNull DateSelectedCallback callback) {
+        if (getContext() == null) return;
+
+        final java.util.Calendar cal = java.util.Calendar.getInstance();
+        if (initialDate != null) {
+            cal.setTime(initialDate);
+        }
+
+        int year = cal.get(java.util.Calendar.YEAR);
+        int month = cal.get(java.util.Calendar.MONTH);
+        int day = cal.get(java.util.Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog dialog = new DatePickerDialog(
+                getContext(),
+                (view, y, m, d) -> {
+                    java.util.Calendar chosen = java.util.Calendar.getInstance();
+                    chosen.set(java.util.Calendar.YEAR, y);
+                    chosen.set(java.util.Calendar.MONTH, m);
+                    chosen.set(java.util.Calendar.DAY_OF_MONTH, d);
+                    chosen.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                    chosen.set(java.util.Calendar.MINUTE, 0);
+                    chosen.set(java.util.Calendar.SECOND, 0);
+                    chosen.set(java.util.Calendar.MILLISECOND, 0);
+
+                    callback.onDateSelected(chosen.getTime());
+                },
+                year, month, day
+        );
+
+        dialog.show();
+    }
+
+    /**
+     * Applies the current filter settings to the event list.
+     * This method clears the displayed event list, re-evaluates all events against the active
+     * query and date range using matchesQuery(Event, String) and matchesDateRange(Event, Date, Date)},
+     * and repopulates the list with matching events. The adapter is then notified of the changes,
+     * and the filter button state is updated to reflect whether any filters are active.
+     */
+    private void applyFilters() {
+        eventList.clear();
+
+        for (Event event : allEvents) {
+            if (!matchesQuery(event, filterQuery)) continue;
+            if (!matchesDateRange(event, filterStartDate, filterEndDate)) continue;
+            eventList.add(event);
+        }
+
+        adapter.notifyDataSetChanged();
+
+        // update the filter button
+        updateFilterButtonState();
+    }
+
+    /**
+     * Determines whether an event matches the given text query.
+     * The query is compared against the event's name, description, and location using
+     * case-insensitive substring matching. If the query is null or empty, the event is treated as
+     * a match.
+     *
+     * @param event the event to evaluate against the query
+     * @param query the search text entered by the user, or null if none
+     * @return true if the event matches the query, false otherwise
+     */
+    private boolean matchesQuery(Event event, String query) {
+        if (query == null || query.isEmpty()) {
+            return true;
+        }
+        String lowerQuery = query.toLowerCase(Locale.getDefault());
+
+        String name = event.getEventName() != null
+                ? event.getEventName().toLowerCase(Locale.getDefault())
+                : "";
+        String desc = event.getEventDescription() != null
+                ? event.getEventDescription().toLowerCase(Locale.getDefault())
+                : "";
+        String location = event.getLocation() != null
+                ? event.getLocation().toLowerCase(Locale.getDefault())
+                : "";
+
+        return name.contains(lowerQuery) || desc.contains(lowerQuery) || location.contains(lowerQuery);
+    }
+
+    /**
+     * Determines whether an event falls within the specified date range.
+     * The event's start time is compared against optional start and end boundaries. If the event
+     * date is null, it is treated as a match. If a start date is provided, events before
+     * that date are excluded. If an end date is provided, events after that date are excluded.
+     *
+     * @param event the event whose date should be evaluated
+     * @param start the inclusive start date of the filter range, or null if unbounded
+     * @param end   the inclusive end date of the filter range, or null if unbounded
+     * @return true if the event matches the date range, false otherwise
+     */
+    private boolean matchesDateRange(Event event, @Nullable Date start, @Nullable Date end) {
+        // Choose which date you want to filter on; here I use event start time.
+        Date eventDate = event.getStartTime();
+        if (eventDate == null) {
+            return true; // or false, depending on your preference
+        }
+
+        if (start != null && eventDate.before(start)) {
+            return false;
+        }
+        if (end != null && eventDate.after(end)) {
+            return false;
+        }
+        return true;
     }
 
     /**

@@ -136,6 +136,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         // Declare the views from the layout
         ImageView imgPoster;
         TextView tvTitle, tvMeta, tvWaitlistCount;
+        TextView tvLotteryCriteriaLabel, tvLotteryCriteria;
         LinearLayout slotActions;
         Button btnJoinWaitlist, btnLeaveWaitlist;
 
@@ -155,6 +156,8 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvMeta = itemView.findViewById(R.id.tvMeta);
             tvWaitlistCount = itemView.findViewById(R.id.tvWaitlistCount);
+            tvLotteryCriteriaLabel = itemView.findViewById(R.id.tvLotteryCriteriaLabel);
+            tvLotteryCriteria = itemView.findViewById(R.id.tvLotteryCriteria);
             slotActions = itemView.findViewById(R.id.slotActions);
             btnJoinWaitlist = itemView.findViewById(R.id.btnJoinWaitlist);
             btnLeaveWaitlist = itemView.findViewById(R.id.btnLeaveWaitlist);
@@ -178,11 +181,20 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             tvTitle.setText(event.getEventName());
             tvMeta.setText(event.getLocation());
 
-            // US 01.05.04: Show waitlist count
             int waitlistSize = event.getWaitListEntrants().size();
             tvWaitlistCount.setText("On Waiting List: " + waitlistSize);
 
-            // Make the button area visible
+            // per-event lottery criteria
+            String criteria = event.getLotteryCriteria();
+            if (criteria == null || criteria.trim().isEmpty()) {
+                tvLotteryCriteriaLabel.setVisibility(View.GONE);
+                tvLotteryCriteria.setVisibility(View.GONE);
+            } else {
+                tvLotteryCriteriaLabel.setVisibility(View.VISIBLE);
+                tvLotteryCriteria.setVisibility(View.VISIBLE);
+                tvLotteryCriteria.setText(criteria.trim());
+            }
+
             slotActions.setVisibility(View.VISIBLE);
 
             // Check registration window status
@@ -200,7 +212,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
                     break;
                 }
             }
-            
+
             if (isOnWaitlist) {
                 // User is ON the waitlist: Show "Leave" (only enabled during registration window)
                 btnJoinWaitlist.setVisibility(View.GONE);
@@ -210,7 +222,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
                 // User is NOT on the waitlist
                 btnLeaveWaitlist.setVisibility(View.GONE);
                 btnJoinWaitlist.setVisibility(View.VISIBLE);
-                
+
                 if (registrationOpen) {
                     // Registration is open: Show enabled "Join" button
                     btnJoinWaitlist.setEnabled(true);
@@ -228,12 +240,13 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
                     listener.onJoinClick(event);
                 }
             });
-            // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
+
             btnLeaveWaitlist.setOnClickListener(v -> {
                 if (registrationOpen) {
                     listener.onLeaveClick(event);
                 }
             });
+
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }
     }

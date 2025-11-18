@@ -35,6 +35,12 @@ public class Event implements Serializable {
     private String eventDescription;
 
     /**
+     * Event specific criteria/guidelines for the lottery
+     * e.g age range, skill level
+     */
+    private String lotteryCriteria;
+
+    /**
      * The start time of the event.
      */
     private Date startTime;
@@ -198,6 +204,17 @@ public class Event implements Serializable {
      */
     public void setEventDescription(String eventDescription) {
         this.eventDescription = eventDescription;
+    }
+
+    /**
+     * returns lottery criteria
+     */
+    public String getLotteryCriteria() {
+        return lotteryCriteria;
+    }
+
+    public void setLotteryCriteria(String lotteryCriteria) {
+        this.lotteryCriteria = lotteryCriteria;
     }
 
     /**

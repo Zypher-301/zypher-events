@@ -36,9 +36,6 @@ import com.example.zypherevent.Utils;
 import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
-import com.example.zypherevent.userTypes.User;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.OutputStream;
@@ -170,10 +167,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void showWaitlistDialog(Event event) {
-        if (getContext() == null) return;
-
-        Database db = new Database();
-
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.popup_organizer_lottery, null);
@@ -188,93 +181,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
-        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
 
-        WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(
-                finalWaitlistEntrants,
-                (entry, position) -> {
-                    if (getContext() == null) return;
-
-                    String hardwareId = entry.getEntrantHardwareID();
-
-                    // If we somehow don't have a hardware ID, fall back to generic text
-                    if (hardwareId == null || hardwareId.isEmpty()) {
-                        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
-                        confirmBuilder.setTitle("Accept Entrant");
-                        confirmBuilder.setMessage("Accept this entrant for this event?");
-                        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-                            finalWaitlistEntrants.remove(position);
-                            if (waitlistRecyclerView.getAdapter() != null) {
-                                waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
-                            }
-                            Toast.makeText(getContext(), "Entrant accepted!", Toast.LENGTH_SHORT).show();
-                        });
-                        confirmBuilder.setNegativeButton("Cancel", null);
-                        confirmBuilder.show();
-                        return;
-                    }
-
-                    // Lookup Entrant by hardware ID to show their name
-                    db.getUser(hardwareId)
-                            .addOnSuccessListener(user -> {
-                                if (getContext() == null) return;
-
-                                String entrantName = "this entrant";
-                                if (user instanceof Entrant) {
-                                    Entrant entrant = (Entrant) user;
-                                    String first = entrant.getFirstName() != null ? entrant.getFirstName() : "";
-                                    String last = entrant.getLastName() != null ? entrant.getLastName() : "";
-                                    entrantName = (first + " " + last).trim();
-                                    if (entrantName.isEmpty()) {
-                                        entrantName = "Unnamed entrant";
-                                    }
-                                }
-
-                                AlertDialog.Builder confirmBuilder =
-                                        new AlertDialog.Builder(getContext());
-                                confirmBuilder.setTitle("Accept Entrant");
-                                confirmBuilder.setMessage("Accept " + entrantName + " for this event?");
-
-                                String finalEntrantName = entrantName;
-                                confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-                                    finalWaitlistEntrants.remove(position);
-                                    if (waitlistRecyclerView.getAdapter() != null) {
-                                        waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
-                                    }
-                                    Toast.makeText(
-                                            getContext(),
-                                            finalEntrantName + " accepted!",
-                                            Toast.LENGTH_SHORT
-                                    ).show();
-                                });
-
-                                confirmBuilder.setNegativeButton("Cancel", null);
-                                confirmBuilder.show();
-                            })
-                            .addOnFailureListener(e -> {
-                                if (getContext() == null) return;
-
-                                // Fallback: no name, but still allow accept
-                                AlertDialog.Builder confirmBuilder =
-                                        new AlertDialog.Builder(getContext());
-                                confirmBuilder.setTitle("Accept Entrant");
-                                confirmBuilder.setMessage("Accept this entrant for this event?");
-                                confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-                                    finalWaitlistEntrants.remove(position);
-                                    if (waitlistRecyclerView.getAdapter() != null) {
-                                        waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
-                                    }
-                                    Toast.makeText(
-                                            getContext(),
-                                            "Entrant accepted!",
-                                            Toast.LENGTH_SHORT
-                                    ).show();
-                                });
-                                confirmBuilder.setNegativeButton("Cancel", null);
-                                confirmBuilder.show();
-                            });
-                }
+        WaitlistEntrantAdapter[] waitlistAdapterHolder = new WaitlistEntrantAdapter[1];
+        waitlistAdapterHolder[0] = new WaitlistEntrantAdapter(
+                waitlistEntrants,
+                (entry, position) -> handleAcceptEntrant(event, entry, position)
         );
+
+        WaitlistEntrantAdapter waitlistAdapter = waitlistAdapterHolder[0];
 
         waitlistRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         waitlistRecyclerView.setAdapter(waitlistAdapter);
@@ -293,16 +207,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
         }
 
-        // Default sort
         waitlistAdapter.sortByNewest();
 
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
 
+        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
+
         if (runLotteryButton != null && etSampleSize != null) {
             runLotteryButton.setOnClickListener(v -> {
-                if (getContext() == null) return;
-
                 String input = etSampleSize.getText().toString().trim();
                 if (input.isEmpty()) {
                     Toast.makeText(getContext(), "Please enter a number to sample", Toast.LENGTH_SHORT).show();
@@ -334,77 +247,52 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 List<WaitlistEntry> selected = shuffled.subList(0, n);
 
-                // Collect hardware IDs for selected entries
-                List<String> selectedIds = new ArrayList<>();
+                int acceptedCount = 0;
                 for (WaitlistEntry entry : selected) {
-                    if (entry == null) continue;
-                    String id = entry.getEntrantHardwareID();
-                    if (id != null && !id.isEmpty()) {
-                        selectedIds.add(id);
-                    }
+                    Entrant e = entry.getEntrant();
+                    if (e == null) continue;
+
+                    db.moveEntrantToAccepted(event.getUniqueEventID().toString(), e)
+                            .addOnSuccessListener(unused -> {
+                            })
+                            .addOnFailureListener(err ->
+                                    Log.e(TAG, "Failed to move entrant to accepted: " + err.getMessage())
+                            );
+
+                    acceptedCount++;
                 }
 
-                if (selectedIds.isEmpty()) {
-                    Toast.makeText(
-                            getContext(),
-                            "Selected " + n + " entrant(s), but no valid IDs found.",
-                            Toast.LENGTH_LONG
-                    ).show();
-                    return;
-                }
+                Toast.makeText(
+                        getContext(),
+                        "Selected and accepted " + acceptedCount + " entrant(s).",
+                        Toast.LENGTH_LONG
+                ).show();
 
-                // Lookup all selected entrants from DB to show their names
-                List<Task<User>> lookupTasks = new ArrayList<>();
-                for (String id : selectedIds) {
-                    lookupTasks.add(db.getUser(id));
-                }
-
-                Tasks.whenAllSuccess(lookupTasks)
-                        .addOnSuccessListener(results -> {
-                            if (getContext() == null) return;
-
-                            StringBuilder sb = new StringBuilder();
-
-                            for (int i = 0; i < results.size(); i++) {
-                                Object obj = results.get(i);
-                                String name;
-
-                                if (obj instanceof Entrant) {
-                                    Entrant e = (Entrant) obj;
-                                    String first = e.getFirstName() != null ? e.getFirstName() : "";
-                                    String last = e.getLastName() != null ? e.getLastName() : "";
-                                    name = (first + " " + last).trim();
-                                    if (name.isEmpty()) {
-                                        name = "Unnamed entrant";
-                                    }
-                                } else {
-                                    name = "Unknown entrant";
-                                }
-
-                                if (sb.length() > 0) sb.append(", ");
-                                sb.append(name);
-                            }
-
-                            Toast.makeText(
-                                    getContext(),
-                                    "Selected " + selectedIds.size() + " entrant(s): " + sb.toString(),
-                                    Toast.LENGTH_LONG
-                            ).show();
-                        })
-                        .addOnFailureListener(e -> {
-                            if (getContext() == null) return;
-
-                            Toast.makeText(
-                                    getContext(),
-                                    "Lottery run, but failed to load entrant names.",
-                                    Toast.LENGTH_LONG
-                            ).show();
-                        });
+                loadEvents();
             });
         }
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+        confirmBuilder.setTitle("Accept Entrant");
+        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
+                entry.getEntrant().getLastName() + " for this event?");
+
+        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant());
+            Toast.makeText(getContext(),
+                    entry.getEntrant().getFirstName() + " accepted!",
+                    Toast.LENGTH_SHORT).show();
+
+            loadEvents();
+        });
+
+        confirmBuilder.setNegativeButton("Cancel", null);
+        confirmBuilder.show();
     }
 
     private void showCreateEventDialog() {
@@ -419,8 +307,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
         EditText editDetails = dialogView.findViewById(R.id.edit_details);
+        EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
+        Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
         Button saveButton = dialogView.findViewById(R.id.save);
 
         TextView label = dialogView.findViewById(R.id.label1);
@@ -444,9 +334,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
             String description = editDetails.getText().toString().trim();
+            String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
-            Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
+            boolean requiresGeo = requireGeolocation.isChecked();
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -476,8 +367,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             Date startTime;
             Date registrationStartTime;
             Date registrationEndTime;
-
-            boolean requiresGeolocation = switchGeolocation.isChecked();
 
             try {
                 startTime = Utils.createWholeDayDate(startTimeStr);
@@ -516,7 +405,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             createEvent(eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
+                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, requiresGeo);
 
             dialog.dismiss();
         });
@@ -525,7 +414,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void createEvent(String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
+                             String lotteryCriteria, boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -557,6 +447,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 newEvent.setWaitlistLimit(waitlistLimit);
             }
 
+            newEvent.setLotteryCriteria(lotteryCriteria);
+
             db.setEventData(eventID, newEvent).addOnCompleteListener(saveTask -> {
                 if (saveTask.isSuccessful()) {
                     Log.d(TAG, "Event created successfully with ID: " + eventID);
@@ -584,9 +476,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
         EditText editDetails = dialogView.findViewById(R.id.edit_details);
+        EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
-        Switch switchGeolocation = dialogView.findViewById(R.id.require_geolocation);
+        Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
         Button saveButton = dialogView.findViewById(R.id.save);
 
         TextView label = dialogView.findViewById(R.id.label1);
@@ -603,10 +496,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         if (event.getRegistrationEndTime() != null) {
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
         }
-        if (event.getRequiresGeolocation()) {
-            switchGeolocation.setChecked(true);
-        }
         editDetails.setText(event.getEventDescription());
+
+        String existingCriteria = event.getLotteryCriteria();
+        if (existingCriteria != null) {
+            editLotteryCriteria.setText(existingCriteria);
+        }
 
         Integer currentLimit = event.getWaitlistLimit();
         if (currentLimit != null) {
@@ -617,6 +512,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             switchLimit.setChecked(false);
             limitNum.setVisibility(View.GONE);
         }
+
+        requireGeolocation.setChecked(event.getRequiresGeolocation());
 
         switchLimit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             limitNum.setVisibility(isChecked ? View.VISIBLE : View.GONE);
@@ -634,9 +531,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
             String description = editDetails.getText().toString().trim();
+            String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
-            boolean requiresGeolocation = switchGeolocation.isChecked();
+            boolean requiresGeo = requireGeolocation.isChecked();
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -709,7 +607,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, requiresGeolocation);
+                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, requiresGeo);
 
             dialog.dismiss();
         });
@@ -718,7 +616,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
-                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, boolean requiresGeolocation) {
+                             Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
+                             String lotteryCriteria, boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
         Event updatedEvent = new Event(
@@ -734,6 +633,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         );
 
         updatedEvent.setWaitlistLimit(waitlistLimit);
+        updatedEvent.setLotteryCriteria(lotteryCriteria);
 
         db.setEventData(eventId, updatedEvent).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {

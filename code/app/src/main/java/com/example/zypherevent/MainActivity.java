@@ -73,11 +73,10 @@ public class MainActivity extends AppCompatActivity {
         db = new Database();
 
         // Get hardware ID from user's device
-//        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        userHardwareID = "entrant1";
+        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+//        userHardwareID = "administrator1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
-
 
         // For testing, to create a user entry in the database, uncomment one of the following!
 //         setCurrentToEntrant(db);
@@ -86,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         // By leaving these commented, if there is not a pre-existing entry for the hwid in the
         // database, then you will be prompted as a new user!
 
-        // Create a sample database
+        // Create a sample database -----  CAREFULLL PLEASE!!!!!!
 //        createSampleDatabase();
 
         // Start the task for getting the user from hardware ID

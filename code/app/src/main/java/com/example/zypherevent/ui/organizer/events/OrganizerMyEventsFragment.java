@@ -48,7 +48,6 @@ import java.util.List;
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 
     private static final String TAG = "OrganizerMyEvents";
-
     private Database db;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -101,6 +100,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         loadEvents();
     }
 
+    /**
+     * Loads events created by the current organizer from the database.
+     * This method queries the database for all {@link Event} instances associated with the
+     * organizer's hardware ID, updates the event list and its adapter with the fetched results,
+     * and toggles the empty state view depending on whether any events are returned. The swipe
+     * refresh indicator is stopped when the query completes, and any errors are logged and shown
+     * to the user via a toast message.
+     */
     private void loadEvents() {
         db.getEventsByOrganizer(organizerUser.getHardwareID()).addOnCompleteListener(task -> {
             if (swipeRefreshLayout != null) {

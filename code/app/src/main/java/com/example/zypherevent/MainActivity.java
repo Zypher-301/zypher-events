@@ -124,6 +124,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Populates the database with sample users, events, and notifications.
+     * This method creates a set of organizers, entrants, and an administrator, assigns locations
+     * to entrants, and persists them to the database. It then creates three sample events with
+     * predefined registration windows, participants in various waitlisted, accepted, and declined
+     * states, and updates each entrant's registered event history and each organizer's created
+     * events list. Finally, it generates a small set of test notifications addressed to a sample
+     * entrant. All event and notification records use IDs obtained from the database's unique ID
+     * generators.
+     */
     private void createSampleDatabase() {
 
         Database db = new Database();

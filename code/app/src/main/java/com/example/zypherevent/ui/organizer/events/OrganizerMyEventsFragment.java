@@ -249,12 +249,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 int acceptedCount = 0;
                 for (WaitlistEntry entry : selected) {
-                    Entrant e = entry.getEntrant();
-                    if (e == null) continue;
+                    String hardwareId = entry.getEntrantHardwareID();
+                    if (hardwareId == null || hardwareId.isEmpty()) continue;
 
-                    db.moveEntrantToAccepted(event.getUniqueEventID().toString(), e)
-                            .addOnSuccessListener(unused -> {
-                            })
+                    // Minimal Entrant object — moveEntrantToAccepted only uses hardwareID
+                    Entrant stubEntrant = new Entrant(hardwareId, "", "", "");
+
+                    db.moveEntrantToAccepted(event.getUniqueEventID().toString(), stubEntrant)
+                            .addOnSuccessListener(unused -> { /* no-op or log if you like */ })
                             .addOnFailureListener(err ->
                                     Log.e(TAG, "Failed to move entrant to accepted: " + err.getMessage())
                             );
@@ -268,6 +270,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                         Toast.LENGTH_LONG
                 ).show();
 
+                // Refresh events so UI elsewhere stays in sync
                 loadEvents();
             });
         }
@@ -277,22 +280,60 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
-        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
-        confirmBuilder.setTitle("Accept Entrant");
-        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
-                entry.getEntrant().getLastName() + " for this event?");
+        if (getContext() == null) return;
 
-        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant());
-            Toast.makeText(getContext(),
-                    entry.getEntrant().getFirstName() + " accepted!",
-                    Toast.LENGTH_SHORT).show();
+        String hardwareId = entry.getEntrantHardwareID();
+        if (hardwareId == null || hardwareId.isEmpty()) {
+            Toast.makeText(getContext(), "Invalid entrant", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            loadEvents();
-        });
+        // look up the Entrant object so we can show a name in the dialog
+        db.getUser(hardwareId)
+                .addOnSuccessListener(user -> {
+                    if (!(user instanceof Entrant)) {
+                        Toast.makeText(getContext(),
+                                "User is not an entrant or could not be loaded",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        confirmBuilder.setNegativeButton("Cancel", null);
-        confirmBuilder.show();
+                    Entrant entrant = (Entrant) user;
+                    String first = entrant.getFirstName() != null ? entrant.getFirstName() : "";
+                    String last = entrant.getLastName() != null ? entrant.getLastName() : "";
+                    String fullName = (first + " " + last).trim();
+                    if (fullName.isEmpty()) {
+                        fullName = "this entrant";
+                    }
+
+                    AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+                    confirmBuilder.setTitle("Accept Entrant");
+                    confirmBuilder.setMessage("Accept " + fullName + " for this event?");
+
+                    String finalFullName = fullName;
+                    confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                        db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entrant)
+                                .addOnSuccessListener(unused -> {
+                                    Toast.makeText(getContext(),
+                                            finalFullName + " accepted!",
+                                            Toast.LENGTH_SHORT).show();
+                                    loadEvents();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(getContext(),
+                                            "Failed to accept entrant: " + e.getMessage(),
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                    });
+
+                    confirmBuilder.setNegativeButton("Cancel", null);
+                    confirmBuilder.show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(),
+                            "Failed to load entrant: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void showCreateEventDialog() {
@@ -448,6 +489,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             newEvent.setLotteryCriteria(lotteryCriteria);
+
+            organizerUser.addCreatedEvent(eventID);
+
+            db.setUserData(organizerUser.getHardwareID(), organizerUser);
 
             db.setEventData(eventID, newEvent).addOnCompleteListener(saveTask -> {
                 if (saveTask.isSuccessful()) {

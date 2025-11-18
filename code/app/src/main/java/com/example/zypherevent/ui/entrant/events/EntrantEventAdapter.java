@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.entrant.events;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -188,8 +191,11 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
 
             // Check if the current user is on the waitlist.
             boolean isOnWaitlist = false;
+            String myId = currentUser.getHardwareID();
+
             for (WaitlistEntry entry : event.getWaitListEntrants()) {
-                if (entry.getEntrant().equals(currentUser)) {
+                String entryId = entry.getEntrantHardwareID();
+                if (entryId != null && entryId.equals(myId)) {
                     isOnWaitlist = true;
                     break;
                 }

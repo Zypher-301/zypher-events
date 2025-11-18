@@ -37,13 +37,13 @@ public class Entrant extends User implements Serializable {
     private boolean useGeolocation;
 
     /** The entrant's location (optional). */
-    private transient GeoPoint location;   // Firestore-native location
+    private transient GeoPoint location; // Firestore-native location
 
     /** Whether the entrant wants notifications. */
     private boolean wantsNotifications;
 
-    /** A list of events the entrant has registered for. */
-    private ArrayList<Event> registeredEventHistory;
+    /** A list of event IDs the entrant has registered for. */
+    private ArrayList<Long> registeredEventHistory;
 
     /**
      * Constructs a new Entrant instance with all attributes specified. (Including phone number)
@@ -61,7 +61,7 @@ public class Entrant extends User implements Serializable {
         this.phoneNumber = phoneNumber;
         this.useGeolocation = useGeolocation;
         this.wantsNotifications = true;
-        this.registeredEventHistory = new ArrayList<Event>();
+        this.registeredEventHistory = new ArrayList<Long>();
     }
 
     /**
@@ -75,7 +75,10 @@ public class Entrant extends User implements Serializable {
     public Entrant(String hardwareID, String firstName, String lastName, String email) {
         super(UserType.ENTRANT, hardwareID, firstName, lastName);
         this.email = email;
-        this.registeredEventHistory = new ArrayList<Event>();
+        this.phoneNumber = null;
+        this.useGeolocation = false;
+        this.wantsNotifications = true;
+        this.registeredEventHistory = new ArrayList<>();
     }
 
     /**
@@ -178,36 +181,36 @@ public class Entrant extends User implements Serializable {
     }
 
     /**
-     * Returns a list of events that the entrant has registered for.
+     * Returns a list of event IDs that the entrant has registered for.
      *
-     * @return a list containing the entrant's registered events
+     * @return a list containing the entrant's registered event IDs
      */
-    public ArrayList<Event> getRegisteredEventHistory() {
+    public ArrayList<Long> getRegisteredEventHistory() {
         return registeredEventHistory;
     }
 
     /**
-     * Adds a new event to the entrant's registered event history.
+     * Adds a new event ID to the entrant's registered event history.
      * The event will only be added if it is not already in the list.
      *
-     * @param event the event to add to the entrant's registration history
+     * @param eventID the event ID to add to the entrant's registration history
      */
-    public void addEventToRegisteredEventHistory(Event event) {
+    public void addEventToRegisteredEventHistory(Long eventID) {
         // Only add event if it's not already in the history
-        if (!registeredEventHistory.contains(event)) {
-            registeredEventHistory.add(event);
+        if (!registeredEventHistory.contains(eventID)) {
+            registeredEventHistory.add(eventID);
         }
     }
 
     /**
-     * Removes an event from the entrant's registered event history.
-     * If the event is not present, no changes are made.
+     * Removes an event ID from the entrant's registered event history.
+     * If the event ID is not present, no changes are made.
      *
-     * @param event the event to remove from the entrant's registration history
+     * @param eventID the event ID to remove from the entrant's registration history
      */
-    public void removeEventFromRegisteredEventHistory(Event event) {
+    public void removeEventFromRegisteredEventHistory(Long eventID) {
         // No contains check needed, as .remove already checks for existence internally
-        registeredEventHistory.remove(event);
+        registeredEventHistory.remove(eventID);
     }
 
     /**
@@ -235,7 +238,7 @@ public class Entrant extends User implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), email, phoneNumber, registeredEventHistory);
+        return Objects.hash(super.hashCode(), email, phoneNumber);
     }
 
 
@@ -284,15 +287,16 @@ public class Entrant extends User implements Serializable {
     public Entrant() {
         // Ensure the type is set
         setUserType(UserType.ENTRANT);
-        this.registeredEventHistory = new ArrayList<Event>();
+        this.registeredEventHistory = new ArrayList<Long>();
     }
 
     /**
      * Sets the entrant's registered event history. ONLY to be used by firestore!
      *
-     * @param registeredEventHistory the new list of registered events
+     * @param registeredEventHistory the new list of registered event IDs
      */
-    public void setRegisteredEventHistory(ArrayList<Event> registeredEventHistory) {
-        this.registeredEventHistory = Objects.requireNonNullElseGet(registeredEventHistory, ArrayList::new);
+    public void setRegisteredEventHistory(ArrayList<Long> registeredEventHistory) {
+        this.registeredEventHistory =
+                Objects.requireNonNullElseGet(registeredEventHistory, ArrayList::new);
     }
 }

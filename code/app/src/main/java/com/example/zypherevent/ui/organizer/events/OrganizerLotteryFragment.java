@@ -183,7 +183,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void updateEventWIthLotteryResults(List<WaitlistEntry> selected, List<WaitlistEntry> denied) {
         for (WaitlistEntry entry : selected) {
-            currentEvent.addEntrantToAcceptedList(entry.getEntrant());
+            currentEvent.addEntrantToAcceptedList(entry.getEntrantHardwareID());
             currentEvent.removeEntrantFromWaitList(entry);
         }
 
@@ -215,7 +215,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void sendInvitationNotification(List<WaitlistEntry> selected) {
         for (WaitlistEntry entry : selected) {
-            String entrantID = entry.getEntrant().getHardwareID();
+            String entrantID = entry.getEntrantHardwareID();
 
             db.getUniqueEventID().addOnSuccessListener(notificationID -> {
                 Notification notification = new Notification(notificationID, organizerID, entrantID,
@@ -238,7 +238,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void sendWaitlistNotification(List<WaitlistEntry> denied) {
         for (WaitlistEntry entry : denied) {
-            String entrantID = entry.getEntrant().getHardwareID();
+            String entrantID = entry.getEntrantHardwareID();
 
             db.getUniqueEventID().addOnSuccessListener(notificationID -> {
                 Notification notification = new Notification(notificationID, organizerID, entrantID,

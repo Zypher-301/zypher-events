@@ -22,10 +22,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.zypherevent.databinding.ActivityMainBinding;
 import com.example.zypherevent.userTypes.UserType;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.GeoPoint;
 
 import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -71,8 +73,11 @@ public class MainActivity extends AppCompatActivity {
         db = new Database();
 
         // Get hardware ID from user's device
-        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+//        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        userHardwareID = "entrant1";
+
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
+
 
         // For testing, to create a user entry in the database, uncomment one of the following!
 //         setCurrentToEntrant(db);
@@ -80,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
 //        setCurrentToAdministrator(db);
         // By leaving these commented, if there is not a pre-existing entry for the hwid in the
         // database, then you will be prompted as a new user!
+
+        // Create a sample database
+//        createSampleDatabase();
 
         // Start the task for getting the user from hardware ID
         db.getUser(userHardwareID).addOnCompleteListener(task -> {
@@ -114,6 +122,233 @@ public class MainActivity extends AppCompatActivity {
                 goToAdministrator(curUser);
 
             }
+        });
+    }
+
+    private void createSampleDatabase() {
+
+        Database db = new Database();
+
+        // --- Organizers ---
+        Organizer organizer1 = new Organizer("organizer1", "John", "Doe");
+        Organizer organizer2 = new Organizer("organizer2", "Jane", "Daren");
+        Organizer organizer3 = new Organizer("organizer3", "June", "Dunley");
+
+        db.setUserData(organizer1.getHardwareID(), organizer1);
+        db.setUserData(organizer2.getHardwareID(), organizer2);
+        db.setUserData(organizer3.getHardwareID(), organizer3);
+
+        // --- Entrants ---
+        Entrant entrant1  = new Entrant("entrant1",  "Joshua",   "Smith",   "joshua.smith@email.com");
+        Entrant entrant2  = new Entrant("entrant2",  "Jacob",    "McMann",  "jacob.mcmann@email.com",  "7801231234", true);
+        Entrant entrant3  = new Entrant("entrant3",  "Emily",    "Turner",  "emily.turner@email.com");
+        Entrant entrant4  = new Entrant("entrant4",  "Michael",  "Andrews", "michael.andrews@email.com", "5875550192", false);
+        Entrant entrant5  = new Entrant("entrant5",  "Sophie",   "Lee",     "sophie.lee@email.com", "5875570192", true);
+        Entrant entrant6  = new Entrant("entrant6",  "Daniel",   "Harris",  "daniel.harris@email.com", "4039914421", true);
+        Entrant entrant7  = new Entrant("entrant7",  "Victoria", "Nguyen",  "victoria.nguyen@email.com", "123123123", true);
+        Entrant entrant8  = new Entrant("entrant8",  "Ethan",    "Marshall","ethan.marshall@email.com", "8257129943", true);
+        Entrant entrant9  = new Entrant("entrant9",  "Olivia",   "Khan",    "olivia.khan@email.com", "123123123123123", true);
+        Entrant entrant10 = new Entrant("entrant10", "Liam",     "Fraser",  "liam.fraser@email.com", "7802239811", true);
+
+        entrant1.setLocation(new GeoPoint(53.5552, -113.6284));
+        entrant2.setLocation(new GeoPoint(53.5927, -113.4219));
+        entrant3.setLocation(new GeoPoint(53.5203, -113.3811));
+        entrant4.setLocation(new GeoPoint(53.5058, -113.5627));
+        entrant5.setLocation(new GeoPoint(53.5739, -113.4972));
+        entrant6.setLocation(new GeoPoint(53.5334, -113.6715));
+        entrant7.setLocation(new GeoPoint(53.6108, -113.5582));
+        entrant8.setLocation(new GeoPoint(53.4947, -113.4479));
+        entrant9.setLocation(new GeoPoint(53.5611, -113.3563));
+        entrant10.setLocation(new GeoPoint(53.5289, -113.5994));
+
+        // --- Admin ---
+        Administrator admin1 = new Administrator("administrator1", "Arnold", "Nimda");
+
+        db.setUserData(entrant1.getHardwareID(), entrant1);
+        db.setUserData(entrant2.getHardwareID(), entrant2);
+        db.setUserData(entrant3.getHardwareID(), entrant3);
+        db.setUserData(entrant4.getHardwareID(), entrant4);
+        db.setUserData(entrant5.getHardwareID(), entrant5);
+        db.setUserData(entrant6.getHardwareID(), entrant6);
+        db.setUserData(entrant7.getHardwareID(), entrant7);
+        db.setUserData(entrant8.getHardwareID(), entrant8);
+        db.setUserData(entrant9.getHardwareID(), entrant9);
+        db.setUserData(entrant10.getHardwareID(), entrant10);
+        db.setUserData(admin1.getHardwareID(), admin1);
+
+        // --- Event 1 ---
+        db.getUniqueEventID().addOnSuccessListener(uniqueEventID -> {
+            Event event1 = new Event(
+                    uniqueEventID,
+                    "Group Swimming",
+                    "Learn to swim at the new Edmonton Swimming School!",
+                    new Date("December 19, 2025 00:00:00"),
+                    "Edmonton Swimming School",
+                    new Date("November 1, 2025 00:00:00"),
+                    new Date("December 10, 2025 00:00:00"),
+                    organizer1.getHardwareID(),
+                    "https://upload.wikimedia.org/wikipedia/commons/a/a7/40._Schwimmzonen-_und_Mastersmeeting_Enns_2017_100m_Brust_Herren_USC_Traun-9897.jpg",
+                    false
+            );
+
+            // These calls will succeed as long as today is within the reg window.
+            event1.addEntrantToWaitList(entrant1.getHardwareID());
+            event1.addEntrantToWaitList(entrant2.getHardwareID());
+            event1.addEntrantToWaitList(entrant3.getHardwareID());
+            event1.addEntrantToWaitList(entrant4.getHardwareID());
+            event1.addEntrantToWaitList(entrant5.getHardwareID());
+            event1.addEntrantToWaitList(entrant6.getHardwareID());
+
+            event1.addEntrantToAcceptedList(entrant7.getHardwareID());
+
+            event1.addEntrantToDeclinedList(entrant8.getHardwareID());
+
+            entrant1.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant2.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant3.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant4.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant5.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant6.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant7.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+            entrant8.addEventToRegisteredEventHistory(event1.getUniqueEventID());
+
+            organizer1.addCreatedEvent(uniqueEventID);
+
+            db.setUserData(entrant1.getHardwareID(), entrant1);
+            db.setUserData(entrant2.getHardwareID(), entrant2);
+            db.setUserData(entrant3.getHardwareID(), entrant3);
+            db.setUserData(entrant4.getHardwareID(), entrant4);
+            db.setUserData(entrant5.getHardwareID(), entrant5);
+            db.setUserData(entrant6.getHardwareID(), entrant6);
+            db.setUserData(entrant7.getHardwareID(), entrant7);
+            db.setUserData(entrant8.getHardwareID(), entrant8);
+
+            db.setUserData(organizer1.getHardwareID(), organizer1);
+
+            db.setEventData(uniqueEventID, event1);
+        });
+
+        // --- Event 2 ---
+        db.getUniqueEventID().addOnSuccessListener(uniqueEventID -> {
+            Event event2 = new Event(
+                    uniqueEventID,
+                    "Chess Club Meeting",
+                    "Playing chess, talking about chess, making friends!",
+                    new Date("December 1, 2025 00:00:00"),
+                    "Vancouver Chess Stadium",
+                    new Date("November 1, 2025 00:00:00"),
+                    new Date("November 29, 2025 00:00:00"),
+                    organizer2.getHardwareID(),
+                    "https://upload.wikimedia.org/wikipedia/commons/6/6f/ChessSet.jpg",
+                    false
+            );
+
+            event2.addEntrantToWaitList(entrant1.getHardwareID());
+            event2.addEntrantToWaitList(entrant5.getHardwareID());
+            event2.addEntrantToWaitList(entrant6.getHardwareID());
+            event2.addEntrantToWaitList(entrant7.getHardwareID());
+            event2.addEntrantToWaitList(entrant8.getHardwareID());
+            event2.addEntrantToWaitList(entrant9.getHardwareID());
+
+            entrant1.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+            entrant5.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+            entrant6.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+            entrant7.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+            entrant8.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+            entrant9.addEventToRegisteredEventHistory(event2.getUniqueEventID());
+
+            organizer2.addCreatedEvent(uniqueEventID);
+
+            db.setUserData(entrant1.getHardwareID(), entrant1);
+            db.setUserData(entrant5.getHardwareID(), entrant5);
+            db.setUserData(entrant6.getHardwareID(), entrant6);
+            db.setUserData(entrant7.getHardwareID(), entrant7);
+            db.setUserData(entrant8.getHardwareID(), entrant8);
+            db.setUserData(entrant9.getHardwareID(), entrant9);
+
+            db.setUserData(organizer2.getHardwareID(), organizer2);
+
+            db.setEventData(uniqueEventID, event2);
+        });
+
+        // --- Event 3 ---
+        db.getUniqueEventID().addOnSuccessListener(uniqueEventID -> {
+            Event event3 = new Event(
+                    uniqueEventID,
+                    "Geocache Searching!",
+                    "Come find geo-caches around Edmonton!",
+                    new Date("December 25, 2025 00:00:00"),
+                    "Edmonton River Valley",
+                    new Date("November 1, 2025 00:00:00"),
+                    new Date("December 20, 2025 00:00:00"),
+                    organizer3.getHardwareID(),
+                    true
+            );
+
+            event3.addEntrantToAcceptedList(entrant5.getHardwareID());
+            event3.addEntrantToAcceptedList(entrant6.getHardwareID());
+            event3.addEntrantToAcceptedList(entrant7.getHardwareID());
+            event3.addEntrantToAcceptedList(entrant8.getHardwareID());
+            event3.addEntrantToAcceptedList(entrant9.getHardwareID());
+            event3.addEntrantToAcceptedList(entrant10.getHardwareID());
+
+            event3.addEntrantToDeclinedList(entrant1.getHardwareID());
+
+            entrant1.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant5.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant6.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant7.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant8.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant9.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+            entrant10.addEventToRegisteredEventHistory(event3.getUniqueEventID());
+
+            organizer3.addCreatedEvent(uniqueEventID);
+
+            db.setUserData(entrant1.getHardwareID(), entrant1);
+            db.setUserData(entrant5.getHardwareID(), entrant5);
+            db.setUserData(entrant6.getHardwareID(), entrant6);
+            db.setUserData(entrant7.getHardwareID(), entrant7);
+            db.setUserData(entrant8.getHardwareID(), entrant8);
+            db.setUserData(entrant9.getHardwareID(), entrant9);
+            db.setUserData(entrant10.getHardwareID(), entrant10);
+
+            db.setUserData(organizer3.getHardwareID(), organizer3);
+
+            db.setEventData(uniqueEventID, event3);
+        });
+
+        // --- Notifications ---
+        db.getUniqueNotificationID().addOnSuccessListener(notificationID -> {
+            Notification notification1 = new Notification(
+                    notificationID,
+                    organizer1.getHardwareID(),
+                    entrant1.getHardwareID(),
+                    "Test Notification 1",
+                    "Notification Body"
+            );
+            db.setNotificationData(notificationID, notification1);
+        });
+
+        db.getUniqueNotificationID().addOnSuccessListener(notificationID -> {
+            Notification notification2 = new Notification(
+                    notificationID,
+                    organizer2.getHardwareID(),
+                    entrant1.getHardwareID(),
+                    "Test Notification 2",
+                    "Notification Body"
+            );
+            db.setNotificationData(notificationID, notification2);
+        });
+
+        db.getUniqueNotificationID().addOnSuccessListener(notificationID -> {
+            Notification notification3 = new Notification(
+                    notificationID,
+                    organizer3.getHardwareID(),
+                    entrant1.getHardwareID(),
+                    "Test Notification 3",
+                    "Notification Body"
+            );
+            db.setNotificationData(notificationID, notification3);
         });
     }
 

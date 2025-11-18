@@ -2,6 +2,7 @@ package com.example.zypherevent.userTypes;
 
 import com.example.zypherevent.Event;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -18,8 +19,8 @@ import java.util.Objects;
  */
 public class Organizer extends User {
 
-    /** A list of events the organizer has created. */
-    private ArrayList<Event> createdEvents;
+    /** A list of event IDs the organizer has created. */
+    private ArrayList<Long> createdEvents;
 
     /**
      * Constructs a new Organizer instance with the specified hardware ID, first name, and last name.
@@ -31,38 +32,38 @@ public class Organizer extends User {
      */
     public Organizer(String hardwareID, String firstName, String lastName) {
         super(UserType.ORGANIZER, hardwareID, firstName, lastName);
-        this.createdEvents = new ArrayList<Event>();
+        this.createdEvents = new ArrayList<Long>();
     }
 
     /**
-     * Returns a list of events created by this organizer.
+     * Returns a list of event IDs created by this organizer.
      *
-     * @return a list containing the organizer's created events
+     * @return a list containing the organizer's created event IDs
      */
-    public ArrayList<Event> getCreatedEvents() {
+    public ArrayList<Long> getCreatedEvents() {
         return createdEvents;
     }
 
     /**
-     * Adds an event to the organizer's list of created events.
+     * Adds an event ID to the organizer's list of created events.
      * The event will only be added if it is not already in the list.
      *
-     * @param event the event to add to the organizer's created event list
+     * @param eventID the event ID to add to the organizer's created event list
      */
-    public void addCreatedEvent(Event event) {
-        if (!createdEvents.contains(event)) {
-            createdEvents.add(event);
+    public void addCreatedEvent(Long eventID) {
+        if (!createdEvents.contains(eventID)) {
+            createdEvents.add(eventID);
         }
     }
 
     /**
-     * Removes an event from the organizer's list of created events.
+     * Removes an event ID from the organizer's list of created events.
      * If the event is not present, no changes are made.
      *
-     * @param event the event to remove from the organizer's created event list
+     * @param eventID the event ID to remove from the organizer's created event list
      */
-    public void removeCreatedEvent(Event event) {
-        createdEvents.remove(event);
+    public void removeCreatedEvent(Long eventID) {
+        createdEvents.remove(eventID);
     }
 
     /**
@@ -104,7 +105,7 @@ public class Organizer extends User {
     public Organizer() {
         // Ensure the type is set
         setUserType(UserType.ORGANIZER);
-        this.createdEvents = new ArrayList<Event>();
+        this.createdEvents = new ArrayList<Long>();
     }
 
     /**
@@ -112,7 +113,7 @@ public class Organizer extends User {
      *
      * @param createdEvents the new list of created events
      */
-    public void setCreatedEvents(ArrayList<Event> createdEvents) {
+    public void setCreatedEvents(ArrayList<Long> createdEvents) {
         this.createdEvents = Objects.requireNonNullElseGet(createdEvents, ArrayList::new);
     }
 }

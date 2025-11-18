@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.zypherevent.Database;
 import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
@@ -86,20 +87,30 @@ public class EntrantJoinedEventsFragment extends Fragment {
         Log.d(TAG, "Loading joined events for user: " + currentUser.getHardwareID());
 
         // Get registered events from user
-        ArrayList<Event> registeredEvents = currentUser.getRegisteredEventHistory();
+        ArrayList<Long> registeredEventIDs = currentUser.getRegisteredEventHistory();
 
-        // Clear and update the event list
-        eventList.clear();
+        Log.d(TAG, "Registered event IDs: " + registeredEventIDs);
 
-        if (registeredEvents != null && !registeredEvents.isEmpty()) {
-            eventList.addAll(registeredEvents);
-            Log.d(TAG, "Successfully loaded " + eventList.size() + " joined events.");
-        } else {
-            Log.d(TAG, "No joined events found.");
-        }
+        Database db = new Database();
 
-        // Notify adapter of data change
-        adapter.notifyDataSetChanged();
+        db.getEventsByIds(registeredEventIDs).addOnCompleteListener(t -> {
+            if (t.isSuccessful()) {
+                List<Event> registeredEvents = t.getResult();
+
+                // Clear and update the event list
+                eventList.clear();
+
+                if (registeredEvents != null && !registeredEvents.isEmpty()) {
+                    eventList.addAll(registeredEvents);
+                    Log.d(TAG, "Successfully loaded " + eventList.size() + " joined events.");
+                } else {
+                    Log.d(TAG, "No joined events found.");
+                }
+
+                // Notify adapter of data change
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 
     /**

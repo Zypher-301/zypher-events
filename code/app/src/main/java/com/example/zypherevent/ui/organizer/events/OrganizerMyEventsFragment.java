@@ -36,6 +36,9 @@ import com.example.zypherevent.Utils;
 import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.example.zypherevent.userTypes.User;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.OutputStream;
@@ -167,6 +170,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void showWaitlistDialog(Event event) {
+        if (getContext() == null) return;
+
+        Database db = new Database();
+
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.popup_organizer_lottery, null);
@@ -186,27 +193,86 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         WaitlistEntrantAdapter waitlistAdapter = new WaitlistEntrantAdapter(
                 finalWaitlistEntrants,
                 (entry, position) -> {
-                    AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
-                    confirmBuilder.setTitle("Accept Entrant");
-                    confirmBuilder.setMessage("Accept "
-                            + entry.getEntrant().getFirstName() + " "
-                            + entry.getEntrant().getLastName()
-                            + " for this event?");
+                    if (getContext() == null) return;
 
-                    confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-                        finalWaitlistEntrants.remove(position);
-                        if (waitlistRecyclerView.getAdapter() != null) {
-                            waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
-                        }
-                        Toast.makeText(
-                                getContext(),
-                                entry.getEntrant().getFirstName() + " accepted!",
-                                Toast.LENGTH_SHORT
-                        ).show();
-                    });
+                    String hardwareId = entry.getEntrantHardwareID();
 
-                    confirmBuilder.setNegativeButton("Cancel", null);
-                    confirmBuilder.show();
+                    // If we somehow don't have a hardware ID, fall back to generic text
+                    if (hardwareId == null || hardwareId.isEmpty()) {
+                        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+                        confirmBuilder.setTitle("Accept Entrant");
+                        confirmBuilder.setMessage("Accept this entrant for this event?");
+                        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                            finalWaitlistEntrants.remove(position);
+                            if (waitlistRecyclerView.getAdapter() != null) {
+                                waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
+                            }
+                            Toast.makeText(getContext(), "Entrant accepted!", Toast.LENGTH_SHORT).show();
+                        });
+                        confirmBuilder.setNegativeButton("Cancel", null);
+                        confirmBuilder.show();
+                        return;
+                    }
+
+                    // Lookup Entrant by hardware ID to show their name
+                    db.getUser(hardwareId)
+                            .addOnSuccessListener(user -> {
+                                if (getContext() == null) return;
+
+                                String entrantName = "this entrant";
+                                if (user instanceof Entrant) {
+                                    Entrant entrant = (Entrant) user;
+                                    String first = entrant.getFirstName() != null ? entrant.getFirstName() : "";
+                                    String last = entrant.getLastName() != null ? entrant.getLastName() : "";
+                                    entrantName = (first + " " + last).trim();
+                                    if (entrantName.isEmpty()) {
+                                        entrantName = "Unnamed entrant";
+                                    }
+                                }
+
+                                AlertDialog.Builder confirmBuilder =
+                                        new AlertDialog.Builder(getContext());
+                                confirmBuilder.setTitle("Accept Entrant");
+                                confirmBuilder.setMessage("Accept " + entrantName + " for this event?");
+
+                                String finalEntrantName = entrantName;
+                                confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                                    finalWaitlistEntrants.remove(position);
+                                    if (waitlistRecyclerView.getAdapter() != null) {
+                                        waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
+                                    }
+                                    Toast.makeText(
+                                            getContext(),
+                                            finalEntrantName + " accepted!",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+                                });
+
+                                confirmBuilder.setNegativeButton("Cancel", null);
+                                confirmBuilder.show();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (getContext() == null) return;
+
+                                // Fallback: no name, but still allow accept
+                                AlertDialog.Builder confirmBuilder =
+                                        new AlertDialog.Builder(getContext());
+                                confirmBuilder.setTitle("Accept Entrant");
+                                confirmBuilder.setMessage("Accept this entrant for this event?");
+                                confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                                    finalWaitlistEntrants.remove(position);
+                                    if (waitlistRecyclerView.getAdapter() != null) {
+                                        waitlistRecyclerView.getAdapter().notifyItemRemoved(position);
+                                    }
+                                    Toast.makeText(
+                                            getContext(),
+                                            "Entrant accepted!",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+                                });
+                                confirmBuilder.setNegativeButton("Cancel", null);
+                                confirmBuilder.show();
+                            });
                 }
         );
 
@@ -227,6 +293,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             btnSortName.setOnClickListener(v -> waitlistAdapter.sortByName());
         }
 
+        // Default sort
         waitlistAdapter.sortByNewest();
 
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
@@ -234,6 +301,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         if (runLotteryButton != null && etSampleSize != null) {
             runLotteryButton.setOnClickListener(v -> {
+                if (getContext() == null) return;
+
                 String input = etSampleSize.getText().toString().trim();
                 if (input.isEmpty()) {
                     Toast.makeText(getContext(), "Please enter a number to sample", Toast.LENGTH_SHORT).show();
@@ -265,30 +334,72 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 List<WaitlistEntry> selected = shuffled.subList(0, n);
 
-                StringBuilder sb = new StringBuilder();
+                // Collect hardware IDs for selected entries
+                List<String> selectedIds = new ArrayList<>();
                 for (WaitlistEntry entry : selected) {
-                    Entrant e = entry.getEntrant();
-                    String name;
-                    if (e != null) {
-                        String first = e.getFirstName() != null ? e.getFirstName() : "";
-                        String last = e.getLastName() != null ? e.getLastName() : "";
-                        name = (first + " " + last).trim();
-                        if (name.isEmpty()) {
-                            name = "Unnamed entrant";
-                        }
-                    } else {
-                        name = "Unknown entrant";
+                    if (entry == null) continue;
+                    String id = entry.getEntrantHardwareID();
+                    if (id != null && !id.isEmpty()) {
+                        selectedIds.add(id);
                     }
-
-                    if (sb.length() > 0) sb.append(", ");
-                    sb.append(name);
                 }
 
-                Toast.makeText(
-                        getContext(),
-                        "Selected " + n + " entrant(s): " + sb.toString(),
-                        Toast.LENGTH_LONG
-                ).show();
+                if (selectedIds.isEmpty()) {
+                    Toast.makeText(
+                            getContext(),
+                            "Selected " + n + " entrant(s), but no valid IDs found.",
+                            Toast.LENGTH_LONG
+                    ).show();
+                    return;
+                }
+
+                // Lookup all selected entrants from DB to show their names
+                List<Task<User>> lookupTasks = new ArrayList<>();
+                for (String id : selectedIds) {
+                    lookupTasks.add(db.getUser(id));
+                }
+
+                Tasks.whenAllSuccess(lookupTasks)
+                        .addOnSuccessListener(results -> {
+                            if (getContext() == null) return;
+
+                            StringBuilder sb = new StringBuilder();
+
+                            for (int i = 0; i < results.size(); i++) {
+                                Object obj = results.get(i);
+                                String name;
+
+                                if (obj instanceof Entrant) {
+                                    Entrant e = (Entrant) obj;
+                                    String first = e.getFirstName() != null ? e.getFirstName() : "";
+                                    String last = e.getLastName() != null ? e.getLastName() : "";
+                                    name = (first + " " + last).trim();
+                                    if (name.isEmpty()) {
+                                        name = "Unnamed entrant";
+                                    }
+                                } else {
+                                    name = "Unknown entrant";
+                                }
+
+                                if (sb.length() > 0) sb.append(", ");
+                                sb.append(name);
+                            }
+
+                            Toast.makeText(
+                                    getContext(),
+                                    "Selected " + selectedIds.size() + " entrant(s): " + sb.toString(),
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            if (getContext() == null) return;
+
+                            Toast.makeText(
+                                    getContext(),
+                                    "Lottery run, but failed to load entrant names.",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        });
             });
         }
 

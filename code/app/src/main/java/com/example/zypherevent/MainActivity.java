@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-//        userHardwareID = "administrator1";
+        userHardwareID = "entrant1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         // By leaving these commented, if there is not a pre-existing entry for the hwid in the
         // database, then you will be prompted as a new user!
 
-        // Create a sample database -----  CAREFULLL PLEASE!!!!!!
+        // Create a sample database -----  CAREFUL PLEASE!!!!!!
 //        createSampleDatabase();
 
         // Start the task for getting the user from hardware ID
@@ -206,7 +206,8 @@ public class MainActivity extends AppCompatActivity {
             event1.addEntrantToWaitList(entrant3.getHardwareID());
             event1.addEntrantToWaitList(entrant4.getHardwareID());
             event1.addEntrantToWaitList(entrant5.getHardwareID());
-            event1.addEntrantToWaitList(entrant6.getHardwareID());
+
+            event1.addEntrantToInvitedList(entrant6.getHardwareID());
 
             event1.addEntrantToAcceptedList(entrant7.getHardwareID());
 
@@ -252,7 +253,8 @@ public class MainActivity extends AppCompatActivity {
                     false
             );
 
-            event2.addEntrantToWaitList(entrant1.getHardwareID());
+            event2.addEntrantToInvitedList(entrant1.getHardwareID());
+
             event2.addEntrantToWaitList(entrant5.getHardwareID());
             event2.addEntrantToWaitList(entrant6.getHardwareID());
             event2.addEntrantToWaitList(entrant7.getHardwareID());
@@ -299,7 +301,8 @@ public class MainActivity extends AppCompatActivity {
             event3.addEntrantToAcceptedList(entrant7.getHardwareID());
             event3.addEntrantToAcceptedList(entrant8.getHardwareID());
             event3.addEntrantToAcceptedList(entrant9.getHardwareID());
-            event3.addEntrantToAcceptedList(entrant10.getHardwareID());
+
+            event3.addEntrantToInvitedList(entrant10.getHardwareID());
 
             event3.addEntrantToDeclinedList(entrant1.getHardwareID());
 

@@ -88,6 +88,11 @@ public class Event implements Serializable {
     private ArrayList<WaitlistEntry> waitListEntrants;
 
     /**
+     * A list of entrant hardware IDs who have been invited into the event.
+     */
+    private ArrayList<String> invitedEntrants;
+
+    /**
      * A list of entrant hardware IDs who have been accepted into the event.
      */
     private ArrayList<String> acceptedEntrants;
@@ -126,6 +131,7 @@ public class Event implements Serializable {
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
+        this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
     }
@@ -157,6 +163,7 @@ public class Event implements Serializable {
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
+        this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
     }
@@ -350,6 +357,15 @@ public class Event implements Serializable {
     }
 
     /**
+     * Returns a list of entrants with pending invitations.
+     *
+     * @return the list of invited entrants
+     */
+    public ArrayList<String> getInvitedEntrants() {
+        return invitedEntrants;
+    }
+
+    /**
      * Returns a list of entrant hardware IDs accepted into the event.
      *
      * @return the list of accepted entrants hardware IDs
@@ -438,6 +454,18 @@ public class Event implements Serializable {
     }
 
     /**
+     * Adds an entrant's hardware ID to the event's invited list.
+     * The entrant will only be added if they are not already in the list.
+     *
+     * @param entrantHardwareID the entrant to add to the invited entrants list
+     */
+    public void addEntrantToInvitedList(String entrantHardwareID) {
+        if (!invitedEntrants.contains(entrantHardwareID)) {
+            invitedEntrants.add(entrantHardwareID);
+        }
+    }
+
+    /**
      * Adds an entrant's hardware ID to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *
@@ -509,6 +537,15 @@ public class Event implements Serializable {
      */
     public void setWaitListEntrants(ArrayList<WaitlistEntry> waitListEntrants) {
         this.waitListEntrants = Objects.requireNonNullElseGet(waitListEntrants, ArrayList::new);
+    }
+
+    /**
+     * Sets the event's invited list. ONLY to be used by firestore.
+     *
+     * @param invitedEntrants the new list of waitlisted entrants
+     */
+    public void setInvitedEntrants(ArrayList<String> invitedEntrants) {
+        this.invitedEntrants = Objects.requireNonNullElseGet(invitedEntrants, ArrayList::new);
     }
 
     /**

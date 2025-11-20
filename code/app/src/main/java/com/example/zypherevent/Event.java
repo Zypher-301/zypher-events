@@ -466,6 +466,16 @@ public class Event implements Serializable {
     }
 
     /**
+     * Removes an entrant from the event's invited list.
+     * If the entrant is not present, no changes are made.
+     *
+     * @param entrantHardwareID the entrant hardware ID to remove from the invited list
+     */
+    public void removeEntrantFromInvitedList(String entrantHardwareID) {
+        invitedEntrants.remove(entrantHardwareID);
+    }
+
+    /**
      * Adds an entrant's hardware ID to the event's accepted list.
      * The entrant will only be added if they are not already in the list.
      *

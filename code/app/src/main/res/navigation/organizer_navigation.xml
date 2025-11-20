@@ -2,7 +2,7 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/admin_navigation"
+    android:id="@+id/organizer_navigation"
     app:startDestination="@+id/nav_my_events">
 
     <!-- Destination for the "My Events" menu item -->

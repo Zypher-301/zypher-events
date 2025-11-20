@@ -1,6 +1,5 @@
 package com.example.zypherevent.ui.entrant.events;
 
-
 import android.app.DatePickerDialog;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -17,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -55,7 +56,6 @@ import java.util.Locale;
 public class EntrantAllEventsFragment extends Fragment implements EntrantEventAdapter.OnItemClickListener {
 
     private static final String TAG = "EntrantAllEvents";
-
     private Database db;
     private RecyclerView recyclerView;
     private EntrantEventAdapter adapter;
@@ -479,47 +479,15 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
         return true;
     }
 
-    /**
-     * Added by Arunoavo Dutta
-     * Handles the click event for an item in the RecyclerView.
-     * This is triggered when a user taps on an event card.
-     * Currently, it displays a Toast message with the name of the clicked event.
-     * <p>
-     * This method has been expanded to navigate to a detailed view of the event.
-     *
-     * @param event The {@link Event} object corresponding to the clicked item.
-     */
-    /**
-     * Handles the click event for an item in the RecyclerView by showing a details dialog.
-     *
-     * @param event The {@link Event} object corresponding to the clicked item.
-     */
     @Override
     public void onItemClick(Event event) {
-        // Check if context is available before creating a dialog
-        if (getContext() == null) {
-            Log.e(TAG, "onItemClick: Context is null, cannot show dialog.");
-            return;
-        }
+        if (event == null) return;
 
-        // Build the details string
-        StringBuilder details = new StringBuilder();
-        details.append("Description:\n").append(event.getEventDescription()).append("\n\n");
-        details.append("Location: ").append(event.getLocation()).append("\n\n");
-        details.append("Event Starts: ")
-                .append(formatDate(event.getStartTime())).append("\n\n");
-        details.append("Registration Opens: ")
-                .append(formatDate(event.getRegistrationStartTime())).append("\n");
-        details.append("Registration Closes: ")
-                .append(formatDate(event.getRegistrationEndTime())).append("\n\n");
-        details.append("Organizer: ").append(event.getEventOrganizerHardwareID());
+        Bundle args = new Bundle();
+        args.putSerializable(EntrantEventDetailsFragment.ARG_EVENT, event);
 
-        // Show the details in an AlertDialog
-        new AlertDialog.Builder(getContext())
-                .setTitle(event.getEventName()) // Set the event name as the title
-                .setMessage(details.toString()) // Set the built string as the message
-                .setPositiveButton("Close", (dialog, which) -> dialog.dismiss()) // Close button
-                .show(); // Display the dialog
+        NavController navController = NavHostFragment.findNavController(this);
+        navController.navigate(com.example.zypherevent.R.id.nav_entrant_event_details, args);
     }
 
     /**
@@ -633,7 +601,6 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Added by Arunavo Dutta
-     * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
      * Handles the "Leave Waitlist" button click for an event.
      * <p>
      * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
@@ -650,7 +617,6 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
      *
      * @param event The {@link Event} object from which the user is leaving the waitlist.
      */
-    // BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
     @Override
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());

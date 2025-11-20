@@ -242,6 +242,9 @@ public class Database {
                         ArrayList<WaitlistEntry> waitList =
                                 parseWaitlistEntryList(doc.get("waitListEntrants"));
 
+                        ArrayList<String> invitedList =
+                                parseHardwareIdList(doc.get("invitedEntrants"));
+
                         ArrayList<String> acceptedList =
                                 parseHardwareIdList(doc.get("acceptedEntrants"));
 
@@ -249,6 +252,7 @@ public class Database {
                                 parseHardwareIdList(doc.get("declinedEntrants"));
 
                         event.setWaitListEntrants(waitList);
+                        event.setInvitedEntrants(invitedList);
                         event.setAcceptedEntrants(acceptedList);
                         event.setDeclinedEntrants(declinedList);
 
@@ -625,6 +629,9 @@ public class Database {
                             ArrayList<WaitlistEntry> waitList =
                                     parseWaitlistEntryList(doc.get("waitListEntrants"));
 
+                            ArrayList<String> invitedList
+                                    = parseHardwareIdList(doc.get("invitedEntrants"));
+
                             ArrayList<String> acceptedList =
                                     parseHardwareIdList(doc.get("acceptedEntrants"));
 
@@ -632,6 +639,7 @@ public class Database {
                                     parseHardwareIdList(doc.get("declinedEntrants"));
 
                             event.setWaitListEntrants(waitList);
+                            event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
 
@@ -717,6 +725,9 @@ public class Database {
                             ArrayList<WaitlistEntry> waitList =
                                     parseWaitlistEntryList(doc.get("waitListEntrants"));
 
+                            ArrayList<String> invitedList
+                                    = parseHardwareIdList(doc.get("invitedEntrants"));
+
                             ArrayList<String> acceptedList =
                                     parseHardwareIdList(doc.get("acceptedEntrants"));
 
@@ -724,6 +735,7 @@ public class Database {
                                     parseHardwareIdList(doc.get("declinedEntrants"));
 
                             event.setWaitListEntrants(waitList);
+                            event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
 

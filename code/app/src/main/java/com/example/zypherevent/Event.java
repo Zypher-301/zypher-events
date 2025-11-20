@@ -517,6 +517,7 @@ public class Event implements Serializable {
      */
     public Event() {
         this.waitListEntrants = new ArrayList<>();
+        this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
     }

@@ -26,6 +26,9 @@ public class MapPoint {
         /** Entrant has been waitlisted. */
         WAITLISTED,
 
+        /** Entrant has been invited to the event. */
+        INVITED,
+
         /** Entrant has been accepted. */
         ACCEPTED,
 

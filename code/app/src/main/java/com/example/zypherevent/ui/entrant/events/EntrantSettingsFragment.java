@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,7 @@ import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.databinding.FragmentEntrantSettingsBinding;
 import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,29 +97,40 @@ public class EntrantSettingsFragment extends Fragment {
         binding.switchGeo.setChecked(currentUser.getUseGeolocation());
         binding.switchNotifications.setChecked(currentUser.getWantsNotifications());
 
-        // Listen for changes, and update the user object accordingly
+        // Initial UI from user
+        binding.etFirstName.setText(currentUser.getFirstName());
+        binding.etLastName.setText(currentUser.getLastName());
+        binding.etEmail.setText(currentUser.getEmail());
+        binding.etPhone.setText(currentUser.getPhoneNumber());
+        binding.switchGeo.setChecked(currentUser.getUseGeolocation());
+        binding.switchNotifications.setChecked(currentUser.getWantsNotifications());
+
+// Keep user object in sync with text fields
         binding.etFirstName.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
-                currentUser.setFirstName(s.toString());
+                currentUser.setFirstName(s.toString().trim());
             }
         });
+
         binding.etLastName.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
-                currentUser.setLastName(s.toString());
+                currentUser.setLastName(s.toString().trim());
             }
         });
+
         binding.etEmail.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
-                currentUser.setEmail(s.toString());
+                currentUser.setEmail(s.toString().trim());
             }
         });
+
         binding.etPhone.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
-                currentUser.setPhoneNumber(s.toString());
+                currentUser.setPhoneNumber(s.toString().trim());
             }
         });
 
@@ -160,17 +173,96 @@ public class EntrantSettingsFragment extends Fragment {
     }
 
     /**
-     * Saves the provided entrant to the database.
+     * Validates the user's input fields.
+     *
+     * @return true if all fields are valid, false otherwise
+     */
+    private boolean validateUserInputs() {
+        boolean isValid = true;
+        View firstErrorView = null;
+
+        // First name
+        String firstName = binding.etFirstName.getText().toString().trim();
+        if (firstName.isEmpty()) {
+            binding.etFirstName.setError("First name is required");
+            if (firstErrorView == null) firstErrorView = binding.etFirstName;
+            isValid = false;
+        } else {
+            binding.etFirstName.setError(null);
+        }
+
+        // Last name
+        String lastName = binding.etLastName.getText().toString().trim();
+        if (lastName.isEmpty()) {
+            binding.etLastName.setError("Last name is required");
+            if (firstErrorView == null) firstErrorView = binding.etLastName;
+            isValid = false;
+        } else {
+            binding.etLastName.setError(null);
+        }
+
+        // Email
+        String email = binding.etEmail.getText().toString().trim();
+        if (email.isEmpty()) {
+            binding.etEmail.setError("Email is required");
+            if (firstErrorView == null) firstErrorView = binding.etEmail;
+            isValid = false;
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.etEmail.setError("Enter a valid email");
+            if (firstErrorView == null) firstErrorView = binding.etEmail;
+            isValid = false;
+        } else {
+            binding.etEmail.setError(null);
+        }
+
+        // Phone
+        String phone = binding.etPhone.getText().toString().trim();
+        if (!phone.isEmpty() && !Patterns.PHONE.matcher(phone).matches()) {
+            binding.etPhone.setError("Enter a valid phone number");
+            if (firstErrorView == null) firstErrorView = binding.etPhone;
+            isValid = false;
+        } else {
+            binding.etPhone.setError(null);
+        }
+
+        // If anything invalid, focus the first bad field
+        if (!isValid && firstErrorView != null) {
+            firstErrorView.requestFocus();
+        }
+
+        // Optionally push back into currentUser to be 100% sure
+        if (isValid) {
+            currentUser.setFirstName(firstName);
+            currentUser.setLastName(lastName);
+            currentUser.setEmail(email);
+            currentUser.setPhoneNumber(phone);
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Saves the provided entrant to the database if the input fields are all valid!
      *
      * @param userToSave the entrant whose changes should be persisted
      * @return a {@link Task} representing the asynchronous save operation
      */
     private Task<Void> saveChanges(Entrant userToSave) {
 
-        // Set the notification visibility in EntrantActivity
+        // 1. Validate first
+        if (!validateUserInputs()) {
+            // Return a failed Task so callers can still chain if they want
+            return Tasks.forException(new IllegalStateException("Validation failed"));
+        }
+
+        // 2. Clear any lingering errors on valid save
+        binding.etPhone.setError(null);
+
+        // 3. Update notifications visibility in EntrantActivity
         EntrantActivity host = (EntrantActivity) requireActivity();
         host.showOrHideNotifications(currentUser.getWantsNotifications());
 
+        // 4. Save to Firestore
         return db.setUserData(userToSave.getHardwareID(), userToSave)
                 .addOnSuccessListener(aVoid ->
                         Toast.makeText(requireContext(), "Changes saved!", Toast.LENGTH_SHORT).show());

@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-//        userHardwareID = "entrant1";
+//        userHardwareID = "organizer3";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
@@ -437,15 +437,18 @@ public class MainActivity extends AppCompatActivity {
                 editTextEmail.requestFocus();
                 return;
             }
-            if (phone.isEmpty()) {
-                editTextPhone.setError("Phone number is required");
-                editTextPhone.requestFocus();
-                return;
-            }
-            if (!Patterns.PHONE.matcher(phone).matches()) {
-                editTextPhone.setError("Enter a valid phone number");
-                editTextPhone.requestFocus();
-                return;
+            // Phone number is optional!!!
+//            if (phone.isEmpty()) {
+//                editTextPhone.setError("Phone number is required");
+//                editTextPhone.requestFocus();
+//                return;
+//            }
+            if (phone != null && !phone.isEmpty()) {
+                if (!Patterns.PHONE.matcher(phone).matches()) {
+                    editTextPhone.setError("Enter a valid phone number");
+                    editTextPhone.requestFocus();
+                    return;
+                }
             }
 
             // Create a new Entrant object with the entered information

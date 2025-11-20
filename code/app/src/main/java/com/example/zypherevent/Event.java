@@ -1,20 +1,11 @@
 package com.example.zypherevent;
 
-import android.os.Parcelable;
-import android.util.Log;
-
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
-import com.example.zypherevent.userTypes.User;
-import com.example.zypherevent.userTypes.UserType;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -91,19 +82,25 @@ public class Event implements Serializable {
     private Integer waitlistLimit;
 
     /**
-     * A list of entrants currently on the event's waitlist.
+     * A list of WaitlistEntry objects storing the entrant's hardware ID and the timestamp
+     * when they joined the waitlist.
      */
     private ArrayList<WaitlistEntry> waitListEntrants;
 
     /**
-     * A list of entrants who have been accepted into the event.
+     * A list of entrant hardware IDs who have been invited into the event.
      */
-    private ArrayList<Entrant> acceptedEntrants;
+    private ArrayList<String> invitedEntrants;
 
     /**
-     * A list of entrants who have been declined from the event.
+     * A list of entrant hardware IDs who have been accepted into the event.
      */
-    private ArrayList<Entrant> declinedEntrants;
+    private ArrayList<String> acceptedEntrants;
+
+    /**
+     * A list of entrant hardware IDs who have been declined from the event.
+     */
+    private ArrayList<String> declinedEntrants;
 
     /**
      * Constructs a new Event instance with all event details specified.
@@ -134,6 +131,7 @@ public class Event implements Serializable {
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
+        this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
     }
@@ -165,6 +163,7 @@ public class Event implements Serializable {
 
         // Initialize entrant lists
         this.waitListEntrants = new ArrayList<>();
+        this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
     }
@@ -358,52 +357,76 @@ public class Event implements Serializable {
     }
 
     /**
-     * Returns a list of entrants accepted into the event.
+     * Returns a list of entrants with pending invitations.
      *
-     * @return the list of accepted entrants
+     * @return the list of invited entrants
      */
-    public ArrayList<Entrant> getAcceptedEntrants() {
+    public ArrayList<String> getInvitedEntrants() {
+        return invitedEntrants;
+    }
+
+    /**
+     * Returns a list of entrant hardware IDs accepted into the event.
+     *
+     * @return the list of accepted entrants hardware IDs
+     */
+    public ArrayList<String> getAcceptedEntrants() {
         return acceptedEntrants;
     }
 
     /**
-     * Returns a list of entrants declined from the event.
+     * Returns a list of entrants harware IDs declined from the event.
      *
-     * @return the list of declined entrants
+     * @return the list of declined entrants hardware IDs
      */
-    public ArrayList<Entrant> getDeclinedEntrants() {
+    public ArrayList<String> getDeclinedEntrants() {
         return declinedEntrants;
     }
 
     /**
-     * Adds an entrant to the event's waitlist.
+     * Adds an entrant's hardware ID to the event's waitlist.
      * The entrant will only be added if they are not already in the list.
      * Makes sure that the waitlist limit has not been exceeded and
      * the registration happens within the allowed date range.
      *
-     * @param entrant the entrant to add to the waitlist
+     * @param entrantHardwareID the entrant hardware ID to add to the waitlist
      */
-    public void addEntrantToWaitList(Entrant entrant) {
+    public void addEntrantToWaitList(String entrantHardwareID) {
+        if (entrantHardwareID == null || entrantHardwareID.isEmpty()) {
+            throw new IllegalArgumentException("Entrant hardware ID cannot be null or empty");
+        }
+
+        if (this.waitListEntrants == null) {
+            this.waitListEntrants = new ArrayList<>();
+        }
+
+        // Enforce waitlist limit (if set)
         if (this.waitlistLimit != null && this.waitListEntrants.size() >= this.waitlistLimit) {
             throw new IllegalStateException("Waitlist is full");
         }
+
         Date now = new Date();
-        if (now.after(this.registrationEndTime)) {
+
+        // Only enforce these if times are set
+        if (this.registrationEndTime != null && now.after(this.registrationEndTime)) {
             throw new IllegalStateException("This event's registration window has ended");
         }
-        if (now.before(this.registrationStartTime)) {
+        if (this.registrationStartTime != null && now.before(this.registrationStartTime)) {
             throw new IllegalStateException("This event's registration window has not yet started");
         }
-        // Check if entrant is already on waitlist by comparing entrants (not WaitlistEntry which includes timestamp)
+
+        // Check if entrant is already on waitlist by comparing hardware IDs
         boolean alreadyOnWaitlist = false;
         for (WaitlistEntry existingEntry : waitListEntrants) {
-            if (existingEntry.getEntrant().equals(entrant)) {
+            if (existingEntry != null &&
+                    entrantHardwareID.equals(existingEntry.getEntrantHardwareID())) {
                 alreadyOnWaitlist = true;
                 break;
             }
         }
+
         if (!alreadyOnWaitlist) {
-            WaitlistEntry entry = new WaitlistEntry(entrant);
+            WaitlistEntry entry = new WaitlistEntry(entrantHardwareID);
             waitListEntrants.add(entry);
         }
     }
@@ -419,14 +442,38 @@ public class Event implements Serializable {
     }
 
     /**
-     * Adds an entrant to the event's accepted list.
+     * Removes an entrant from the event's waitlist from a specific hardware ID.
+     * If the entrant is not present, no changes are made.
+     *
+     * @param entrantHardwareID the entrant hardware ID to remove from the waitlist
+     */
+    public void removeEntrantFromWaitList(String entrantHardwareID) {
+        if (waitListEntrants == null) return;
+        waitListEntrants.removeIf(entry ->
+                entrantHardwareID.equals(entry.getEntrantHardwareID()));
+    }
+
+    /**
+     * Adds an entrant's hardware ID to the event's invited list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entrant the entrant to add to the accepted list
+     * @param entrantHardwareID the entrant to add to the invited entrants list
      */
-    public void addEntrantToAcceptedList(Entrant entrant) {
-        if (!acceptedEntrants.contains(entrant)) {
-            acceptedEntrants.add(entrant);
+    public void addEntrantToInvitedList(String entrantHardwareID) {
+        if (!invitedEntrants.contains(entrantHardwareID)) {
+            invitedEntrants.add(entrantHardwareID);
+        }
+    }
+
+    /**
+     * Adds an entrant's hardware ID to the event's accepted list.
+     * The entrant will only be added if they are not already in the list.
+     *
+     * @param entrantHardwareID the entrant to add to the accepted list
+     */
+    public void addEntrantToAcceptedList(String entrantHardwareID) {
+        if (!acceptedEntrants.contains(entrantHardwareID)) {
+            acceptedEntrants.add(entrantHardwareID);
         }
     }
 
@@ -434,21 +481,21 @@ public class Event implements Serializable {
      * Removes an entrant from the event's accepted list.
      * If the entrant is not present, no changes are made.
      *
-     * @param entrant the entrant to remove from the accepted list
+     * @param entrantHardwareID the entrant hardware ID to remove from the accepted list
      */
-    public void removeEntrantFromAcceptedList(Entrant entrant) {
-        acceptedEntrants.remove(entrant);
+    public void removeEntrantFromAcceptedList(String entrantHardwareID) {
+        acceptedEntrants.remove(entrantHardwareID);
     }
 
     /**
      * Adds an entrant to the event's declined list.
      * The entrant will only be added if they are not already in the list.
      *
-     * @param entrant the entrant to add to the declined list
+     * @param entrantHardwareID the entrant hardware ID to add to the declined list
      */
-    public void addEntrantToDeclinedList(Entrant entrant) {
-        if (!declinedEntrants.contains(entrant)) {
-            declinedEntrants.add(entrant);
+    public void addEntrantToDeclinedList(String entrantHardwareID) {
+        if (!declinedEntrants.contains(entrantHardwareID)) {
+            declinedEntrants.add(entrantHardwareID);
         }
     }
 
@@ -456,10 +503,10 @@ public class Event implements Serializable {
      * Removes an entrant from the event's declined list.
      * If the entrant is not present, no changes are made.
      *
-     * @param entrant the entrant to remove from the declined list
+     * @param entrantHardwareID the entrant hardware ID to remove from the declined list
      */
-    public void removeEntrantFromDeclinedList(Entrant entrant) {
-        declinedEntrants.remove(entrant);
+    public void removeEntrantFromDeclinedList(String entrantHardwareID) {
+        declinedEntrants.remove(entrantHardwareID);
     }
 
     // ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!!
@@ -493,11 +540,20 @@ public class Event implements Serializable {
     }
 
     /**
+     * Sets the event's invited list. ONLY to be used by firestore.
+     *
+     * @param invitedEntrants the new list of waitlisted entrants
+     */
+    public void setInvitedEntrants(ArrayList<String> invitedEntrants) {
+        this.invitedEntrants = Objects.requireNonNullElseGet(invitedEntrants, ArrayList::new);
+    }
+
+    /**
      * Sets the event's accepted list. ONLY to be used by firestore.
      *
      * @param acceptedEntrants the new list of accepted entrants
      */
-    public void setAcceptedEntrants(ArrayList<Entrant> acceptedEntrants) {
+    public void setAcceptedEntrants(ArrayList<String> acceptedEntrants) {
         this.acceptedEntrants = Objects.requireNonNullElseGet(acceptedEntrants, ArrayList::new);
     }
 
@@ -506,7 +562,7 @@ public class Event implements Serializable {
      *
      * @param declinedEntrants the new list of declined entrants
      */
-    public void setDeclinedEntrants(ArrayList<Entrant> declinedEntrants) {
+    public void setDeclinedEntrants(ArrayList<String> declinedEntrants) {
         this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
     }
 
@@ -554,103 +610,6 @@ public class Event implements Serializable {
      */
     public void setRequiresGeolocation(boolean requiresGeolocation) {
         this.requiresGeolocation = requiresGeolocation;
-    }
-
-    /**
-     * Refreshes entrant information for all event lists from the database.
-     * This method updates the Entrant instances in the waitlist, accepted, and declined lists by
-     * retrieving the latest corresponding User records from the database using each
-     * entrant's hardware ID. If the retrieved user is still an Entrant, the list entry is
-     * replaced with the updated entrant. If the user cannot be found or their role has changed,
-     * the original entrant is retained and a warning is logged. If no entrants are present in any
-     * list, a completed task is returned immediately.
-     *
-     * @return a task that completes when all entrant refresh operations have finished
-     */
-    public Task<Void> updateEntrantInformationInLists() {
-        Database db = new Database();
-        List<Task<?>> allTasks = new ArrayList<>();
-
-        // --- Update waitlisted entrants (WaitlistEntry contains Entrant) ---
-        if (waitListEntrants != null) {
-            for (WaitlistEntry entry : waitListEntrants) {
-                if (entry == null || entry.getEntrant() == null) continue;
-
-                final Entrant originalEntrant = entry.getEntrant();
-                final String hardwareID = originalEntrant.getHardwareID();
-
-                Task<User> t = db.getUser(hardwareID);
-                t.addOnSuccessListener(updated -> {
-                    if (updated instanceof Entrant) {
-                        entry.setEntrant((Entrant) updated);
-                    } else if (updated == null) {
-                        // user deleted? keep original entrant
-                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
-                    } else {
-                        // role changed; keep original entrant
-                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
-                                + "; keeping original Entrant in waitlist");
-                    }
-                }).addOnFailureListener(e ->
-                        Log.w("Event", "Failed to refresh waitlisted entrant " + hardwareID, e)
-                );
-                allTasks.add(t);
-            }
-        }
-
-        // --- Update accepted entrants ---
-        if (acceptedEntrants != null) {
-            for (int i = 0; i < acceptedEntrants.size(); i++) {
-                final int index = i;
-                final Entrant originalEntrant = acceptedEntrants.get(i);
-                if (originalEntrant == null) continue;
-
-                final String hardwareID = originalEntrant.getHardwareID();
-                Task<User> t = db.getUser(hardwareID);
-                t.addOnSuccessListener(updated -> {
-                    if (updated instanceof Entrant) {
-                        acceptedEntrants.set(index, (Entrant) updated);
-                    } else if (updated == null) {
-                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
-                    } else {
-                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
-                                + "; keeping original Entrant in accepted list");
-                    }
-                }).addOnFailureListener(e ->
-                        Log.w("Event", "Failed to refresh accepted entrant " + hardwareID, e)
-                );
-                allTasks.add(t);
-            }
-        }
-
-        // --- Update declined entrants ---
-        if (declinedEntrants != null) {
-            for (int i = 0; i < declinedEntrants.size(); i++) {
-                final int index = i;
-                final Entrant originalEntrant = declinedEntrants.get(i);
-                if (originalEntrant == null) continue;
-
-                final String hardwareID = originalEntrant.getHardwareID();
-                Task<User> t = db.getUser(hardwareID);
-                t.addOnSuccessListener(updated -> {
-                    if (updated instanceof Entrant) {
-                        declinedEntrants.set(index, (Entrant) updated);
-                    } else if (updated == null) {
-                        Log.w("Event", "User not found for " + hardwareID + "; keeping original Entrant");
-                    } else {
-                        Log.w("Event", "User " + hardwareID + " is now " + updated.getClass().getSimpleName()
-                                + "; keeping original Entrant in declined list");
-                    }
-                }).addOnFailureListener(e ->
-                        Log.w("Event", "Failed to refresh declined entrant " + hardwareID, e)
-                );
-                allTasks.add(t);
-            }
-        }
-
-        if (allTasks.isEmpty()) return Tasks.forResult(null);
-
-        return Tasks.whenAllComplete(allTasks).continueWith(task -> null);
     }
 
     /**

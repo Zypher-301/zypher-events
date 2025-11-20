@@ -607,7 +607,7 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
                             event.getRequiresGeolocation()
                     );
 
-                    currentUser.addEventToRegisteredEventHistory(eventForHistory);
+                    currentUser.addEventToRegisteredEventHistory(eventForHistory.getUniqueEventID());
 
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
@@ -655,19 +655,20 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
+        currentUser.removeEventFromRegisteredEventHistory(event.getUniqueEventID());
+        adapter.notifyDataSetChanged();
+
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
 
-                    Event eventToRemove = new Event();
-                    eventToRemove.setUniqueEventID(event.getUniqueEventID());
-
-                    currentUser.removeEventFromRegisteredEventHistory(eventToRemove);
+                    // use the ID directly
+                    currentUser.removeEventFromRegisteredEventHistory(event.getUniqueEventID());
 
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
                                 Log.d(TAG, "User profile updated, event removed.");
                                 Toast.makeText(getContext(), "Left waitlist.", Toast.LENGTH_SHORT).show();
-                                loadEvents(); // Refresh
+                                loadEvents(); // same as before
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after leaving: ", e);

@@ -141,7 +141,7 @@ public class EntrantJoinedEventsAdapter extends RecyclerView.Adapter<EntrantJoin
         } else if (event.getWaitListEntrants() != null) {
             // Check if user is in waitlist by iterating through WaitlistEntry objects
             for (WaitlistEntry entry : event.getWaitListEntrants()) {
-                if (entry.getEntrant().equals(user)) {
+                if (entry.getEntrantHardwareID().equals(user)) {
                     return "Waitlisted";
                 }
             }

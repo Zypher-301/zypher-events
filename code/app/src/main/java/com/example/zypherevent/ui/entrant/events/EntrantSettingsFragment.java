@@ -25,6 +25,7 @@ import com.example.zypherevent.userTypes.Entrant;
 import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Elliot Chrystal
@@ -235,67 +236,87 @@ public class EntrantSettingsFragment extends Fragment {
      * @param entrant The entrant to remove from events
      * @param hardwareID The entrant's hardware ID
      */
+    /**
+     * Removes the entrant from all events they are in.
+     *
+     * @param entrant    The entrant to remove from events
+     * @param hardwareID The entrant's hardware ID
+     */
     private void removeUserFromEvents(Entrant entrant, String hardwareID) {
-        ArrayList<Event> registeredEvents = entrant.getRegisteredEventHistory();
 
-        if (registeredEvents == null || registeredEvents.isEmpty()) {
-            deleteUserData(hardwareID);
-            return;
-        }
+        ArrayList<Long> registeredEventIDs = entrant.getRegisteredEventHistory();
 
-        // Count how many events need to be updated
-        int totalEvents = registeredEvents.size();
-        int[] completedEvents = {0}; // Using array to modify in lambda
+        // get the events list from the database
+        db.getEventsByIds(registeredEventIDs).addOnCompleteListener(t -> {
+            if (t.isSuccessful()) {
 
-        // Loop through each event and remove the user
-        for (Event event : registeredEvents) {
-            Long eventID = event.getUniqueEventID();
+                List<Event> registeredEvents = t.getResult();
 
-            // Get the latest event data from Firebase
-            db.getEvent(eventID)
-                    .addOnSuccessListener(eventFromDB -> {
-                        if (eventFromDB != null) {
-                            // Remove entrant from waitlist - find and remove the entry containing this entrant
-                            WaitlistEntry entryToRemove = null;
-                            for (WaitlistEntry entry : eventFromDB.getWaitListEntrants()) {
-                                if (entry.getEntrant().equals(entrant)) {
-                                    entryToRemove = entry;
-                                    break;
-                                }
-                            }
-                            if (entryToRemove != null) {
-                                eventFromDB.removeEntrantFromWaitList(entryToRemove);
-                            }
+                if (registeredEvents == null || registeredEvents.isEmpty()) {
+                    // No events to clean up, just delete the user
+                    deleteUserData(hardwareID);
+                    return;
+                }
 
-                            // Remove entrant from other lists
-                            eventFromDB.removeEntrantFromAcceptedList(entrant);
-                            eventFromDB.removeEntrantFromDeclinedList(entrant);
+                // Count how many events need to be updated
+                int totalEvents = registeredEvents.size();
+                int[] completedEvents = {0}; // Using array so we can modify inside lambdas
 
-                            // Save updated event back to database
-                            db.setEventData(eventID, eventFromDB)
-                                    .addOnCompleteListener(task -> {
-                                        completedEvents[0]++;
-                                        // Check if all events have been processed
-                                        if (completedEvents[0] >= totalEvents) {
-                                            deleteUserData(hardwareID);
+                // Loop through each event and remove the user
+                for (Event event : registeredEvents) {
+                    Long eventID = event.getUniqueEventID();
+
+                    // Get the latest event data from Firebase
+                    db.getEvent(eventID)
+                            .addOnSuccessListener(eventFromDB -> {
+                                if (eventFromDB != null) {
+                                    // ---- Remove entrant from WAITLIST ----
+                                    WaitlistEntry entryToRemove = null;
+                                    ArrayList<WaitlistEntry> waitlist = eventFromDB.getWaitListEntrants();
+                                    if (waitlist != null) {
+                                        for (WaitlistEntry entry : waitlist) {
+                                            if (entry != null
+                                                    && hardwareID.equals(entry.getEntrantHardwareID())) {
+                                                entryToRemove = entry;
+                                                break;
+                                            }
                                         }
-                                    });
-                        } else {
-                            // Event doesn't exist anymore, move on
-                            completedEvents[0]++;
-                            if (completedEvents[0] >= totalEvents) {
-                                deleteUserData(hardwareID);
-                            }
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        // Failed to get event, but continue anyway
-                        completedEvents[0]++;
-                        if (completedEvents[0] >= totalEvents) {
-                            deleteUserData(hardwareID);
-                        }
-                    });
-        }
+                                    }
+                                    if (entryToRemove != null) {
+                                        eventFromDB.removeEntrantFromWaitList(entryToRemove);
+                                    }
+
+                                    // ---- Remove entrant from ACCEPTED / DECLINED lists (by hardware ID) ----
+                                    eventFromDB.removeEntrantFromAcceptedList(hardwareID);
+                                    eventFromDB.removeEntrantFromDeclinedList(hardwareID);
+
+                                    // Save updated event back to database
+                                    db.setEventData(eventID, eventFromDB)
+                                            .addOnCompleteListener(task -> {
+                                                completedEvents[0]++;
+                                                // Check if all events have been processed
+                                                if (completedEvents[0] >= totalEvents) {
+                                                    deleteUserData(hardwareID);
+                                                }
+                                            });
+                                } else {
+                                    // Event doesn't exist anymore, move on
+                                    completedEvents[0]++;
+                                    if (completedEvents[0] >= totalEvents) {
+                                        deleteUserData(hardwareID);
+                                    }
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                // Failed to get event, but continue anyway
+                                completedEvents[0]++;
+                                if (completedEvents[0] >= totalEvents) {
+                                    deleteUserData(hardwareID);
+                                }
+                            });
+                }
+            }
+        });
     }
 
     /**

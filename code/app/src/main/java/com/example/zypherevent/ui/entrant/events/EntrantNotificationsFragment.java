@@ -1,6 +1,7 @@
 package com.example.zypherevent.ui.entrant.events;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,8 +15,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Database;
+import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
+import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.User;
 
 import java.util.ArrayList;
@@ -51,11 +54,11 @@ public class EntrantNotificationsFragment extends Fragment {
         db = new Database();
 
         // Get current user's hardware ID from arguments
-        if (getArguments() != null) {
-            User currentUser = (User) getArguments().getSerializable("currentUser");
-            if (currentUser != null) {
-                currentUserHardwareID = currentUser.getHardwareID();
-            }
+        Entrant currentUser = ((EntrantActivity) getActivity()).getEntrantUser();
+
+        if (currentUser != null) {
+            currentUserHardwareID = currentUser.getHardwareID();
+            Log.d("EntrantNotificationsFragment", "Current user hardware ID: " + currentUserHardwareID);
         }
 
         // Initialize views

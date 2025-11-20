@@ -1,7 +1,6 @@
 package com.example.zypherevent;
 
 import com.example.zypherevent.userTypes.Entrant;
-import com.google.firebase.firestore.ServerTimestamp;
 
 import java.util.Date;
 import java.util.Objects;
@@ -22,9 +21,9 @@ import java.util.Objects;
 public class WaitlistEntry {
 
     /**
-     * The entrant who joined the waitlist.
+     * The entrant's hardware ID who joined the waitlist.
      */
-    private Entrant entrant;
+    private String entrantHardwareID;
 
     /**
      * The timestamp when the entrant joined the waitlist.
@@ -43,10 +42,10 @@ public class WaitlistEntry {
      * when this entry is saved to the database using the @ServerTimestamp annotation.
      * </p>
      *
-     * @param entrant the entrant to add to the waitlist
+     * @param entrantHardwareID the entrant ID to add to the waitlist
      */
-    public WaitlistEntry(Entrant entrant) {
-        this.entrant = entrant;
+    public WaitlistEntry(String entrantHardwareID) {
+        this.entrantHardwareID = entrantHardwareID;
         this.timeJoined = new Date();
     }
 
@@ -57,21 +56,21 @@ public class WaitlistEntry {
      * or for testing purposes where a specific timestamp is needed.
      * </p>
      *
-     * @param entrant the entrant to add to the waitlist
+     * @param entrantHardwareID the entrant ID to add to the waitlist
      * @param timeJoined the time they joined the waitlist
      */
-    public WaitlistEntry(Entrant entrant, Date timeJoined) {
-        this.entrant = entrant;
+    public WaitlistEntry(String entrantHardwareID, Date timeJoined) {
+        this.entrantHardwareID = entrantHardwareID;
         this.timeJoined = timeJoined;
     }
 
     /**
-     * Gets the entrant associated with this waitlist entry.
+     * Gets the entrant ID associated with this waitlist entry.
      *
-     * @return the entrant who joined the waitlist
+     * @return the entrant hardware ID who joined the waitlist
      */
-    public Entrant getEntrant() {
-        return entrant;
+    public String getEntrantHardwareID() {
+        return entrantHardwareID;
     }
 
     /**
@@ -84,13 +83,13 @@ public class WaitlistEntry {
     }
 
     /**
-     * Sets the entrant for this waitlist entry.
+     * Sets the entrant hardware ID for this waitlist entry.
      * Required by Firestore for deserialization.
      *
-     * @param entrant the entrant to set
+     * @param entrantID the entrant hardware ID to set
      */
-    public void setEntrant(Entrant entrant) {
-        this.entrant = entrant;
+    public void setEntrantHardwareID(String entrantID) {
+        this.entrantHardwareID = entrantID;
     }
 
     /**
@@ -118,7 +117,7 @@ public class WaitlistEntry {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         WaitlistEntry waitlistEntry = (WaitlistEntry) o;
-        return Objects.equals(this.entrant, waitlistEntry.entrant) && Objects.equals(this.timeJoined, waitlistEntry.timeJoined);
+        return Objects.equals(this.entrantHardwareID, waitlistEntry.entrantHardwareID) && Objects.equals(this.timeJoined, waitlistEntry.timeJoined);
     }
 
     /**
@@ -128,7 +127,7 @@ public class WaitlistEntry {
      */
     @Override
     public int hashCode() {
-       return Objects.hash(this.timeJoined, entrant);
+       return Objects.hash(this.timeJoined, entrantHardwareID);
     }
 
 }

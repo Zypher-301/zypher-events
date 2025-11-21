@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="Group: "
         android:textColor="@color/black"
-        android:textSize="25sp"
+        android:textSize="30sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@id/entrant_info"
         app:layout_constraintEnd_toStartOf="@id/dropdown"

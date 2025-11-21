@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity {
         db = new Database();
 
         // Get hardware ID from user's device
-//        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        userHardwareID = "ElliotTestOrg1";
+        userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+//        userHardwareID = "ElliotTestOrg1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 

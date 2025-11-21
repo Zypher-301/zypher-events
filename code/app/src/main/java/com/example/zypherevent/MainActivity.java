@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-//        userHardwareID = "ElliotTestOrg1";
+//        userHardwareID = "organizer1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
@@ -327,6 +327,51 @@ public class MainActivity extends AppCompatActivity {
             db.setUserData(organizer3.getHardwareID(), organizer3);
 
             db.setEventData(uniqueEventID, event3);
+        });
+
+        // --- Event 4 ---
+        db.getUniqueEventID().addOnSuccessListener(uniqueEventID -> {
+            Event event4 = new Event(
+                    uniqueEventID,
+                    "Orange Growers Anonymous",
+                    "Come help us grow some oranges! But wear a mask!",
+                    new Date("December 30, 2025 00:00:00"),
+                    "Edmonton Orange Plantation",
+                    new Date("November 1, 2025 00:00:00"),
+                    new Date("December 20, 2025 00:00:00"),
+                    organizer1.getHardwareID(),
+                    false
+            );
+
+            event4.addEntrantToWaitList(entrant1.getHardwareID());
+            event4.addEntrantToWaitList(entrant2.getHardwareID());
+            event4.addEntrantToWaitList(entrant3.getHardwareID());
+            event4.addEntrantToWaitList(entrant4.getHardwareID());
+            event4.addEntrantToWaitList(entrant5.getHardwareID());
+            event4.addEntrantToWaitList(entrant6.getHardwareID());
+            event4.addEntrantToWaitList(entrant7.getHardwareID());
+
+            entrant1.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant2.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant3.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant4.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant5.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant6.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+            entrant7.addEventToRegisteredEventHistory(event4.getUniqueEventID());
+
+            organizer1.addCreatedEvent(uniqueEventID);
+
+            db.setUserData(entrant1.getHardwareID(), entrant1);
+            db.setUserData(entrant2.getHardwareID(), entrant2);
+            db.setUserData(entrant3.getHardwareID(), entrant3);
+            db.setUserData(entrant4.getHardwareID(), entrant4);
+            db.setUserData(entrant5.getHardwareID(), entrant5);
+            db.setUserData(entrant6.getHardwareID(), entrant6);
+            db.setUserData(entrant7.getHardwareID(), entrant7);
+
+            db.setUserData(organizer1.getHardwareID(), organizer1);
+
+            db.setEventData(uniqueEventID, event4);
         });
 
         // --- Notifications ---

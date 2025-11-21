@@ -1070,6 +1070,48 @@ public class Database {
         });
     }
 
+    public Task<Void> moveEntrantToInvited(String eventId, Entrant entrant) {
+
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        String targetHardwareID = entrant.getHardwareID();
+
+        return db.runTransaction(transaction -> {
+
+            DocumentSnapshot snapshot = transaction.get(eventRef);
+            if (snapshot == null || !snapshot.exists()) {
+                throw new RuntimeException("Event not found!");
+            }
+
+            // Get the current waitlist
+            ArrayList<WaitlistEntry> currentWaitlist =
+                    parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+
+            // Find and remove the entrant from waitlist
+            String entrantHardwareToMove = null;
+            for (int i = 0; i < currentWaitlist.size(); i++) {
+                WaitlistEntry wlEntry = currentWaitlist.get(i);
+                if (wlEntry != null && targetHardwareID.equals(wlEntry.getEntrantHardwareID())) {
+                    entrantHardwareToMove = wlEntry.getEntrantHardwareID();
+                    currentWaitlist.remove(i);
+                    break;
+                }
+            }
+
+            if (entrantHardwareToMove != null) {
+                // Update waitlist in DB
+                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
+                // Add hardware ID to invitedEntrants array (list of Strings)
+                transaction.update(eventRef, "invitedEntrants",
+                        FieldValue.arrayUnion(entrantHardwareToMove));
+            } else {
+                // Entrant wasn't on the waitlist, maybe already moved
+                Log.w("Database", "Entrant not found on waitlist, could not move.");
+            }
+
+            return null;
+        });
+    }
+
     /**
      * Manually parses a list from Firestore into a proper ArrayList of WaitlistEntry.
      * Expects each item to be a Map with:

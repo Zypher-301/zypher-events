@@ -358,26 +358,28 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 List<WaitlistEntry> selected = shuffled.subList(0, n);
 
-                int acceptedCount = 0;
+                int invitedCount = 0;
+
                 for (WaitlistEntry entry : selected) {
+
                     String hardwareId = entry.getEntrantHardwareID();
                     if (hardwareId == null || hardwareId.isEmpty()) continue;
 
                     // Minimal Entrant object — moveEntrantToAccepted only uses hardwareID
                     Entrant stubEntrant = new Entrant(hardwareId, "", "", "");
 
-                    db.moveEntrantToAccepted(event.getUniqueEventID().toString(), stubEntrant)
+                    db.moveEntrantToInvited(event.getUniqueEventID().toString(), stubEntrant)
                             .addOnSuccessListener(unused -> { /* no-op or log if you like */ })
                             .addOnFailureListener(err ->
-                                    Log.e(TAG, "Failed to move entrant to accepted: " + err.getMessage())
+                                    Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage())
                             );
 
-                    acceptedCount++;
+                    invitedCount++;
                 }
 
                 Toast.makeText(
                         getContext(),
-                        "Selected and accepted " + acceptedCount + " entrant(s).",
+                        "Selected and invited " + invitedCount + " entrant(s).",
                         Toast.LENGTH_LONG
                 ).show();
 

@@ -62,7 +62,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
      * to filter and view entrants based on their status: accepted, invited, or declined.
      */
     private final List<String> groupNames = Arrays.asList(
-            "Accepted Entrants (Final List)",
+            "Accepted Entrants",
             "Invited Entrants",
             "Declined Entrants (Cancelled)"
     );
@@ -217,7 +217,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         if (currentEvent == null) return new ArrayList<>();
 
         switch (selectedGroup) {
-            case "Accepted Entrants (Final List)":
+            case "Accepted Entrants":
                 return currentEvent.getAcceptedEntrants();
             case "Invited Entrants":
                 return currentEvent.getInvitedEntrants();

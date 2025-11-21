@@ -20,7 +20,7 @@ import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.navigation.Navigation;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -148,6 +148,25 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     @Override
     public void onViewEntrantsClick(Event event) {
         showWaitlistDialog(event);
+    }
+
+    /**
+     * NEW: Handles "Entrant List" button click.
+     * Navigates to the new fragment to see Accepted/Declined lists.
+     */
+    @Override
+    public void onEntrantListClick(Event event) {
+        if (event.getUniqueEventID() == null) {
+            Toast.makeText(getContext(), "Error: Event ID is missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create bundle with the event ID
+        Bundle bundle = new Bundle();
+        bundle.putLong("eventId", event.getUniqueEventID());
+
+        // Navigate to the new fragment (ensure ID matches organizer_navigation.xml)
+        Navigation.findNavController(requireView()).navigate(R.id.nav_view_entrants_list, bundle);
     }
 
     @Override

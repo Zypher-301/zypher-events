@@ -332,6 +332,12 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
             return entrants.size();
         }
 
+        /**
+         * A {@link RecyclerView.ViewHolder} that holds the view for a single entrant item in the list.
+         * It displays the entrant's full name and their contact details (email and phone number).
+         * The layout is based on {@code android.R.layout.simple_list_item_2}, which provides
+         * two {@link TextView} elements ({@code text1} and {@code text2}).
+         */
         public static class EntrantInfoViewHolder extends RecyclerView.ViewHolder {
             TextView text1;
             TextView text2;

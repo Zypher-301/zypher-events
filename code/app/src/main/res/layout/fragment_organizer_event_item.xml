@@ -68,17 +68,28 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnViewEntrants"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View Entrants" />
+                android:layout_width="85dp"
+                android:layout_height="match_parent"
+                android:text="View Entrants"
+                android:textSize="10sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEntrantList"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:text="Entrant List"
+                android:textSize="10sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnMenu"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="70dp"
+                android:layout_height="match_parent"
                 android:layout_marginStart="8dp"
-                android:text="Menu" />
+                android:text="Menu"
+                android:textSize="10sp" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

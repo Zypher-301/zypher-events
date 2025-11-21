@@ -24,6 +24,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
 
     public interface OnItemClickListener {
         void onViewEntrantsClick(Event event);
+        void onEntrantListClick(Event event);
         void onMenuClick(Event event, View anchorView);
     }
 
@@ -56,6 +57,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
         TextView tvTitle, tvMeta;
         Button btnViewEntrants;
         Button btnMenu;
+        Button btnEntrantList;
         ImageView imgPoster;
 
         public EventViewHolder(@NonNull View itemView) {
@@ -63,6 +65,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvMeta = itemView.findViewById(R.id.tvMeta);
             btnViewEntrants = itemView.findViewById(R.id.btnViewEntrants);
+            btnEntrantList = itemView.findViewById(R.id.btnEntrantList);
             btnMenu = itemView.findViewById(R.id.btnMenu);
             imgPoster = itemView.findViewById(R.id.imgPoster);
         }
@@ -92,6 +95,7 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
 
             // Set Button Listeners
             btnViewEntrants.setOnClickListener(v -> listener.onViewEntrantsClick(event));
+            btnEntrantList.setOnClickListener(v -> listener.onEntrantListClick(event));
             btnMenu.setOnClickListener(v -> listener.onMenuClick(event, v));
 
             // Set the placeholder image

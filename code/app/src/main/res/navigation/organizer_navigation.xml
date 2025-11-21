@@ -19,4 +19,14 @@
         android:label="Events Map"
         tools:layout="@layout/fragment_organizer_events_map" />
 
+    <fragment
+        android:id="@+id/nav_view_entrants_list"
+        android:name="com.example.zypherevent.ui.organizer.events.OrganizerSelectedEntrantsFragment"
+        android:label="Entrant Lists"
+        tools:layout="@layout/popup_organizer_selected_entrants" >
+        <argument
+            android:name="eventId"
+            app:argType="long" />
+    </fragment>
+
 </navigation>

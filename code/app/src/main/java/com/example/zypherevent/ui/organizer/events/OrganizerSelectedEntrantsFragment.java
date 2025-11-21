@@ -64,7 +64,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     private final List<String> groupNames = Arrays.asList(
             "Accepted Entrants",
             "Invited Entrants",
-            "Declined Entrants (Cancelled)"
+            "Declined Entrants"
     );
 
     public OrganizerSelectedEntrantsFragment() {
@@ -221,7 +221,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                 return currentEvent.getAcceptedEntrants();
             case "Invited Entrants":
                 return currentEvent.getInvitedEntrants();
-            case "Declined Entrants (Cancelled)":
+            case "Declined Entrants":
                 return currentEvent.getDeclinedEntrants();
             default:
                 return new ArrayList<>();

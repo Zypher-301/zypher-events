@@ -378,7 +378,8 @@ public class EntrantSettingsFragment extends Fragment {
                                         eventFromDB.removeEntrantFromWaitList(entryToRemove);
                                     }
 
-                                    // ---- Remove entrant from ACCEPTED / DECLINED lists (by hardware ID) ----
+                                    // ---- Remove entrant from INVITED / ACCEPTED / DECLINED lists (by hardware ID) ----
+                                    eventFromDB.removeEntrantFromInvitedList(hardwareID);
                                     eventFromDB.removeEntrantFromAcceptedList(hardwareID);
                                     eventFromDB.removeEntrantFromDeclinedList(hardwareID);
 

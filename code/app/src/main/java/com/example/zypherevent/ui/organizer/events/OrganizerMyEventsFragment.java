@@ -36,9 +36,12 @@ import com.example.zypherevent.Utils;
 import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -161,7 +164,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 showQRCodeDialog(event);
                 return true;
             } else if (id == R.id.action_export_csv) {
-                Toast.makeText(getContext(), "Export CSV for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                showCSVDialog(event);
                 return true;
             } else if (id == R.id.action_edit_event) {
                 showEditEventDialog(event);
@@ -171,6 +174,107 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
 
         popup.show();
+    }
+
+    private void showCSVDialog(Event event) {
+        exportCSV(event)
+                .addOnSuccessListener(csvString -> {
+                    Log.d("CSV", csvString);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_csv, null);
+
+                    TextView registrationWarning = dialogView.findViewById(R.id.tvCSVWarning);
+
+                    Log.d("OrganizerMyEvents", event.getEventName() + " isRegistrationOpen: " + event.isRegistrationOpen());
+                    if (event.isRegistrationOpen()) {
+                        registrationWarning.setVisibility(View.VISIBLE);
+                    } else {
+                        registrationWarning.setVisibility(View.GONE);
+                    }
+
+                    TextView csvContent = dialogView.findViewById(R.id.tvCopyPaste);
+                    Button downloadButton = dialogView.findViewById(R.id.btnDownloadCSV);
+
+                    csvContent.setText(csvString);
+
+                    downloadButton.setOnClickListener(v -> saveCSVToDownloads(csvString, event.getEventName()));
+
+                    builder.setView(dialogView);
+                    builder.setPositiveButton("Close", null);
+                    builder.create().show();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("CSV", "Failed to export CSV", e);
+                });
+    }
+
+    private void saveCSVToDownloads(String csvString, String eventName) {
+        try {
+            String fileName = eventName.replaceAll("[^a-zA-Z0-9]", "_")
+                    + "_" + System.currentTimeMillis() + ".csv";
+
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, "text/csv");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+            Uri uri = requireContext().getContentResolver()
+                    .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+            if (uri != null) {
+                OutputStream outputStream = requireContext()
+                        .getContentResolver().openOutputStream(uri);
+
+                if (outputStream != null) {
+                    outputStream.write(csvString.getBytes(StandardCharsets.UTF_8));
+                    outputStream.close();
+
+                    Toast.makeText(getContext(),
+                            "CSV saved to Downloads",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving CSV", e);
+            Toast.makeText(getContext(), "Failed to save CSV", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Task<String> exportCSV(Event event) {
+        ArrayList<String> acceptedList = event.getAcceptedEntrants();
+        if (acceptedList == null || acceptedList.isEmpty()) {
+            return Tasks.forResult(""); // immediately resolved Task with empty CSV
+        }
+
+        List<Task<Entrant>> userTasks = new ArrayList<>();
+
+        for (String entrantId : acceptedList) {
+            Task<Entrant> t = db.getUser(entrantId)
+                    .continueWith(task -> {
+                        // if failed
+                        if (!task.isSuccessful()) {
+                            throw task.getException();
+                        }
+                        // adjust type if getUser returns User instead of Entrant
+                        return (Entrant) task.getResult();
+                    });
+            userTasks.add(t);
+        }
+
+        // Wait for all user fetches to finish, then build the CSV
+        return Tasks.whenAllSuccess(userTasks)
+                .continueWith(task -> {
+                    @SuppressWarnings("unchecked")
+                    List<Entrant> entrants = (List<Entrant>) (List<?>) task.getResult();
+
+                    List<String> names = new ArrayList<>();
+                    for (Entrant e : entrants) {
+                        names.add(e.getFirstName() + " " + e.getLastName());
+                    }
+                    return String.join(", ", names);
+                });
     }
 
     private void showWaitlistDialog(Event event) {

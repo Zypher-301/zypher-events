@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.zypherevent.Database;
-import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.OrganizerActivity;
 import com.example.zypherevent.R;
 import com.example.zypherevent.WaitlistEntry;
@@ -26,6 +25,7 @@ import com.example.zypherevent.model.MapPoint;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.example.zypherevent.userTypes.User;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 
@@ -196,72 +196,105 @@ public class OrganizerEventsMapFragment extends Fragment {
             return Tasks.forResult(new ArrayList<>());
         }
 
-        // update the entrants' info in the event (location data may have been updated!)
-        return event.updateEntrantInformationInLists()
+        Database db = new Database();
+        List<Task<User>> lookupTasks = new ArrayList<>();
+        List<MapPoint.Status> statuses = new ArrayList<>();
+
+        // --- WAITLISTED (WaitlistEntry -> hardware ID) ---
+        ArrayList<WaitlistEntry> waitlistEntrants = event.getWaitListEntrants();
+        Log.d("OrganizerEventsMapFrag", "Waitlist Entrys: " + waitlistEntrants);
+        if (waitlistEntrants != null) {
+            for (WaitlistEntry entry : waitlistEntrants) {
+                if (entry == null) continue;
+                String hardwareID = entry.getEntrantHardwareID();
+                if (hardwareID == null || hardwareID.isEmpty()) continue;
+
+                lookupTasks.add(db.getUser(hardwareID));
+                statuses.add(MapPoint.Status.WAITLISTED);
+            }
+        }
+
+        // --- INVITED (list of hardware IDs) ---
+        ArrayList<String> invitedIds = event.getInvitedEntrants();
+        Log.d("OrganizerEventsMapFrag", "Invited IDs: " + invitedIds);
+        if (invitedIds != null) {
+            for (String hardwareID : invitedIds) {
+                if (hardwareID == null || hardwareID.isEmpty()) continue;
+
+                lookupTasks.add(db.getUser(hardwareID));
+                statuses.add(MapPoint.Status.INVITED);
+            }
+        }
+
+        // --- ACCEPTED (list of hardware IDs) ---
+        ArrayList<String> acceptedIds = event.getAcceptedEntrants();
+        Log.d("OrganizerEventsMapFrag", "Accepted IDs: " + acceptedIds);
+        if (acceptedIds != null) {
+            for (String hardwareID : acceptedIds) {
+                if (hardwareID == null || hardwareID.isEmpty()) continue;
+
+                lookupTasks.add(db.getUser(hardwareID));
+                statuses.add(MapPoint.Status.ACCEPTED);
+            }
+        }
+
+        // --- DENIED (list of hardware IDs) ---
+        ArrayList<String> declinedIds = event.getDeclinedEntrants();
+        Log.d("OrganizerEventsMapFrag", "Declined IDs: " + declinedIds);
+        if (declinedIds != null) {
+            for (String hardwareID : declinedIds) {
+                if (hardwareID == null || hardwareID.isEmpty()) continue;
+
+                lookupTasks.add(db.getUser(hardwareID));
+                statuses.add(MapPoint.Status.DENIED);
+            }
+        }
+
+        // No entrants at all
+        if (lookupTasks.isEmpty()) {
+            return Tasks.forResult(new ArrayList<>());
+        }
+
+        // Wait until all lookups complete, then walk lookupTasks in order
+        return Tasks.whenAllComplete(lookupTasks)
                 .continueWith(task -> {
                     List<MapPoint> mapPoints = new ArrayList<>();
 
-                    if (!task.isSuccessful()) {
-                        Log.w("OrganizerEventsMapFrag",
-                                "Failed to update entrants", task.getException());
-                        return mapPoints; // empty list on failure
-                    }
+                    for (int i = 0; i < lookupTasks.size(); i++) {
+                        Task<User> userTask = lookupTasks.get(i);
 
-                    // --- WAITLISTED ---
-                    ArrayList<WaitlistEntry> waitlistEntrants = event.getWaitListEntrants();
-                    if (waitlistEntrants != null) {
-                        for (WaitlistEntry entry : waitlistEntrants) {
-                            Entrant entrant = entry.getEntrant();
-                            if (entrant == null) continue;
-
-                            com.google.firebase.firestore.GeoPoint location = entrant.getLocation();
-                            if (location == null) {
-                                Log.w("OrganizerEventsMapFrag",
-                                        "Waitlisted entrant has null location: "
-                                                + entrant.getFirstName() + " " + entrant.getLastName());
-                                continue;
-                            }
-
-                            String label = entrant.getFirstName() + " " + entrant.getLastName();
-                            mapPoints.add(new MapPoint(location, label, MapPoint.Status.WAITLISTED));
+                        if (!userTask.isSuccessful()) {
+                            Log.w("OrganizerEventsMapFrag",
+                                    "Failed to fetch user for map point", userTask.getException());
+                            continue;
                         }
-                    }
 
-                    // --- ACCEPTED ---
-                    ArrayList<Entrant> acceptedEntrants = event.getAcceptedEntrants();
-                    if (acceptedEntrants != null) {
-                        for (Entrant entrant : acceptedEntrants) {
-                            if (entrant == null) continue;
-
-                            com.google.firebase.firestore.GeoPoint location = entrant.getLocation();
-                            if (location == null) {
-                                Log.w("OrganizerEventsMapFrag",
-                                        "Accepted entrant has null location: "
-                                                + entrant.getFirstName() + " " + entrant.getLastName());
-                                continue;
-                            }
-
-                            String label = entrant.getFirstName() + " " + entrant.getLastName();
-                            mapPoints.add(new MapPoint(location, label, MapPoint.Status.ACCEPTED));
+                        User user = userTask.getResult();
+                        if (!(user instanceof Entrant)) {
+                            // This shouldn't happen for event participants, but be safe
+                            Log.w("OrganizerEventsMapFrag",
+                                    "User is not an Entrant, skipping: " + (user != null ? user.getHardwareID() : "null"));
+                            continue;
                         }
-                    }
 
-                    // --- DENIED ---
-                    ArrayList<Entrant> declinedEntrants = event.getDeclinedEntrants();
-                    if (declinedEntrants != null) {
-                        for (Entrant entrant : declinedEntrants) {
-                            if (entrant == null) continue;
+                        Entrant entrant = (Entrant) user;
+                        if (entrant == null) continue;
+
+                        // Only use geo-location for those who have it enabled
+                        if (entrant.getUseGeolocation() == true) {
 
                             com.google.firebase.firestore.GeoPoint location = entrant.getLocation();
                             if (location == null) {
                                 Log.w("OrganizerEventsMapFrag",
-                                        "Declined entrant has null location: "
+                                        "Entrant has null location: "
                                                 + entrant.getFirstName() + " " + entrant.getLastName());
                                 continue;
                             }
 
                             String label = entrant.getFirstName() + " " + entrant.getLastName();
-                            mapPoints.add(new MapPoint(location, label, MapPoint.Status.DENIED));
+                            MapPoint.Status status = statuses.get(i); // same index as lookupTasks
+
+                            mapPoints.add(new MapPoint(location, label, status));
                         }
                     }
 
@@ -344,12 +377,19 @@ public class OrganizerEventsMapFragment extends Fragment {
         } else {
             switch (status) {
                 case ACCEPTED:
+                    Log.d("OrganizerEventsMapFrag", "Accepted status added, " + mapPoint.getLabel());
                     iconResId = R.drawable.marker_dot_accepted;
                     break;
                 case DENIED:
+                    Log.d("OrganizerEventsMapFrag", "Denied status added, " + mapPoint.getLabel());
                     iconResId = R.drawable.marker_dot_denied;
                     break;
+                case INVITED:
+                    Log.d("OrganizerEventsMapFrag", "Invited status added, " + mapPoint.getLabel());
+                    iconResId = R.drawable.marker_dot_invited;
+                    break;
                 case WAITLISTED:
+                    Log.d("OrganizerEventsMapFrag", "Waitlisted status added, " + mapPoint.getLabel());
                 default:
                     iconResId = R.drawable.marker_dot_waitlisted;
                     break;

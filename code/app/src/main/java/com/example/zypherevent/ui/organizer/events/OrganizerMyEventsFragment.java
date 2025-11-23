@@ -20,7 +20,7 @@ import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.navigation.Navigation;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -36,9 +36,12 @@ import com.example.zypherevent.Utils;
 import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +51,6 @@ import java.util.List;
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 
     private static final String TAG = "OrganizerMyEvents";
-
     private Database db;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -101,6 +103,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         loadEvents();
     }
 
+    /**
+     * Loads events created by the current organizer from the database.
+     * This method queries the database for all {@link Event} instances associated with the
+     * organizer's hardware ID, updates the event list and its adapter with the fetched results,
+     * and toggles the empty state view depending on whether any events are returned. The swipe
+     * refresh indicator is stopped when the query completes, and any errors are logged and shown
+     * to the user via a toast message.
+     */
     private void loadEvents() {
         db.getEventsByOrganizer(organizerUser.getHardwareID()).addOnCompleteListener(task -> {
             if (swipeRefreshLayout != null) {
@@ -140,6 +150,25 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         showWaitlistDialog(event);
     }
 
+    /**
+     * NEW: Handles "Entrant List" button click.
+     * Navigates to the new fragment to see Accepted/Declined lists.
+     */
+    @Override
+    public void onEntrantListClick(Event event) {
+        if (event.getUniqueEventID() == null) {
+            Toast.makeText(getContext(), "Error: Event ID is missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create bundle with the event ID
+        Bundle bundle = new Bundle();
+        bundle.putLong("eventId", event.getUniqueEventID());
+
+        // Navigate to the new fragment (ensure ID matches organizer_navigation.xml)
+        Navigation.findNavController(requireView()).navigate(R.id.nav_view_entrants_list, bundle);
+    }
+
     @Override
     public void onMenuClick(Event event, View anchorView) {
         PopupMenu popup = new PopupMenu(getContext(), anchorView);
@@ -154,7 +183,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 showQRCodeDialog(event);
                 return true;
             } else if (id == R.id.action_export_csv) {
-                Toast.makeText(getContext(), "Export CSV for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                showCSVDialog(event);
                 return true;
             } else if (id == R.id.action_edit_event) {
                 showEditEventDialog(event);
@@ -164,6 +193,107 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
 
         popup.show();
+    }
+
+    private void showCSVDialog(Event event) {
+        exportCSV(event)
+                .addOnSuccessListener(csvString -> {
+                    Log.d("CSV", csvString);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_csv, null);
+
+                    TextView registrationWarning = dialogView.findViewById(R.id.tvCSVWarning);
+
+                    Log.d("OrganizerMyEvents", event.getEventName() + " isRegistrationOpen: " + event.isRegistrationOpen());
+                    if (event.isRegistrationOpen()) {
+                        registrationWarning.setVisibility(View.VISIBLE);
+                    } else {
+                        registrationWarning.setVisibility(View.GONE);
+                    }
+
+                    TextView csvContent = dialogView.findViewById(R.id.tvCopyPaste);
+                    Button downloadButton = dialogView.findViewById(R.id.btnDownloadCSV);
+
+                    csvContent.setText(csvString);
+
+                    downloadButton.setOnClickListener(v -> saveCSVToDownloads(csvString, event.getEventName()));
+
+                    builder.setView(dialogView);
+                    builder.setPositiveButton("Close", null);
+                    builder.create().show();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("CSV", "Failed to export CSV", e);
+                });
+    }
+
+    private void saveCSVToDownloads(String csvString, String eventName) {
+        try {
+            String fileName = eventName.replaceAll("[^a-zA-Z0-9]", "_")
+                    + "_" + System.currentTimeMillis() + ".csv";
+
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, "text/csv");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+            Uri uri = requireContext().getContentResolver()
+                    .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+            if (uri != null) {
+                OutputStream outputStream = requireContext()
+                        .getContentResolver().openOutputStream(uri);
+
+                if (outputStream != null) {
+                    outputStream.write(csvString.getBytes(StandardCharsets.UTF_8));
+                    outputStream.close();
+
+                    Toast.makeText(getContext(),
+                            "CSV saved to Downloads",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving CSV", e);
+            Toast.makeText(getContext(), "Failed to save CSV", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Task<String> exportCSV(Event event) {
+        ArrayList<String> acceptedList = event.getAcceptedEntrants();
+        if (acceptedList == null || acceptedList.isEmpty()) {
+            return Tasks.forResult(""); // immediately resolved Task with empty CSV
+        }
+
+        List<Task<Entrant>> userTasks = new ArrayList<>();
+
+        for (String entrantId : acceptedList) {
+            Task<Entrant> t = db.getUser(entrantId)
+                    .continueWith(task -> {
+                        // if failed
+                        if (!task.isSuccessful()) {
+                            throw task.getException();
+                        }
+                        // adjust type if getUser returns User instead of Entrant
+                        return (Entrant) task.getResult();
+                    });
+            userTasks.add(t);
+        }
+
+        // Wait for all user fetches to finish, then build the CSV
+        return Tasks.whenAllSuccess(userTasks)
+                .continueWith(task -> {
+                    @SuppressWarnings("unchecked")
+                    List<Entrant> entrants = (List<Entrant>) (List<?>) task.getResult();
+
+                    List<String> names = new ArrayList<>();
+                    for (Entrant e : entrants) {
+                        names.add(e.getFirstName() + " " + e.getLastName());
+                    }
+                    return String.join(", ", names);
+                });
     }
 
     private void showWaitlistDialog(Event event) {
@@ -247,27 +377,32 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 List<WaitlistEntry> selected = shuffled.subList(0, n);
 
-                int acceptedCount = 0;
-                for (WaitlistEntry entry : selected) {
-                    Entrant e = entry.getEntrant();
-                    if (e == null) continue;
+                int invitedCount = 0;
 
-                    db.moveEntrantToAccepted(event.getUniqueEventID().toString(), e)
-                            .addOnSuccessListener(unused -> {
-                            })
+                for (WaitlistEntry entry : selected) {
+
+                    String hardwareId = entry.getEntrantHardwareID();
+                    if (hardwareId == null || hardwareId.isEmpty()) continue;
+
+                    // Minimal Entrant object — moveEntrantToAccepted only uses hardwareID
+                    Entrant stubEntrant = new Entrant(hardwareId, "", "", "");
+
+                    db.moveEntrantToInvited(event.getUniqueEventID().toString(), stubEntrant)
+                            .addOnSuccessListener(unused -> { /* no-op or log if you like */ })
                             .addOnFailureListener(err ->
-                                    Log.e(TAG, "Failed to move entrant to accepted: " + err.getMessage())
+                                    Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage())
                             );
 
-                    acceptedCount++;
+                    invitedCount++;
                 }
 
                 Toast.makeText(
                         getContext(),
-                        "Selected and accepted " + acceptedCount + " entrant(s).",
+                        "Selected and invited " + invitedCount + " entrant(s).",
                         Toast.LENGTH_LONG
                 ).show();
 
+                // Refresh events so UI elsewhere stays in sync
                 loadEvents();
             });
         }
@@ -277,22 +412,60 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
-        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
-        confirmBuilder.setTitle("Accept Entrant");
-        confirmBuilder.setMessage("Accept " + entry.getEntrant().getFirstName() + " " +
-                entry.getEntrant().getLastName() + " for this event?");
+        if (getContext() == null) return;
 
-        confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
-            db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entry.getEntrant());
-            Toast.makeText(getContext(),
-                    entry.getEntrant().getFirstName() + " accepted!",
-                    Toast.LENGTH_SHORT).show();
+        String hardwareId = entry.getEntrantHardwareID();
+        if (hardwareId == null || hardwareId.isEmpty()) {
+            Toast.makeText(getContext(), "Invalid entrant", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            loadEvents();
-        });
+        // look up the Entrant object so we can show a name in the dialog
+        db.getUser(hardwareId)
+                .addOnSuccessListener(user -> {
+                    if (!(user instanceof Entrant)) {
+                        Toast.makeText(getContext(),
+                                "User is not an entrant or could not be loaded",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        confirmBuilder.setNegativeButton("Cancel", null);
-        confirmBuilder.show();
+                    Entrant entrant = (Entrant) user;
+                    String first = entrant.getFirstName() != null ? entrant.getFirstName() : "";
+                    String last = entrant.getLastName() != null ? entrant.getLastName() : "";
+                    String fullName = (first + " " + last).trim();
+                    if (fullName.isEmpty()) {
+                        fullName = "this entrant";
+                    }
+
+                    AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(getContext());
+                    confirmBuilder.setTitle("Accept Entrant");
+                    confirmBuilder.setMessage("Accept " + fullName + " for this event?");
+
+                    String finalFullName = fullName;
+                    confirmBuilder.setPositiveButton("Accept", (dialog, which) -> {
+                        db.moveEntrantToAccepted(event.getUniqueEventID().toString(), entrant)
+                                .addOnSuccessListener(unused -> {
+                                    Toast.makeText(getContext(),
+                                            finalFullName + " accepted!",
+                                            Toast.LENGTH_SHORT).show();
+                                    loadEvents();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(getContext(),
+                                            "Failed to accept entrant: " + e.getMessage(),
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                    });
+
+                    confirmBuilder.setNegativeButton("Cancel", null);
+                    confirmBuilder.show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(),
+                            "Failed to load entrant: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void showCreateEventDialog() {
@@ -448,6 +621,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             newEvent.setLotteryCriteria(lotteryCriteria);
+
+            organizerUser.addCreatedEvent(eventID);
+
+            db.setUserData(organizerUser.getHardwareID(), organizerUser);
 
             db.setEventData(eventID, newEvent).addOnCompleteListener(saveTask -> {
                 if (saveTask.isSuccessful()) {

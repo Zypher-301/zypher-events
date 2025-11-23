@@ -13,18 +13,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Group: "
-        android:textSize="45sp"
-        android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/entrant_info"
         app:layout_constraintEnd_toStartOf="@id/dropdown"
-        app:layout_constraintBottom_toTopOf="@id/entrant_info" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Spinner
         android:id="@+id/dropdown"
         android:layout_width="wrap_content"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:maxWidth="120dp"
         android:minWidth="40dp"
         android:paddingStart="20dp"

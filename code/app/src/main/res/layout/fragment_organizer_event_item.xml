@@ -54,32 +54,47 @@
             app:layout_constraintTop_toBottomOf="@+id/tvTitle"
             tools:text="Nov 10 · 7:00 PM · Convention Center" />
 
-        <LinearLayout
-            android:id="@+id/buttonRow"
+        <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:layout_marginTop="12dp"
+            android:scrollbars="none"
             app:layout_constraintStart_toStartOf="@+id/tvTitle"
             app:layout_constraintTop_toBottomOf="@+id/tvMeta"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnViewEntrants"
-                style="?attr/materialButtonOutlinedStyle"
+            <LinearLayout
+                android:id="@+id/buttonRow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="View Entrants" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMenu"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Menu" />
-        </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewEntrants"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="View Entrants" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEntrantList"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Entrant List" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMenu"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Menu" />
+            </LinearLayout>
+
+        </HorizontalScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

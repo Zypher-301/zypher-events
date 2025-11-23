@@ -21,9 +21,13 @@ import com.example.zypherevent.R;
 import com.example.zypherevent.WaitlistEntry;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
+import com.example.zypherevent.userTypes.User;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * @author Tom Yang
@@ -185,7 +189,8 @@ public class SendNotificationFragment extends Fragment {
         sendButton.setEnabled(false);
 
         // Query the event to get entrants with selected status
-        database.getEvent(eventID).addOnSuccessListener(event -> {
+        database.getEvent(eventID)
+                .addOnSuccessListener(event -> {
                     if (event == null) {
                         Toast.makeText(getContext(), "Event not found", Toast.LENGTH_SHORT).show();
                         sendButton.setEnabled(true);
@@ -198,19 +203,37 @@ public class SendNotificationFragment extends Fragment {
                     String header = getNotificationHeader(selectedStatus, eventName);
                     String body = getNotificationBody(selectedStatus);
 
-                    ArrayList<Entrant> targetEntrants = getEntrantListByStatus(event, selectedStatus);
+                    // 🔹 Now async: fetch Entrant objects by status from DB
+                    getEntrantListByStatus(event, selectedStatus)
+                            .addOnCompleteListener(task -> {
+                                // Re-enable button regardless of outcome
+                                sendButton.setEnabled(true);
 
-                    if (targetEntrants == null || targetEntrants.isEmpty()) {
-                        showNoEntrantDialog(selectedStatus);
-                        sendButton.setEnabled(true);
-                        return;
-                    }
+                                if (!task.isSuccessful()) {
+                                    Toast.makeText(
+                                            getContext(),
+                                            "Failed to load entrants: " + task.getException().getMessage(),
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+                                    return;
+                                }
 
-                    // Send notification to all entrants in the target list
-                    sendNotificationToEntrants(targetEntrants, header, body);
+                                List<Entrant> targetEntrants = task.getResult();
+                                if (targetEntrants == null || targetEntrants.isEmpty()) {
+                                    showNoEntrantDialog(selectedStatus);
+                                    return;
+                                }
+
+                                // Send notification to all entrants in the target list
+                                sendNotificationToEntrants((ArrayList<Entrant>) targetEntrants, header, body);
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Failed to retrieve event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(
+                            getContext(),
+                            "Failed to retrieve event: " + e.getMessage(),
+                            Toast.LENGTH_SHORT
+                    ).show();
                     sendButton.setEnabled(true);
                 });
     }
@@ -241,28 +264,65 @@ public class SendNotificationFragment extends Fragment {
     }
 
     /**
-     * Retrieves the appropriate list of entrants based on the selected status.
+     * Retrieves the list of Entrant objects for a given event/status.
+     * Since the Event now stores only hardware IDs, this method fetches
+     * the Entrant objects asynchronously from the database.
      *
-     * @param event          The event containing the entrant lists
-     * @param selectedStatus The selected status (waitlisted, accepted, denied)
-     * @return The list of entrants matching the selectedStatus, or null if status is invalid
+     * @param event          The event containing lists of hardware IDs
+     * @param selectedStatus The selected status ("Waitlisted", "Accepted", "Denied")
+     * @return A Task that completes with List<Entrant>
      */
-    private ArrayList<Entrant> getEntrantListByStatus(Event event, String selectedStatus) {
+    private Task<List<Entrant>> getEntrantListByStatus(Event event, String selectedStatus) {
+
+        Database db = new Database();
+        List<Task<User>> lookupTasks = new ArrayList<>();
+
         switch (selectedStatus) {
             case "Waitlisted":
-                // Extract Entrant objects from WaitlistEntry list
-                ArrayList<Entrant> waitlistedEntrants = new ArrayList<>();
                 for (WaitlistEntry entry : event.getWaitListEntrants()) {
-                    waitlistedEntrants.add(entry.getEntrant());
+                    if (entry == null || entry.getEntrantHardwareID() == null) continue;
+                    lookupTasks.add(db.getUser(entry.getEntrantHardwareID()));
                 }
-                return waitlistedEntrants;
+                break;
+
             case "Accepted":
-                return event.getAcceptedEntrants();
+                for (String id : event.getAcceptedEntrants()) {
+                    if (id == null || id.isEmpty()) continue;
+                    lookupTasks.add(db.getUser(id));
+                }
+                break;
+
             case "Denied":
-                return event.getDeclinedEntrants();
+                for (String id : event.getDeclinedEntrants()) {
+                    if (id == null || id.isEmpty()) continue;
+                    lookupTasks.add(db.getUser(id));
+                }
+                break;
+
             default:
-                return null;
+                return Tasks.forResult(new ArrayList<>());
         }
+
+        if (lookupTasks.isEmpty()) {
+            return Tasks.forResult(new ArrayList<>());
+        }
+
+        // Fetch Entrants in parallel and assemble result safely
+        return Tasks.whenAllComplete(lookupTasks)
+                .continueWith(task -> {
+                    List<Entrant> result = new ArrayList<>();
+
+                    for (Task<User> userTask : lookupTasks) {
+                        if (!userTask.isSuccessful()) continue;
+
+                        User user = userTask.getResult();
+                        if (user instanceof Entrant) {
+                            result.add((Entrant) user);
+                        }
+                    }
+
+                    return result;
+                });
     }
 
     /**

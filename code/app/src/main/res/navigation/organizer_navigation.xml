@@ -2,7 +2,7 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/admin_navigation"
+    android:id="@+id/organizer_navigation"
     app:startDestination="@+id/nav_my_events">
 
     <!-- Destination for the "My Events" menu item -->
@@ -18,5 +18,15 @@
         android:name="com.example.zypherevent.ui.organizer.events.OrganizerEventsMapFragment"
         android:label="Events Map"
         tools:layout="@layout/fragment_organizer_events_map" />
+
+    <fragment
+        android:id="@+id/nav_view_entrants_list"
+        android:name="com.example.zypherevent.ui.organizer.events.OrganizerSelectedEntrantsFragment"
+        android:label="Entrant Lists"
+        tools:layout="@layout/popup_organizer_selected_entrants" >
+        <argument
+            android:name="eventId"
+            app:argType="long" />
+    </fragment>
 
 </navigation>

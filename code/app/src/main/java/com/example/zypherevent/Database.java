@@ -8,14 +8,13 @@ import com.example.zypherevent.userTypes.Organizer;
 import com.example.zypherevent.userTypes.User;
 import com.example.zypherevent.userTypes.UserType;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.io.Serializable;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -210,13 +209,14 @@ public class Database {
                         String location = doc.getString("location");
                         String eventOrganizerHardwareID = doc.getString("eventOrganizerHardwareID");
                         String posterURL = doc.getString("posterURL");
-                        
+
                         Date startTime = doc.getDate("startTime");
                         Date registrationStartTime = doc.getDate("registrationStartTime");
                         Date registrationEndTime = doc.getDate("registrationEndTime");
 
-                        boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
-                        
+                        boolean requiresGeolocation =
+                                Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
+
                         Event event = new Event(
                                 uniqueEventID,
                                 eventName,
@@ -229,7 +229,7 @@ public class Database {
                                 posterURL,
                                 requiresGeolocation
                         );
-                        
+
                         // Parse optional fields
                         if (doc.contains("waitlistLimit")) {
                             Long limitLong = doc.getLong("waitlistLimit");
@@ -237,22 +237,53 @@ public class Database {
                                 event.setWaitlistLimit(limitLong.intValue());
                             }
                         }
-                        
-                        // Parse entrant lists using helper methods
-                        ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
-                        ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
-                        ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
-                        
+
+                        // Parse entrant lists
+                        ArrayList<WaitlistEntry> waitList =
+                                parseWaitlistEntryList(doc.get("waitListEntrants"));
+
+                        ArrayList<String> invitedList =
+                                parseHardwareIdList(doc.get("invitedEntrants"));
+
+                        ArrayList<String> acceptedList =
+                                parseHardwareIdList(doc.get("acceptedEntrants"));
+
+                        ArrayList<String> declinedList =
+                                parseHardwareIdList(doc.get("declinedEntrants"));
+
                         event.setWaitListEntrants(waitList);
+                        event.setInvitedEntrants(invitedList);
                         event.setAcceptedEntrants(acceptedList);
                         event.setDeclinedEntrants(declinedList);
-                        
+
                         return event;
                     } catch (Exception e) {
                         Log.e("Database", "Failed to parse event for eventID: " + eventID, e);
                         return null;
                     }
                 });
+    }
+
+    /**
+     * Helper to parse a Firestore field into a list of hardware ID strings.
+     *
+     * @param raw the raw value from DocumentSnapshot.get(...)
+     * @return a non-null ArrayList of hardware ID strings
+     */
+    @SuppressWarnings("unchecked")
+    private ArrayList<String> parseHardwareIdList(Object raw) {
+        ArrayList<String> result = new ArrayList<>();
+        if (raw instanceof List<?>) {
+            for (Object o : (List<?>) raw) {
+                if (o instanceof String) {
+                    result.add((String) o);
+                } else if (o != null) {
+                    // Fallback: store string representation if something weird is stored
+                    result.add(o.toString());
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -533,19 +564,18 @@ public class Database {
      * rather than relying on automatic deserialization with {@code .toObject(Event.class)}.
      * This robust approach provides several key benefits:
      * <ul>
-     * <li><b>Date Handling:</b> It correctly handles date fields stored as strings in Firestore
-     * (e.g., "2025-10-20") by using the {@link Utils#createWholeDayDate(String)} helper
-     * method to convert them into proper {@link Date} objects as required by the {@link Event} model.</li>
-     * <li><b>Casting Safety:</b> It resolves a critical {@code ClassCastException} that occurs when
-     * Firestore returns a list of entrants as an {@code ArrayList<HashMap>} instead of an
-     * {@code ArrayList<Entrant>}. By using the {@link #parseEntrantList(Object)} helper, it ensures type safety.</li>
+     * <li><b>Date Handling:</b> It correctly handles date fields stored as Firestore {@link com.google.firebase.Timestamp}
+     * and converts them into proper {@link Date} objects as required by the {@link Event} model.</li>
+     * <li><b>Casting Safety:</b> It safely parses waitlist entries and entrant hardware ID lists using
+     * helper methods like {@link #parseWaitlistEntryList(Object)} and {@link #parseHardwareIdList(Object)}.</li>
      * <li><b>Error Isolation:</b> If a single event document is malformed or missing a field, this
      * method will log the error and skip that document, allowing the rest of the valid
      * events to be loaded successfully. This prevents one bad entry from crashing the entire fetch operation.</li>
      * </ul>
      *
      * @return A {@code Task<List<Event>>} that, upon successful completion, contains a list
-     * of all valid {@link Event} objects from the database. The list will be empty if the
+     * of all valid {@link Event} objects from the database. The list will be empty if none
+     * can be parsed successfully.
      * @author Arunavo Dutta
      */
     public Task<List<Event>> getAllEventsList() {
@@ -560,7 +590,6 @@ public class Database {
 
                     for (DocumentSnapshot doc : task.getResult().getDocuments()) {
                         try {
-
                             Long uniqueEventID = doc.getLong("uniqueEventID");
                             String eventName = doc.getString("eventName");
                             String eventDescription = doc.getString("eventDescription");
@@ -569,10 +598,11 @@ public class Database {
                             String posterURL = doc.getString("posterURL");
 
                             Date startTime = doc.getDate("startTime");
-                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationStartTime = doc.getDate("registrationStartTime");
                             Date registrationEndTime = doc.getDate("registrationEndTime");
 
-                            boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
+                            boolean requiresGeolocation =
+                                    Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
 
                             Event event = new Event(
                                     uniqueEventID,
@@ -587,6 +617,7 @@ public class Database {
                                     requiresGeolocation
                             );
 
+                            // optional waitlist limit
                             if (doc.contains("waitlistLimit")) {
                                 Long limitLong = doc.getLong("waitlistLimit");
                                 if (limitLong != null) {
@@ -594,18 +625,27 @@ public class Database {
                                 }
                             }
 
-                            ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
-                            ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
-                            ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+                            // parse lists
+                            ArrayList<WaitlistEntry> waitList =
+                                    parseWaitlistEntryList(doc.get("waitListEntrants"));
+
+                            ArrayList<String> invitedList
+                                    = parseHardwareIdList(doc.get("invitedEntrants"));
+
+                            ArrayList<String> acceptedList =
+                                    parseHardwareIdList(doc.get("acceptedEntrants"));
+
+                            ArrayList<String> declinedList =
+                                    parseHardwareIdList(doc.get("declinedEntrants"));
 
                             event.setWaitListEntrants(waitList);
+                            event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
 
                             eventList.add(event);
 
                         } catch (Exception e) {
-
                             Log.e("Database", "Failed to parse event: " + doc.getId(), e);
                         }
                     }
@@ -654,10 +694,11 @@ public class Database {
                             String posterURL = doc.getString("posterURL");
 
                             Date startTime = doc.getDate("startTime");
-                            Date registrationStartTime= doc.getDate("registrationStartTime");
+                            Date registrationStartTime = doc.getDate("registrationStartTime");
                             Date registrationEndTime = doc.getDate("registrationEndTime");
 
-                            boolean requiresGeolocation = Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
+                            boolean requiresGeolocation =
+                                    Boolean.TRUE.equals(doc.getBoolean("requiresGeolocation"));
 
                             Event event = new Event(
                                     uniqueEventID,
@@ -672,6 +713,7 @@ public class Database {
                                     requiresGeolocation
                             );
 
+                            // optional waitlist limit
                             if (doc.contains("waitlistLimit")) {
                                 Long limitLong = doc.getLong("waitlistLimit");
                                 if (limitLong != null) {
@@ -679,11 +721,21 @@ public class Database {
                                 }
                             }
 
-                            ArrayList<WaitlistEntry> waitList = parseWaitlistEntryList(doc.get("waitListEntrants"));
-                            ArrayList<Entrant> acceptedList = parseEntrantList(doc.get("acceptedEntrants"));
-                            ArrayList<Entrant> declinedList = parseEntrantList(doc.get("declinedEntrants"));
+                            // parse lists
+                            ArrayList<WaitlistEntry> waitList =
+                                    parseWaitlistEntryList(doc.get("waitListEntrants"));
+
+                            ArrayList<String> invitedList
+                                    = parseHardwareIdList(doc.get("invitedEntrants"));
+
+                            ArrayList<String> acceptedList =
+                                    parseHardwareIdList(doc.get("acceptedEntrants"));
+
+                            ArrayList<String> declinedList =
+                                    parseHardwareIdList(doc.get("declinedEntrants"));
 
                             event.setWaitListEntrants(waitList);
+                            event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
 
@@ -870,19 +922,26 @@ public class Database {
                 throw new RuntimeException("Registration window has not yet started");
             }
             // Check if entrant already exists on waitlist (arrayUnion won't work correctly with null timestamp)
-            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+            ArrayList<WaitlistEntry> currentWaitlist =
+                    parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+
+            String entrantHardwareID = entrant.getHardwareID();
             boolean alreadyExists = false;
+
             for (WaitlistEntry existingEntry : currentWaitlist) {
-                if (existingEntry.getEntrant() != null && existingEntry.getEntrant().equals(entrant)) {
+                if (existingEntry != null &&
+                        existingEntry.getEntrantHardwareID() != null &&
+                        existingEntry.getEntrantHardwareID().equals(entrantHardwareID)) {
                     alreadyExists = true;
                     break;
                 }
             }
 
             if (!alreadyExists) {
-                WaitlistEntry entry = new WaitlistEntry(entrant);
-                // Add the entry to the waitlist
-                transaction.update(eventRef, "waitListEntrants", FieldValue.arrayUnion(entry));
+                WaitlistEntry entry = new WaitlistEntry(entrantHardwareID);
+                currentWaitlist.add(entry);
+                // Write the whole list back
+                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
             }
             return null; // Return null on success
         });
@@ -925,6 +984,7 @@ public class Database {
     public Task<Void> removeEntrantFromWaitlist(String eventId, Entrant entrant) {
         // Get reference to the event document
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        String targetHardwareID = entrant.getHardwareID();
 
         // Run a transaction to perform server-side checks and remove the entrant
         return db.runTransaction(transaction -> {
@@ -935,12 +995,12 @@ public class Database {
                 throw new RuntimeException("Event not found");
             }
 
-            // Get the date strings
+            // Get registration times
             Date registrationStartTime = snapshot.getDate("registrationStartTime");
             Date registrationEndTime = snapshot.getDate("registrationEndTime");
 
             // Perform server-side checks
-            Date now = new Date(); // Server's current time
+            Date now = new Date(); // server time
             if (registrationEndTime != null && now.after(registrationEndTime)) {
                 throw new RuntimeException("Registration window has ended");
             }
@@ -948,57 +1008,103 @@ public class Database {
                 throw new RuntimeException("Registration window has not yet started");
             }
 
-            // All checks passed, remove matching WaitlistEntry (by entrant) and write back the list
-            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+            // All checks passed, remove matching WaitlistEntry by hardware ID
+            ArrayList<WaitlistEntry> currentWaitlist =
+                    parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+
             int indexToRemove = -1;
             for (int i = 0; i < currentWaitlist.size(); i++) {
-                Entrant e = currentWaitlist.get(i).getEntrant();
-                if (e != null && e.equals(entrant)) {
+                WaitlistEntry entry = currentWaitlist.get(i);
+                if (entry != null && targetHardwareID.equals(entry.getEntrantHardwareID())) {
                     indexToRemove = i;
                     break;
                 }
             }
+
             if (indexToRemove != -1) {
                 currentWaitlist.remove(indexToRemove);
                 transaction.update(eventRef, "waitListEntrants", currentWaitlist);
             }
-            return null; // Return null on success
+
+            return null;
         });
     }
 
     public Task<Void> moveEntrantToAccepted(String eventId, Entrant entrant) {
         DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        String targetHardwareID = entrant.getHardwareID();
 
         return db.runTransaction(transaction -> {
             DocumentSnapshot snapshot = transaction.get(eventRef);
-            if (!snapshot.exists()) {
-                try {
-                    throw new Exception("Event not found!");
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            if (snapshot == null || !snapshot.exists()) {
+                throw new RuntimeException("Event not found!");
             }
 
-            // Get the current waitlist using our new parser
-            ArrayList<WaitlistEntry> currentWaitlist = parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+            // Get the current waitlist
+            ArrayList<WaitlistEntry> currentWaitlist =
+                    parseWaitlistEntryList(snapshot.get("waitListEntrants"));
 
-            // Find and remove the entrant
-            Entrant entrantToMove = null;
+            // Find and remove the entrant from waitlist
+            String entrantHardwareToMove = null;
             for (int i = 0; i < currentWaitlist.size(); i++) {
-                if (currentWaitlist.get(i).getEntrant().equals(entrant)) {
-                    // Get the entrant from the entry and remove the entry from the list
-                    entrantToMove = currentWaitlist.remove(i).getEntrant();
+                WaitlistEntry wlEntry = currentWaitlist.get(i);
+                if (wlEntry != null && targetHardwareID.equals(wlEntry.getEntrantHardwareID())) {
+                    entrantHardwareToMove = wlEntry.getEntrantHardwareID();
+                    currentWaitlist.remove(i);
                     break;
                 }
             }
 
-            if (entrantToMove != null) {
-                // Write the modified waitlist back to the DB
+            if (entrantHardwareToMove != null) {
+                // Update waitlist in DB
                 transaction.update(eventRef, "waitListEntrants", currentWaitlist);
-                // Add the plain Entrant object to the accepted list
-                transaction.update(eventRef, "acceptedEntrants", FieldValue.arrayUnion(entrantToMove));
+                // Add hardware ID to acceptedEntrants array (list of Strings)
+                transaction.update(eventRef, "acceptedEntrants",
+                        FieldValue.arrayUnion(entrantHardwareToMove));
             } else {
-                // Entrant wasn't on the waitlist, maybe they were already moved
+                // Entrant wasn't on the waitlist, maybe already moved
+                Log.w("Database", "Entrant not found on waitlist, could not move.");
+            }
+
+            return null;
+        });
+    }
+
+    public Task<Void> moveEntrantToInvited(String eventId, Entrant entrant) {
+
+        DocumentReference eventRef = eventsCollection.document(String.valueOf(eventId));
+        String targetHardwareID = entrant.getHardwareID();
+
+        return db.runTransaction(transaction -> {
+
+            DocumentSnapshot snapshot = transaction.get(eventRef);
+            if (snapshot == null || !snapshot.exists()) {
+                throw new RuntimeException("Event not found!");
+            }
+
+            // Get the current waitlist
+            ArrayList<WaitlistEntry> currentWaitlist =
+                    parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+
+            // Find and remove the entrant from waitlist
+            String entrantHardwareToMove = null;
+            for (int i = 0; i < currentWaitlist.size(); i++) {
+                WaitlistEntry wlEntry = currentWaitlist.get(i);
+                if (wlEntry != null && targetHardwareID.equals(wlEntry.getEntrantHardwareID())) {
+                    entrantHardwareToMove = wlEntry.getEntrantHardwareID();
+                    currentWaitlist.remove(i);
+                    break;
+                }
+            }
+
+            if (entrantHardwareToMove != null) {
+                // Update waitlist in DB
+                transaction.update(eventRef, "waitListEntrants", currentWaitlist);
+                // Add hardware ID to invitedEntrants array (list of Strings)
+                transaction.update(eventRef, "invitedEntrants",
+                        FieldValue.arrayUnion(entrantHardwareToMove));
+            } else {
+                // Entrant wasn't on the waitlist, maybe already moved
                 Log.w("Database", "Entrant not found on waitlist, could not move.");
             }
 
@@ -1007,43 +1113,41 @@ public class Database {
     }
 
     /**
-     * Manually parses a list of HashMaps from Firestore into a proper ArrayList of WaitlistEntry.
-     * @return the list of waitlist entries parsed into java objects
+     * Manually parses a list from Firestore into a proper ArrayList of WaitlistEntry.
+     * Expects each item to be a Map with:
+     *   - "entrantHardwareID": String
+     *   - "timeJoined": Timestamp (optional)
+     *
+     * @param rawList the raw value from DocumentSnapshot.get("waitListEntrants")
+     * @return the list of waitlist entries parsed into Java objects
      */
     public ArrayList<WaitlistEntry> parseWaitlistEntryList(Object rawList) {
         ArrayList<WaitlistEntry> entryList = new ArrayList<>();
-        if (!(rawList instanceof List)) {
+        if (!(rawList instanceof List<?>)) {
             return entryList;
         }
 
         List<?> rawEntryList = (List<?>) rawList;
         for (Object item : rawEntryList) {
-            if (item instanceof HashMap) {
+            if (item instanceof Map) {
                 try {
-                    HashMap<String, Object> map = (HashMap<String, Object>) item;
+                    Map<String, Object> map = (Map<String, Object>) item;
 
-                    // Firestore nests the Entrant object as another HashMap
-                    HashMap<String, Object> entrantMap = (HashMap<String, Object>) map.get("entrant");
+                    // Read hardware ID directly from the map
+                    String hardwareID = (String) map.get("entrantHardwareID");
+                    if (hardwareID == null || hardwareID.isEmpty()) {
+                        continue; // skip malformed entry
+                    }
 
-                    // Manually build the Entrant
-                    String hardwareID = (String) entrantMap.get("hardwareID");
-                    String firstName = (String) entrantMap.get("firstName");
-                    String lastName = (String) entrantMap.get("lastName");
-                    String email = (String) entrantMap.get("email");
-                    String phone = (String) entrantMap.get("phoneNumber");
-                    boolean useGeo = entrantMap.containsKey("useGeolocation") ? (Boolean) entrantMap.get("useGeolocation") : false;
-                    boolean wantsNotifs = entrantMap.containsKey("wantsNotifications") ? (Boolean) entrantMap.get("wantsNotifications") : true;
-
-                    Entrant entrant = new Entrant(hardwareID, firstName, lastName, email, phone, useGeo);
-                    entrant.setWantsNotifications(wantsNotifs);
-
-                    // Get the timeJoined
-                    com.google.firebase.Timestamp timestamp = (com.google.firebase.Timestamp) map.get("timeJoined");
+                    // Read timestamp, if present
+                    com.google.firebase.Timestamp timestamp =
+                            (com.google.firebase.Timestamp) map.get("timeJoined");
                     Date timeJoined = (timestamp != null) ? timestamp.toDate() : null;
 
-                    // the final WaitlistEntry object
-                    WaitlistEntry entry = new WaitlistEntry(entrant);
-                    entry.setTimeJoined(timeJoined); // Manually set the time
+                    // Build WaitlistEntry with hardware ID + time
+                    WaitlistEntry entry = new WaitlistEntry(hardwareID);
+                    entry.setTimeJoined(timeJoined);
+
                     entryList.add(entry);
 
                 } catch (Exception e) {
@@ -1053,4 +1157,50 @@ public class Database {
         }
         return entryList;
     }
+
+    /**
+     * Retrieves a list of Event objects for the given list of event IDs.
+     * This method reuses {@link #getEvent(Long)} for each ID and aggregates
+     * the results into a single Task. Any events that cannot be found or
+     * parsed (getEvent returns null) are skipped in the final list.
+     *
+     * @param eventIds a list of event IDs to look up
+     * @return a Task that resolves to a List<Event> for all successfully
+     *        loaded events. The list may be empty but is never null.
+     */
+    public Task<List<Event>> getEventsByIds(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Tasks.forResult(new ArrayList<>());
+        }
+
+        List<Task<Event>> lookupTasks = new ArrayList<>();
+        for (Long id : eventIds) {
+            if (id != null) {
+                lookupTasks.add(getEvent(id));
+            }
+        }
+
+        if (lookupTasks.isEmpty()) {
+            return Tasks.forResult(new ArrayList<>());
+        }
+
+        return Tasks
+                .whenAllSuccess(lookupTasks)
+                .continueWith(task -> {
+                    List<?> rawResults = task.getResult();
+                    List<Event> events = new ArrayList<>();
+
+                    if (rawResults != null) {
+                        for (Object obj : rawResults) {
+                            if (obj instanceof Event) {
+                                events.add((Event) obj);
+                            }
+                            // if null or wrong type, skip
+                        }
+                    }
+
+                    return events;
+                });
+    }
+
 }

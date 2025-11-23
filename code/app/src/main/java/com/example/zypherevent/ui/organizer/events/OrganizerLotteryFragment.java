@@ -144,6 +144,7 @@ public class OrganizerLotteryFragment extends Fragment {
         }
 
         int sampleSize;
+
         try {
             sampleSize = Integer.parseInt(input);
         } catch (NumberFormatException e) {
@@ -168,40 +169,57 @@ public class OrganizerLotteryFragment extends Fragment {
         Collections.shuffle(waitlistEntries);
 
         // Pick the first n entrants after shuffle
-        List<WaitlistEntry> selectedEntrants = new ArrayList<>(waitlistEntries.subList(0, n));
-        List<WaitlistEntry> deniedEntrants = new ArrayList<>(waitlistEntries.subList(n, waitlistEntries.size()));
+        List<WaitlistEntry> entrantsToInvite = new ArrayList<>(waitlistEntries.subList(0, n));
+        List<WaitlistEntry> entrantsWithoutInvite = new ArrayList<>(waitlistEntries.subList(n, waitlistEntries.size()));
 
         //Update the event in database
-        updateEventWIthLotteryResults(selectedEntrants, deniedEntrants);
+        updateEventWithLotteryResults(entrantsToInvite, entrantsWithoutInvite);
     }
 
     /**
-     * Updates the event in the Database and sends notification
+     * Updates the event in the Database and sends notifications.
      *
-     * @param selected List of WaitlistEntry objects that were selected
-     * @param denied List of WaitlistEntry objects that were not selected
+     * Selected entrants:
+     *  - moved from waitlist → invited list
+     * Non-selected entrants:
+     *  - remain on the waitlist for future lotteries
+     *
+     * @param entrantsToInvite List of WaitlistEntry objects that were selected by the lottery
+     * @param entrantsWithoutInvite List of WaitlistEntry objects that were not selected by lottery
+     *
      */
-    private void updateEventWIthLotteryResults(List<WaitlistEntry> selected, List<WaitlistEntry> denied) {
-        for (WaitlistEntry entry : selected) {
-            currentEvent.addEntrantToAcceptedList(entry.getEntrant());
+    private void updateEventWithLotteryResults(List<WaitlistEntry> entrantsToInvite, List<WaitlistEntry> entrantsWithoutInvite) {
+        // Selected entrants get invitations
+        for (WaitlistEntry entry : entrantsToInvite) {
+            String entrantId = entry.getEntrantHardwareID();
+
+            // Add to invited list
+            currentEvent.addEntrantToInvitedList(entrantId);
+
+            // Remove from waitlist so they aren't drawn again while invite is pending
             currentEvent.removeEntrantFromWaitList(entry);
         }
 
-        // Keep a record of the denied entrants for future lottery
-        Log.d(TAG, denied.size() + " entrants remain on waitlist for future lottery");
+        // Denied entrants: we *do not* remove them from the waitlist.
+        // They stay for future lottery runs.
+        Log.d(TAG, entrantsWithoutInvite.size() + " entrants remain on waitlist for future lottery");
 
-        // Update event in Database
+        // Persist updated event
         db.setEventData(eventId, currentEvent)
                 .addOnSuccessListener(v -> {
                     Log.d(TAG, "Successfully updated event with lottery results");
 
-                    // Send notification to selected entrants
-                    sendInvitationNotification(selected);
+                    // Notify selected entrants that they've been invited
+                    sendInvitationNotification(entrantsToInvite);
 
-                    // Send notification to denied entrants
-                    sendWaitlistNotification(denied);
+                    // Notify non-selected entrants that they're still on the waitlist
+                    sendWaitlistNotification(entrantsWithoutInvite);
 
-                    Toast.makeText(getContext(), "Lottery complete! Invited " + selected.size() + " entrants.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(
+                            getContext(),
+                            "Lottery complete! Invited " + entrantsToInvite.size() + " entrants.",
+                            Toast.LENGTH_SHORT
+                    ).show();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error updating event", e);
@@ -215,7 +233,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void sendInvitationNotification(List<WaitlistEntry> selected) {
         for (WaitlistEntry entry : selected) {
-            String entrantID = entry.getEntrant().getHardwareID();
+            String entrantID = entry.getEntrantHardwareID();
 
             db.getUniqueEventID().addOnSuccessListener(notificationID -> {
                 Notification notification = new Notification(notificationID, organizerID, entrantID,
@@ -238,7 +256,7 @@ public class OrganizerLotteryFragment extends Fragment {
      */
     private void sendWaitlistNotification(List<WaitlistEntry> denied) {
         for (WaitlistEntry entry : denied) {
-            String entrantID = entry.getEntrant().getHardwareID();
+            String entrantID = entry.getEntrantHardwareID();
 
             db.getUniqueEventID().addOnSuccessListener(notificationID -> {
                 Notification notification = new Notification(notificationID, organizerID, entrantID,

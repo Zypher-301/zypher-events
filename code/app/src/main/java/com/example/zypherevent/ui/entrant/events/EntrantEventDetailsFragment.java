@@ -39,8 +39,16 @@ public class EntrantEventDetailsFragment extends Fragment {
      */
     private static final String TAG = "EntrantAllEvents";
 
+    /**
+     * Argument key for passing an Entrant's hardware ID into this fragment.
+     */
+    public static final String ARG_ENTRANT_HARDWARE_ID = "arg_entrant_hardware_id";
+
     /** The event to display. */
     private Event event;
+
+    /** The hardware ID of the entrant viewing this event. */
+    private String entrantHardwareId;
 
     /**
      * Required empty public constructor for fragment instantiation.
@@ -63,6 +71,7 @@ public class EntrantEventDetailsFragment extends Fragment {
             if (obj instanceof Event) {
                 event = (Event) obj;
             }
+            entrantHardwareId = getArguments().getString(ARG_ENTRANT_HARDWARE_ID);
         }
     }
 
@@ -100,6 +109,7 @@ public class EntrantEventDetailsFragment extends Fragment {
         TextView textOrganizerId = view.findViewById(R.id.text_organizer_id);
         TextView textWaitlistInfo = view.findViewById(R.id.text_waitlist_info);
         TextView textRegistrationStatus = view.findViewById(R.id.text_registration_status);
+        TextView textEntrantStatus = view.findViewById(R.id.text_entrant_status);
 
         // Date formatter
         DateFormat dateTimeFormat =
@@ -189,6 +199,36 @@ public class EntrantEventDetailsFragment extends Fragment {
             waitlistText = "Waitlist: " + waitlistSize + " (no limit)";
         }
         textWaitlistInfo.setText(waitlistText);
+
+        // entrant's status
+        if (!TextUtils.isEmpty(entrantHardwareId)) {
+            Event.EntrantStatus entrantStatus = event.getEntrantStatus(entrantHardwareId);
+
+            switch (entrantStatus) {
+                case ACCEPTED:
+                    textEntrantStatus.setText("Your status: Accepted");
+                    textEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case INVITED:
+                    textEntrantStatus.setText("Your status: Invited");
+                    textEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case WAITLISTED:
+                    textEntrantStatus.setText("Your status: On waitlist");
+                    textEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case DECLINED:
+                    textEntrantStatus.setText("Your status: Declined");
+                    textEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case NONE:
+                default:
+                    textEntrantStatus.setVisibility(View.GONE);
+                    break;
+            }
+        } else {
+            textEntrantStatus.setVisibility(View.GONE);
+        }
 
         return view;
     }

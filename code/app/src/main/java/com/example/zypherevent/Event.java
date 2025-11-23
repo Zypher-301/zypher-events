@@ -103,6 +103,32 @@ public class Event implements Serializable {
     private ArrayList<String> declinedEntrants;
 
     /**
+     * The status of the join and leave waitlist operation.
+     */
+    public enum WaitlistOperationResult {
+        SUCCESS,
+        ALREADY_INVITED,
+        ALREADY_ACCEPTED,
+        ALREADY_DECLINED,
+        ALREADY_ON_WAITLIST,
+        NOT_ON_WAITLIST,
+        REGISTRATION_NOT_STARTED,
+        REGISTRATION_CLOSED,
+        WAITLIST_FULL
+    }
+
+    /**
+     * The status of the entrant's registration.
+     */
+    public enum EntrantStatus {
+        NONE,
+        WAITLISTED,
+        INVITED,
+        ACCEPTED,
+        DECLINED
+    }
+
+    /**
      * Constructs a new Event instance with all event details specified.
      *
      * @param uniqueEventID            the unique identifier for the event
@@ -517,6 +543,123 @@ public class Event implements Serializable {
      */
     public void removeEntrantFromDeclinedList(String entrantHardwareID) {
         declinedEntrants.remove(entrantHardwareID);
+    }
+
+    /**
+     * Attempts to add an entrant to this event's waitlist.
+     * This method enforces:
+     *   The entrant is not already invited, accepted, or declined.
+     *   The entrant is not already on the waitlist.
+     *   The registration window is currently open (if defined).
+     *   The waitlist limit has not been reached (if defined).
+     *
+     * @param entrantHardwareID the hardware ID of the entrant attempting to join
+     * @return a WaitlistOperationResult describing the outcome
+     */
+    public WaitlistOperationResult joinWaitlist(String entrantHardwareID) {
+        if (entrantHardwareID == null || entrantHardwareID.isEmpty()) {
+            throw new IllegalArgumentException("Entrant hardware ID cannot be null or empty");
+        }
+
+        if (invitedEntrants == null) invitedEntrants = new ArrayList<>();
+        if (acceptedEntrants == null) acceptedEntrants = new ArrayList<>();
+        if (declinedEntrants == null) declinedEntrants = new ArrayList<>();
+        if (waitListEntrants == null) waitListEntrants = new ArrayList<>();
+
+        // Already in one of the lists?
+        if (invitedEntrants.contains(entrantHardwareID)) {
+            return WaitlistOperationResult.ALREADY_INVITED;
+        }
+        if (acceptedEntrants.contains(entrantHardwareID)) {
+            return WaitlistOperationResult.ALREADY_ACCEPTED;
+        }
+        if (declinedEntrants.contains(entrantHardwareID)) {
+            return WaitlistOperationResult.ALREADY_DECLINED;
+        }
+
+        // Already on waitlist?
+        for (WaitlistEntry entry : waitListEntrants) {
+            if (entry != null && entrantHardwareID.equals(entry.getEntrantHardwareID())) {
+                return WaitlistOperationResult.ALREADY_ON_WAITLIST;
+            }
+        }
+
+        // Check registration window
+        Date now = new Date();
+        if (registrationStartTime != null && now.before(registrationStartTime)) {
+            return WaitlistOperationResult.REGISTRATION_NOT_STARTED;
+        }
+        if (registrationEndTime != null && now.after(registrationEndTime)) {
+            return WaitlistOperationResult.REGISTRATION_CLOSED;
+        }
+
+        // Enforce waitlist limit (if set)
+        if (waitlistLimit != null && waitListEntrants.size() >= waitlistLimit) {
+            return WaitlistOperationResult.WAITLIST_FULL;
+        }
+
+        // All good – add to waitlist
+        waitListEntrants.add(new WaitlistEntry(entrantHardwareID));
+        return WaitlistOperationResult.SUCCESS;
+    }
+
+    /**
+     * Attempts to remove an entrant from this event's waitlist.
+     *
+     * @param entrantHardwareID the hardware ID of the entrant attempting to leave
+     * @return a WaitlistOperationResult describing the outcome (only SUCCESS or NOT_ON_WAITLIST)
+     */
+    public WaitlistOperationResult leaveWaitlist(String entrantHardwareID) {
+        if (entrantHardwareID == null || entrantHardwareID.isEmpty()) {
+            throw new IllegalArgumentException("Entrant hardware ID cannot be null or empty");
+        }
+
+        if (waitListEntrants == null || waitListEntrants.isEmpty()) {
+            return WaitlistOperationResult.NOT_ON_WAITLIST;
+        }
+
+        boolean removed = waitListEntrants.removeIf(
+                entry -> entry != null && entrantHardwareID.equals(entry.getEntrantHardwareID())
+        );
+
+        return removed ? WaitlistOperationResult.SUCCESS
+                : WaitlistOperationResult.NOT_ON_WAITLIST;
+    }
+
+    /**
+     * Determines this entrant's status relative to this event by checking
+     * accepted, invited, declined, and waitlist collections.
+     *
+     * @param entrantHardwareID the entrant's hardware ID to look up
+     * @return the EntrantStatus of the entrant for this event
+     */
+    public EntrantStatus getEntrantStatus(String entrantHardwareID) {
+        if (entrantHardwareID == null || entrantHardwareID.isEmpty()) {
+            return EntrantStatus.NONE;
+        }
+
+        if (acceptedEntrants != null && acceptedEntrants.contains(entrantHardwareID)) {
+            return EntrantStatus.ACCEPTED;
+        }
+
+        if (invitedEntrants != null && invitedEntrants.contains(entrantHardwareID)) {
+            return EntrantStatus.INVITED;
+        }
+
+        if (declinedEntrants != null && declinedEntrants.contains(entrantHardwareID)) {
+            return EntrantStatus.DECLINED;
+        }
+
+        if (waitListEntrants != null) {
+            for (WaitlistEntry entry : waitListEntrants) {
+                if (entry != null &&
+                        entrantHardwareID.equals(entry.getEntrantHardwareID())) {
+                    return EntrantStatus.WAITLISTED;
+                }
+            }
+        }
+
+        return EntrantStatus.NONE;
     }
 
     // ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!!

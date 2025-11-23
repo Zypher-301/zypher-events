@@ -535,7 +535,16 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Initially Added by Arunavo Dutta, Modified by Elliot
-     * Handles the "Join Waitlist" button click for an event.
+     * Handles the "Join Waitlist" action for the given event.
+     *
+     * If the event requires geolocation and the current user does not have geolocation enabled,
+     * a message is shown and no changes are made. Otherwise, this method delegates to
+     * {@link Event#joinWaitlist(String)} and displays feedback based on the returned
+     * {@link Event.WaitlistOperationResult}. On success, the user is added to the event's
+     * waitlist in the database, their registered event history is updated, and the event list
+     * is reloaded to reflect the change.
+     *
+     * @param event the event for which the user is attempting to join the waitlist
      */
     @Override
     public void onJoinClick(Event event) {
@@ -611,7 +620,14 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
     /**
      * Initially added by Arunavo Dutta, modified by Elliot
-     * Handles the "Leave Waitlist" button click for an event.
+     * Handles the "Leave Waitlist" action for the given event.
+     * This method first attempts to remove the current user from the event's waitlist via
+     * {@link Event#leaveWaitlist(String)}. If the user is not on the waitlist, a message is
+     * shown and no further changes are made. On success, the user's registered event history
+     * is updated locally, the change is persisted to the database, and the event list is
+     * reloaded. Any errors during persistence are logged and surfaced to the user.
+     *
+     * @param event the event for which the user is leaving the waitlist
      */
     @Override
     public void onLeaveClick(Event event) {

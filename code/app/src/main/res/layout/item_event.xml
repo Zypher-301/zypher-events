@@ -62,7 +62,7 @@
             android:layout_marginTop="2dp"
             tools:text="Waiting list: 52 people" />
 
-        <!-- NEW: Entrant status -->
+        <!-- Entrant status -->
         <TextView
             android:id="@+id/tvEntrantStatus"
             android:layout_width="0dp"

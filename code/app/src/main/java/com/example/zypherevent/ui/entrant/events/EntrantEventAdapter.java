@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.entrant.events;
 
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 import com.example.zypherevent.WaitlistEntry;
@@ -270,6 +272,20 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
                     listener.onLeaveClick(event);
                 }
             });
+
+            // load poster image with Glide
+            String posterUrl = event.getPosterURL();
+            if (!TextUtils.isEmpty(posterUrl)) {
+                Glide.with(itemView.getContext())
+                        .load(posterUrl)
+                        .placeholder(R.drawable.ic_images)   // fallback while loading
+                        .error(R.drawable.ic_images) // if URL fails
+                        .centerCrop()
+                        .into(imgPoster);
+            } else {
+                imgPoster.setImageResource(R.drawable.ic_images);
+            }
+
 
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }

@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.organizer.events;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 
@@ -98,8 +100,19 @@ public class OrganizerEventsAdapter extends RecyclerView.Adapter<OrganizerEvents
             btnEntrantList.setOnClickListener(v -> listener.onEntrantListClick(event));
             btnMenu.setOnClickListener(v -> listener.onMenuClick(event, v));
 
-            // Set the placeholder image
-            imgPoster.setImageResource(R.drawable.ic_images);
+            // load poster from URL if available
+            String posterUrl = event.getPosterURL();
+            if (!TextUtils.isEmpty(posterUrl)) {
+                Glide.with(itemView.getContext())
+                        .load(posterUrl)
+                        .placeholder(R.drawable.ic_images)
+                        .error(R.drawable.ic_images)
+                        .centerCrop()
+                        .into(imgPoster);
+            } else {
+                // show placeholder otherwise
+                imgPoster.setImageResource(R.drawable.ic_images);
+            }
         }
     }
 }

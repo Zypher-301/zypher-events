@@ -42,22 +42,52 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Elliot Chrystal
+ * Displays an interactive map view of all entrant locations for events created by an organizer
+ * This fragment provides organizers with a map of participation in their events.
+ * Entrants who have geolocation enabled and are associated with a selected event are shown as
+ * a marker (waitlisted, invited, accepted, or denied). Each marker reflects the
+ * entrant’s current relationship to the event, and clicking a marker displays a label with
+ * the entrant’s name.
  *
- * @version 1.0
+ * @author Elliot Chrystal
+ * @version 2.0
  */
 public class OrganizerEventsMapFragment extends Fragment {
 
+    /**
+     * The map view used to display entrant locations for organizer events.
+     */
     private MapView mapView;
 
+    /**
+     * The currently logged-in organizer viewing their events.
+     */
     private Organizer currentOrganizer;
 
+    /**
+     * The list of events created by the current organizer, used to populate the spinner.
+     */
     private List<Event> organizerEvents;
 
+    /**
+     * Public no-argument constructor required for fragment instantiation.
+     */
     public OrganizerEventsMapFragment() {
         // public no-arg constructor required
     }
 
+    /**
+     * Inflates the organizer events map layout and configures the map and event filter spinner.
+     * This method initializes the osmdroid MapView, loads the current organizer
+     * from the hosting OrganizerActivity, fetches all events, filters them to those
+     * owned by the organizer, and populates the spinner with event names. When an event is
+     * selected, the map is updated with mappoints representing entrants for that event.
+     *
+     * @param inflater           the layout inflater used to inflate the fragment view
+     * @param container          the parent view that the fragment's UI should be attached to, or null
+     * @param savedInstanceState the previously saved state, or Null if none
+     * @return the root view for this fragment's UI
+     */
     @SuppressLint("ClickableViewAccessibility")
     @Nullable
     @Override
@@ -186,11 +216,30 @@ public class OrganizerEventsMapFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Retrieves all events from the database.
+     * This method delegates to {@link Database#getAllEventsList()} and returns the
+     * resulting task. The full event list is later filtered to those owned by the
+     * current organizer before being used to populate the spinner.
+     *
+     * @return a task that resolves to a list of all Event objects
+     */
     public Task<List<Event>> getEvents() {
         Database db = new Database();
         return db.getAllEventsList();
     }
 
+    /**
+     * Builds a list of mapPoints instances representing participants for the given event.
+     * This method inspects the event's waitlisted, invited, accepted, and declined entrants,
+     * looks up each corresponding User from the database, and converts those users
+     * who are Entrants with geolocation enabled into MapPoints. Each map point
+     * is tagged with a Status reflecting the entrant's status for the event.
+     * If the event is null or no entrants are found, an empty list is returned.
+     *
+     * @param event the event whose participant locations should be resolved
+     * @return a task that resolves to a list of MapPoints for the event
+     */
     public Task<List<MapPoint>> getMapPoints(Event event) {
         if (event == null) {
             return Tasks.forResult(new ArrayList<>());
@@ -303,8 +352,10 @@ public class OrganizerEventsMapFragment extends Fragment {
     }
 
     /**
-     * Adds all provided map points to the map, centers the view on them,
-     * and adjusts the zoom level so that all points fit within the viewport.
+     * Adds all provided map points to the map and adjusts the viewport.
+     * Existing markers and info windows are cleared, new markers are added for each
+     * mappoint, and the map is either centered on a single point or zoomed
+     * to fit all points within a bounding box when multiple locations are present.
      *
      * @param mapPoints a list of MapPoint objects to display
      */
@@ -351,8 +402,10 @@ public class OrganizerEventsMapFragment extends Fragment {
     }
 
     /**
-     * Adds a marker to the map for the given MapPoint, using a status-specific icon
-     * and a label displayed in the marker info window.
+     * Adds a marker to the map for the given MapPoint.
+     * The marker's icon is chosen based on the point's MapPoint.Status, and the
+     * entrant label is shown in a custom LabelInfoWindow when the marker is tapped.
+     * If the map view is not available, no marker is added.
      *
      * @param mapPoint the MapPoint to display on the map
      */
@@ -409,12 +462,22 @@ public class OrganizerEventsMapFragment extends Fragment {
         mapView.invalidate();
     }
 
+    /**
+     * Resumes the map view when the fragment becomes active.
+     * This forwards the lifecycle event to osmdroid's MapView so that it can
+     * properly manage resources such as the compass, location overlays, and tile loading.
+     */
     @Override
     public void onResume() {
         super.onResume();
         if (mapView != null) mapView.onResume(); // needed for osmdroid
     }
 
+    /**
+     * Pauses the map view when the fragment is no longer in the foreground.
+     * This forwards the lifecycle event to osmdroid's MapView so that it can
+     * pause ongoing work and release resources while the fragment is not visible.
+     */
     @Override
     public void onPause() {
         super.onPause();

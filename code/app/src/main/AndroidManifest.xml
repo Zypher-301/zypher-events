@@ -18,6 +18,8 @@
         android:name="org.osmdroid.CONF_USERAGENT_VALUE"
         android:value="com.example.zypherevent" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

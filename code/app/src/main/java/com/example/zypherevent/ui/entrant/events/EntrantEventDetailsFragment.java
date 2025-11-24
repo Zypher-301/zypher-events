@@ -12,7 +12,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.bumptech.glide.Glide;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 
@@ -109,12 +108,27 @@ public class EntrantEventDetailsFragment extends Fragment {
         String posterUrl = event.getPosterURL();
         if (!TextUtils.isEmpty(posterUrl)) {
             imagePoster.setVisibility(View.VISIBLE);
-            Glide.with(this)
-                    .load(posterUrl)
-                    .into(imagePoster);
+            imagePoster.setImageResource(R.drawable.ic_launcher_foreground); //temp placeholder
+
+            new Thread(() -> {
+                try {
+                    java.net.URL url = new java.net.URL(posterUrl);
+                    final android.graphics.Bitmap bmp =
+                            android.graphics.BitmapFactory.decodeStream(
+                                    url.openConnection().getInputStream()
+                            );
+
+                    imagePoster.post(() -> imagePoster.setImageBitmap(bmp));
+                } catch (Exception e) {
+                    imagePoster.post(() ->
+                            imagePoster.setImageResource(R.drawable.ic_launcher_foreground));
+                }
+            }).start();
         } else {
-            imagePoster.setVisibility(View.GONE);
+            imagePoster.setVisibility(View.VISIBLE);
+            imagePoster.setImageResource(R.drawable.ic_launcher_foreground);
         }
+
 
         // Basic fields
         textEventName.setText(event.getEventName());

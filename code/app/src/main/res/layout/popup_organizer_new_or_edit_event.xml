@@ -68,6 +68,14 @@
             android:minLines="3" />
 
         <EditText
+            android:id="@+id/edit_poster_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Poster image URL (optional)"
+            android:inputType="textUri" />
+
+        <EditText
             android:id="@+id/edit_lottery_criteria"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -479,7 +479,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editLocation = dialogView.findViewById(R.id.edit_location);
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
-        EditText editDetails = dialogView.findViewById(R.id.edit_details);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         EditText editPosterUrl = dialogView.findViewById(R.id.edit_poster_url);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
@@ -507,7 +506,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
-            String description = editDetails.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             String posterUrl = editPosterUrl.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
@@ -579,8 +577,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            createEvent(eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, posterUrl, requiresGeo);
 
             dialog.dismiss();
         });
@@ -655,7 +651,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editLocation = dialogView.findViewById(R.id.edit_location);
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
-        EditText editDetails = dialogView.findViewById(R.id.edit_details);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
@@ -677,7 +672,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         if (event.getRegistrationEndTime() != null) {
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
         }
-        editDetails.setText(event.getEventDescription());
 
         String existingCriteria = event.getLotteryCriteria();
         if (existingCriteria != null) {
@@ -716,7 +710,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
-            String description = editDetails.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
@@ -795,8 +788,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, posterUrl, requiresGeo);
 
             dialog.dismiss();
         });

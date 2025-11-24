@@ -19,7 +19,6 @@ import com.example.zypherevent.EntrantActivity;
 import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
 import com.example.zypherevent.userTypes.Entrant;
-import com.example.zypherevent.userTypes.User;
 
 import java.util.ArrayList;
 import java.util.List;

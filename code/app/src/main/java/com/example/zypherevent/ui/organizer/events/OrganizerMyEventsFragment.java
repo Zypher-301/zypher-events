@@ -583,8 +583,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editLocation = dialogView.findViewById(R.id.edit_location);
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
-        EditText editDetails = dialogView.findViewById(R.id.edit_details);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
+        EditText editPosterUrl = dialogView.findViewById(R.id.edit_poster_url);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
@@ -610,8 +610,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
-            String description = editDetails.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
+            String posterUrl = editPosterUrl.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
@@ -681,8 +681,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            createEvent(eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, requiresGeo);
 
             dialog.dismiss();
         });
@@ -709,7 +707,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      */
     private void createEvent(String eventName, String description, Date startTime, String location,
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
-                             String lotteryCriteria, boolean requiresGeolocation) {
+                             String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -734,6 +732,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     registrationStartTime,
                     registrationEndTime,
                     organizerUser.getHardwareID(),
+                    posterUrl,
                     requiresGeolocation
             );
 
@@ -782,12 +781,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText editLocation = dialogView.findViewById(R.id.edit_location);
         EditText editRegStart = dialogView.findViewById(R.id.edit_reg_start);
         EditText editRegEnd = dialogView.findViewById(R.id.edit_reg_end);
-        EditText editDetails = dialogView.findViewById(R.id.edit_details);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
         Button saveButton = dialogView.findViewById(R.id.save);
+        EditText editPosterUrl = dialogView.findViewById(R.id.edit_poster_url);
 
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Edit Event");
@@ -803,11 +802,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         if (event.getRegistrationEndTime() != null) {
             editRegEnd.setText(Utils.formatDateForDisplay(event.getRegistrationEndTime()));
         }
-        editDetails.setText(event.getEventDescription());
 
         String existingCriteria = event.getLotteryCriteria();
         if (existingCriteria != null) {
             editLotteryCriteria.setText(existingCriteria);
+        }
+
+        String existingPosterUrl = event.getPosterURL();
+        if (existingPosterUrl != null) {
+            editPosterUrl.setText(existingPosterUrl);
         }
 
         Integer currentLimit = event.getWaitlistLimit();
@@ -837,11 +840,13 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String regStartStr = editRegStart.getText().toString().trim();
             String regEndStr = editRegEnd.getText().toString().trim();
-            String description = editDetails.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
+            String posterUrl = editPosterUrl.getText().toString().trim();
+
+
 
             if (TextUtils.isEmpty(eventName)) {
                 Toast.makeText(getContext(), "Event name is required", Toast.LENGTH_SHORT).show();
@@ -913,8 +918,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            updateEvent(event.getUniqueEventID(), eventName, description, startTime, location,
-                    registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, requiresGeo);
 
             dialog.dismiss();
         });
@@ -942,7 +945,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      */
     private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
-                             String lotteryCriteria, boolean requiresGeolocation) {
+                             String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
         Event updatedEvent = new Event(
@@ -954,6 +957,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 registrationStartTime,
                 registrationEndTime,
                 organizerUser.getHardwareID(),
+                posterUrl,
                 requiresGeolocation
         );
 

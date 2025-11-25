@@ -40,6 +40,8 @@ public class Event implements Serializable {
      */
     private String lotteryCriteria;
 
+
+
     /**
      * The start time of the event.
      */
@@ -238,6 +240,8 @@ public class Event implements Serializable {
     public void setEventDescription(String eventDescription) {
         this.eventDescription = eventDescription;
     }
+
+
 
     /**
      * returns lottery criteria

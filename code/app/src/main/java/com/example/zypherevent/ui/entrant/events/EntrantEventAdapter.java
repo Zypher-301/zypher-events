@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -183,6 +185,25 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         public void bind(final Event event, Entrant currentUser, final OnItemClickListener listener) {
             tvTitle.setText(event.getEventName());
             tvMeta.setText(event.getLocation());
+
+            String posterUrl = event.getPosterURL();
+            if (posterUrl != null && !posterUrl.trim().isEmpty()) {
+                imgPoster.setImageResource(R.drawable.ic_launcher_foreground); //temp while loading
+
+                new Thread(() -> {
+                    try {
+                        java.net.URL url = new java.net.URL(posterUrl);
+                        final Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+
+                        imgPoster.post(() -> imgPoster.setImageBitmap(bmp));
+                    } catch (Exception e) {
+                        imgPoster.post(() -> imgPoster.setImageResource(R.drawable.ic_launcher_foreground));
+
+                    }
+                }).start();
+            } else {
+                imgPoster.setImageResource(R.drawable.ic_launcher_foreground);
+            }
 
             int waitlistSize = event.getWaitListEntrants().size();
             tvWaitlistCount.setText("On Waiting List: " + waitlistSize);

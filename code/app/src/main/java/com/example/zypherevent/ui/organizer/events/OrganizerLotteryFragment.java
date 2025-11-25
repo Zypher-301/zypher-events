@@ -1,6 +1,11 @@
 package com.example.zypherevent.ui.organizer.events;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,9 +22,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
-import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
 import com.example.zypherevent.WaitlistEntry;
+import com.example.zypherevent.notifications.NotificationService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,9 +32,12 @@ import java.util.List;
 
 /**
  * @author Britney Kunchidi
- * @author Tom Yang (connected firebase to waiting list and implemented sending notifications to accepted and declined entrants)
+ * @author Tom Yang (connected firebase to waiting list and implemented sending notifications,
+ * both in-app and Android level to accepted and declined entrants)
+ * @version 2.0
  * Simple Activity to run the lottery for an event.
  * Uses popup_organizer_lottery.xml as its layout.
+ * Uses NotificationService for sending Android level notifications
  *
  */
 public class OrganizerLotteryFragment extends Fragment {
@@ -46,9 +54,34 @@ public class OrganizerLotteryFragment extends Fragment {
     private ArrayList<WaitlistEntry> waitlistEntries = new ArrayList<>();
     private WaitlistEntrantAdapter waitlistAdapter;
 
+    // NotificationService binding
+    private NotificationService notificationService;
+    private boolean serviceBound = false;
+
     public OrganizerLotteryFragment() {
         // Required empty public constructor
     }
+
+    /**
+     * ServiceConnection callback for binding to the NotificationService.
+     * When connected, starts listening for notifications if the user has notifications enabled.
+     */
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            NotificationService.LocalBinder binder = (NotificationService.LocalBinder) service;
+            notificationService = binder.getService();
+            serviceBound = true;
+            Log.d(TAG, "NotificationService connected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+            notificationService = null;
+            Log.d(TAG, "NotificationService disconnected");
+        }
+    };
 
     /**
      * Sets the event ID for this lottery fragment
@@ -72,6 +105,10 @@ public class OrganizerLotteryFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = new Database();
+
+        // Bind to NotificationService
+        Intent intent = new Intent(getContext(), NotificationService.class);
+        getContext().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Nullable
@@ -117,15 +154,12 @@ public class OrganizerLotteryFragment extends Fragment {
                     if (currentEvent != null && currentEvent.getWaitListEntrants() != null) {
                         waitlistEntries.clear();
                         waitlistEntries.addAll(currentEvent.getWaitListEntrants());
-
                         waitlistAdapter.notifyDataSetChanged();
-
                         Log.d(TAG, "Loaded " + waitlistEntries.size() + " entrants from waitlist");
                     }
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error loading event", e);
-                });
+                .addOnFailureListener(e ->
+                    Log.e(TAG, "Error loading event", e));
     }
 
     /**
@@ -177,7 +211,7 @@ public class OrganizerLotteryFragment extends Fragment {
     }
 
     /**
-     * Updates the event in the Database and sends notifications.
+     * Updates the event in the Database and sends notifications using NotificationService.
      *
      * Selected entrants:
      *  - moved from waitlist → invited list
@@ -221,56 +255,56 @@ public class OrganizerLotteryFragment extends Fragment {
                             Toast.LENGTH_SHORT
                     ).show();
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error updating event", e);
-                });
+                .addOnFailureListener(e ->
+                    Log.e(TAG, "Error updating event", e));
     }
 
     /**
-     * Sends notification to the selected entrants
+     * Sends invitation notifications to the selected entrants using NotificationService
      *
      * @param selected List of WaitlistEntry objects that were selected
      */
     private void sendInvitationNotification(List<WaitlistEntry> selected) {
-        for (WaitlistEntry entry : selected) {
-            String entrantID = entry.getEntrantHardwareID();
-
-            db.getUniqueEventID().addOnSuccessListener(notificationID -> {
-                Notification notification = new Notification(notificationID, organizerID, entrantID,
-                        "You've Been Selected!",
-                        "Congratulations! You have been selected for " + currentEvent.getEventName() + ". Please accept or decline your invitation.");
-
-                db.setNotificationData(notificationID, notification)
-                        .addOnSuccessListener(v ->
-                            Log.d(TAG, "Invitation sent to: " + entrantID))
-                        .addOnFailureListener(e ->
-                                Log.e(TAG, "Failed to send notification to: " + entrantID, e));
-            });
+        if (!serviceBound || notificationService == null) {
+            Log.e(TAG,"NotificationService not bound, cannot send notifications");
+            return;
         }
+
+        String title = "You've Been Selected!";
+        String message = "Congratulations! You have been selected for " + currentEvent.getEventName() + ". Please accept to claim your spot before the deadline.";
+
+        // Get all hardware IDs from selected entrants
+        List<String> entrantIDs = new ArrayList<>();
+        for (WaitlistEntry entry : selected) {
+            entrantIDs.add(entry.getEntrantHardwareID());
+        }
+
+        notificationService.sendBulkNotifications(organizerID, entrantIDs, title, message);
+        Log.d(TAG, "Invitation notification sent to: " + entrantIDs.size() + " entrants");
     }
 
     /**
-     * Sends notification to the non-selected entrants
+     * Sends notification to the non-selected entrants using NotificationService
      *
-     * @param denied List of WaitlistEntry objects that were not selected
+     * @param notSelected List of WaitlistEntry objects that were not selected
      */
-    private void sendWaitlistNotification(List<WaitlistEntry> denied) {
-        for (WaitlistEntry entry : denied) {
-            String entrantID = entry.getEntrantHardwareID();
-
-            db.getUniqueEventID().addOnSuccessListener(notificationID -> {
-                Notification notification = new Notification(notificationID, organizerID, entrantID,
-                        "Event Update",
-                        "You were not selected in "
-                                + currentEvent.getEventName() +
-                                "at this lottery run, but you will remain on the waitlist for future selections.");
-
-                db.setNotificationData(notificationID, notification)
-                        .addOnSuccessListener(v ->
-                                Log.d(TAG, "Invitation sent to: " + entrantID))
-                        .addOnFailureListener(e ->
-                                Log.e(TAG, "Failed to send notification to: " + entrantID, e));
-            });
+    private void sendWaitlistNotification(List<WaitlistEntry> notSelected) {
+        if (!serviceBound || notificationService == null) {
+            Log.e(TAG,"NotificationService not bound, cannot send notifications");
+            return;
         }
+
+        String title = "Event Update";
+        String message = "You were not selected in " + currentEvent.getEventName() +
+                "at this lottery run, but you will remain on the waitlist for future selections.";
+
+        // Get all hardware IDs from waitlist entrants
+        List<String> entrantIDs = new ArrayList<>();
+        for (WaitlistEntry entry : notSelected) {
+            entrantIDs.add(entry.getEntrantHardwareID());
+        }
+
+        notificationService.sendBulkNotifications(organizerID, entrantIDs, title, message);
+        Log.d(TAG, "Waitlist notifications sent to " + entrantIDs.size() + " entrants");
     }
 }

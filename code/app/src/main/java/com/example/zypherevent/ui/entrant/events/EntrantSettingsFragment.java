@@ -166,7 +166,13 @@ public class EntrantSettingsFragment extends Fragment {
         });
 
         // Persist changes
-        binding.btnSaveChanges.setOnClickListener(v -> saveChanges(currentUser));
+        binding.btnSaveChanges.setOnClickListener(v -> {
+            saveChanges(currentUser);
+
+            // Update notification service with the save button
+            EntrantActivity host = (EntrantActivity) requireActivity();
+            host.onNotificationPreferenceChanged(currentUser.getWantsNotifications());
+        });
 
         // Delete profile
         binding.btnDeleteProfile.setOnClickListener(v -> showDeleteConfirmationDialog());

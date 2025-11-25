@@ -479,15 +479,21 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
         return true;
     }
 
+    /**
+     * Starts the EntrantEventDetailsFragment when an event is clicked.
+     *
+     * @param event the event the entrant has clicked
+     */
     @Override
     public void onItemClick(Event event) {
         if (event == null) return;
 
         Bundle args = new Bundle();
         args.putSerializable(EntrantEventDetailsFragment.ARG_EVENT, event);
+        args.putString(EntrantEventDetailsFragment.ARG_ENTRANT_HARDWARE_ID, currentUser.getHardwareID());
 
         NavController navController = NavHostFragment.findNavController(this);
-        navController.navigate(com.example.zypherevent.R.id.nav_entrant_event_details, args);
+        navController.navigate(R.id.nav_entrant_event_details, args);
     }
 
     /**
@@ -528,122 +534,138 @@ public class EntrantAllEventsFragment extends Fragment implements EntrantEventAd
 
 
     /**
-     * Added by Arunavo Dutta
-     * Handles the click event for joining an event's waitlist.
-     * <p>
-     * This method orchestrates the process of an entrant joining an event. It performs a sequence
-     * of asynchronous database operations:
-     * <ol>
-     * <li>Adds the current user to the specified event's waitlist in the database.</li>
-     * <li>Upon success, creates a simplified "clean" version of the event object to avoid
-     * nested data issues in Firestore when saving to the user's profile.</li>
-     * <li>Adds this clean event to the user's local list of registered events.</li>
-     * <li>Saves the updated user object (with the new event history) back to the database.</li>
-     * <li>Finally, refreshes the event list to update the UI, typically changing the
-     * "Join" button to a "Leave" button.</li>
-     * </ol>
-     * Error handling is implemented at each step to log failures and provide feedback to the user
-     * via a {@link Toast}.
+     * Initially Added by Arunavo Dutta, Modified by Elliot
+     * Handles the "Join Waitlist" action for the given event.
      *
-     * @param event The {@link Event} object that the user has chosen to join.
+     * If the event requires geolocation and the current user does not have geolocation enabled,
+     * a message is shown and no changes are made. Otherwise, this method delegates to
+     * {@link Event#joinWaitlist(String)} and displays feedback based on the returned
+     * {@link Event.WaitlistOperationResult}. On success, the user is added to the event's
+     * waitlist in the database, their registered event history is updated, and the event list
+     * is reloaded to reflect the change.
+     *
+     * @param event the event for which the user is attempting to join the waitlist
      */
     @Override
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
 
-        if (event.getRequiresGeolocation()) {
-            if (!currentUser.getUseGeolocation()) {
-                Log.d(TAG, "Geolocation is required for this event, but Entrant does not have it enabled.");
-                Toast.makeText(getContext(), "Geolocation is required for this event. Please enable it in your settings.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        if (event.getRequiresGeolocation() && !currentUser.getUseGeolocation()) {
+            Toast.makeText(getContext(),
+                    "Geolocation is required for this event. Please enable it in your settings.",
+                    Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        Event.WaitlistOperationResult result =
+                event.joinWaitlist(currentUser.getHardwareID());
+
+        switch (result) {
+            case ALREADY_INVITED:
+                Toast.makeText(getContext(),
+                        "You are already invited to this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_ACCEPTED:
+                Toast.makeText(getContext(),
+                        "You have already accepted this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_DECLINED:
+                Toast.makeText(getContext(),
+                        "You have already declined this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_ON_WAITLIST:
+                Toast.makeText(getContext(),
+                        "You are already on the waitlist.", Toast.LENGTH_SHORT).show();
+                return;
+            case REGISTRATION_NOT_STARTED:
+                Toast.makeText(getContext(),
+                        "Registration has not started yet.", Toast.LENGTH_SHORT).show();
+                return;
+            case REGISTRATION_CLOSED:
+                Toast.makeText(getContext(),
+                        "Registration has closed.", Toast.LENGTH_SHORT).show();
+                return;
+            case WAITLIST_FULL:
+                Toast.makeText(getContext(),
+                        "Waitlist is full.", Toast.LENGTH_SHORT).show();
+                return;
+            case SUCCESS:
+                break;
+        }
+
+        // persist that change and update user profile
         db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
-
-                    Event eventForHistory = new Event(
-                            event.getUniqueEventID(),
-                            event.getEventName(),
-                            event.getEventDescription(),
-                            event.getStartTime(),
-                            event.getLocation(),
-                            event.getRegistrationStartTime(),
-                            event.getRegistrationEndTime(),
-                            event.getEventOrganizerHardwareID(),
-                            event.getPosterURL(),
-                            event.getRequiresGeolocation()
-                    );
-
-                    currentUser.addEventToRegisteredEventHistory(eventForHistory.getUniqueEventID());
-
+                    currentUser.addEventToRegisteredEventHistory(event.getUniqueEventID());
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
-                                Log.d(TAG, "User profile updated with new event.");
-                                Toast.makeText(getContext(), "Joined waitlist!", Toast.LENGTH_SHORT).show();
-                                loadEvents(); // Refresh
+                                Toast.makeText(getContext(),
+                                        "Joined waitlist!", Toast.LENGTH_SHORT).show();
+                                loadEvents();
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after joining: ", e);
-                                Toast.makeText(getContext(), "Error saving to profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(),
+                                        "Error saving to profile: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error joining waitlist", e);
-                    String message = e.getMessage();
-                    if (message != null && !message.isEmpty()) {
-                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "Failed to join waitlist", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getContext(),
+                            e.getMessage() != null ? e.getMessage() : "Failed to join waitlist",
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 
     /**
-     * Added by Arunavo Dutta
-     * Handles the "Leave Waitlist" button click for an event.
-     * <p>
-     * This method orchestrates the process for an entrant to leave the waitlist of a specific event.
-     * It performs the following sequential, asynchronous operations:
-     * <ol>
-     * <li>Calls the database to remove the current user from the specified event's waitlist.</li>
-     * <li>Upon successful removal from the event's waitlist, it removes the corresponding event from the user's
-     * local list of registered events.</li>
-     * <li>Saves the updated user object back to the database to persist the change in their event history.</li>
-     * <li>Refreshes the list of all events to update the UI, which will now show the option to "Join" the waitlist again for that event.</li>
-     * </ol>
-     * Each step includes error handling. If a database operation fails, an error is logged, and a
-     * {@link Toast} message is shown to the user to inform them of the failure. A success message is shown upon completion.
+     * Initially added by Arunavo Dutta, modified by Elliot
+     * Handles the "Leave Waitlist" action for the given event.
+     * This method first attempts to remove the current user from the event's waitlist via
+     * {@link Event#leaveWaitlist(String)}. If the user is not on the waitlist, a message is
+     * shown and no further changes are made. On success, the user's registered event history
+     * is updated locally, the change is persisted to the database, and the event list is
+     * reloaded. Any errors during persistence are logged and surfaced to the user.
      *
-     * @param event The {@link Event} object from which the user is leaving the waitlist.
+     * @param event the event for which the user is leaving the waitlist
      */
     @Override
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
 
+        Event.WaitlistOperationResult result =
+                event.leaveWaitlist(currentUser.getHardwareID());
+
+        if (result == Event.WaitlistOperationResult.NOT_ON_WAITLIST) {
+            Toast.makeText(getContext(),
+                    "You are not on the waitlist for this event.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Local user history update
         currentUser.removeEventFromRegisteredEventHistory(event.getUniqueEventID());
         adapter.notifyDataSetChanged();
 
         db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
                 .addOnSuccessListener(aVoid -> {
-
-                    // use the ID directly
-                    currentUser.removeEventFromRegisteredEventHistory(event.getUniqueEventID());
-
                     db.setUserData(currentUser.getHardwareID(), currentUser)
                             .addOnSuccessListener(aVoid1 -> {
-                                Log.d(TAG, "User profile updated, event removed.");
-                                Toast.makeText(getContext(), "Left waitlist.", Toast.LENGTH_SHORT).show();
-                                loadEvents(); // same as before
+                                Toast.makeText(getContext(),
+                                        "Left waitlist.", Toast.LENGTH_SHORT).show();
+                                loadEvents();
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Error saving user data after leaving: ", e);
-                                Toast.makeText(getContext(), "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(),
+                                        "Error updating profile: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
                             });
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error leaving waitlist", e);
-                    Toast.makeText(getContext(), "Error leaving waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),
+                            "Error leaving waitlist: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 

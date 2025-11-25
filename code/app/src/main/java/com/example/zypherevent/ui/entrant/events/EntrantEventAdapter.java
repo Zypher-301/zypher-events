@@ -1,5 +1,6 @@
 package com.example.zypherevent.ui.entrant.events;
 
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 import com.example.zypherevent.WaitlistEntry;
@@ -20,7 +22,6 @@ import com.example.zypherevent.userTypes.Entrant;
 import java.util.List;
 
 /**
- * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * An adapter to display a list of {@link Event} objects for an {@link Entrant} in a {@link RecyclerView}.
  * <p>
  * This adapter is responsible for creating views for each event, binding event data to those views,
@@ -136,6 +137,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
         // Declare the views from the layout
         ImageView imgPoster;
         TextView tvTitle, tvMeta, tvWaitlistCount;
+        TextView tvEntrantStatus;
         TextView tvLotteryCriteriaLabel, tvLotteryCriteria;
         LinearLayout slotActions;
         Button btnJoinWaitlist, btnLeaveWaitlist;
@@ -158,6 +160,7 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
             tvWaitlistCount = itemView.findViewById(R.id.tvWaitlistCount);
             tvLotteryCriteriaLabel = itemView.findViewById(R.id.tvLotteryCriteriaLabel);
             tvLotteryCriteria = itemView.findViewById(R.id.tvLotteryCriteria);
+            tvEntrantStatus = itemView.findViewById(R.id.tvEntrantStatus);
             slotActions = itemView.findViewById(R.id.slotActions);
             btnJoinWaitlist = itemView.findViewById(R.id.btnJoinWaitlist);
             btnLeaveWaitlist = itemView.findViewById(R.id.btnLeaveWaitlist);
@@ -197,55 +200,92 @@ public class EntrantEventAdapter extends RecyclerView.Adapter<EntrantEventAdapte
 
             slotActions.setVisibility(View.VISIBLE);
 
-            // Check registration window status
             boolean registrationOpen = event.isRegistrationOpen();
             String registrationStatus = event.getRegistrationStatus();
 
-            // Check if the current user is on the waitlist.
-            boolean isOnWaitlist = false;
             String myId = currentUser.getHardwareID();
+            Event.EntrantStatus entrantStatus = event.getEntrantStatus(myId);
 
-            for (WaitlistEntry entry : event.getWaitListEntrants()) {
-                String entryId = entry.getEntrantHardwareID();
-                if (entryId != null && entryId.equals(myId)) {
-                    isOnWaitlist = true;
+            // ----- show entrant status label -----
+            switch (entrantStatus) {
+                case ACCEPTED:
+                    tvEntrantStatus.setText("Your status: Accepted");
+                    tvEntrantStatus.setVisibility(View.VISIBLE);
                     break;
-                }
+                case INVITED:
+                    tvEntrantStatus.setText("Your status: Invited");
+                    tvEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case DECLINED:
+                    tvEntrantStatus.setText("Your status: Declined");
+                    tvEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case WAITLISTED:
+                    tvEntrantStatus.setText("Your status: On waitlist");
+                    tvEntrantStatus.setVisibility(View.VISIBLE);
+                    break;
+                case NONE:
+                default:
+                    tvEntrantStatus.setVisibility(View.GONE);
+                    break;
             }
 
-            if (isOnWaitlist) {
-                // User is ON the waitlist: Show "Leave" (only enabled during registration window)
-                btnJoinWaitlist.setVisibility(View.GONE);
+            // ----- control join/leave buttons -----
+            if (entrantStatus == Event.EntrantStatus.ACCEPTED
+                    || entrantStatus == Event.EntrantStatus.INVITED
+                    || entrantStatus == Event.EntrantStatus.DECLINED) {
+
+                slotActions.setVisibility(View.INVISIBLE);
+                btnJoinWaitlist.setVisibility(View.INVISIBLE);
+                btnLeaveWaitlist.setVisibility(View.INVISIBLE);
+
+            } else if (entrantStatus == Event.EntrantStatus.WAITLISTED) {
+
+                slotActions.setVisibility(View.VISIBLE);
+                btnJoinWaitlist.setVisibility(View.INVISIBLE);
                 btnLeaveWaitlist.setVisibility(View.VISIBLE);
                 btnLeaveWaitlist.setEnabled(registrationOpen);
+
             } else {
-                // User is NOT on the waitlist
-                btnLeaveWaitlist.setVisibility(View.GONE);
+                slotActions.setVisibility(View.VISIBLE);
+                btnLeaveWaitlist.setVisibility(View.INVISIBLE);
                 btnJoinWaitlist.setVisibility(View.VISIBLE);
 
                 if (registrationOpen) {
-                    // Registration is open: Show enabled "Join" button
                     btnJoinWaitlist.setEnabled(true);
                     btnJoinWaitlist.setText("Join Waitlist");
                 } else {
-                    // Registration is closed/not started: Show disabled button with status
                     btnJoinWaitlist.setEnabled(false);
                     btnJoinWaitlist.setText(registrationStatus);
                 }
             }
 
-            // Set the click listeners to call the methods in the fragment
+            // Click listeners
             btnJoinWaitlist.setOnClickListener(v -> {
-                if (registrationOpen) {
+                if (registrationOpen && entrantStatus == Event.EntrantStatus.NONE) {
                     listener.onJoinClick(event);
                 }
             });
 
             btnLeaveWaitlist.setOnClickListener(v -> {
-                if (registrationOpen) {
+                if (registrationOpen && entrantStatus == Event.EntrantStatus.WAITLISTED) {
                     listener.onLeaveClick(event);
                 }
             });
+
+            // load poster image with Glide
+            String posterUrl = event.getPosterURL();
+            if (!TextUtils.isEmpty(posterUrl)) {
+                Glide.with(itemView.getContext())
+                        .load(posterUrl)
+                        .placeholder(R.drawable.ic_images)   // fallback while loading
+                        .error(R.drawable.ic_images) // if URL fails
+                        .centerCrop()
+                        .into(imgPoster);
+            } else {
+                imgPoster.setImageResource(R.drawable.ic_images);
+            }
+
 
             itemView.setOnClickListener(v -> listener.onItemClick(event));
         }

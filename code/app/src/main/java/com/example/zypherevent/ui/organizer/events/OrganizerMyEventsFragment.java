@@ -48,6 +48,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Fragment that displays and manages events created by the current Organizer.
+ * shows a scrollable list of the organizer's events and provides actions to create new events, edit existing ones,
+ * export accepted entrants as CSV, run waitlist lotteries, and generate or share QR codes for
+ * event check-in or promotion. It serves as the main event management screen for organizer users.
+ */
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 
     private static final String TAG = "OrganizerMyEvents";
@@ -60,9 +66,22 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     private Organizer organizerUser;
     private FloatingActionButton fabCreateEvent;
 
+    /**
+     * Default no-argument constructor required by the Fragment framework.
+     */
     public OrganizerMyEventsFragment() {
     }
 
+    /**
+     * Inflates the layout for this fragment.
+     * This method inflates and returns the root view.
+     * Further view lookups and initialization are performed in onViewCreated(View, Bundle)
+     *
+     * @param inflater  the LayoutInflater used to inflate the layout XML
+     * @param container the parent view that the fragment's UI should attach to, or null
+     * @param savedInstanceState previously saved state, or null if none
+     * @return the root view for this fragment's UI
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -71,6 +90,17 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         return inflater.inflate(R.layout.fragment_organizer_my_events, container, false);
     }
 
+    /**
+     * Called after the fragment's view has been created.
+     * This method initializes the Database instance, resolves the current
+     * Organizer from the hosting OrganizerActivity, wires up the RecyclerView, adapter,
+     * empty-state view and the "Create Event" floating action button. If organizer information is unavailable,
+     * an error is logged and shown to the user and initialization is aborted. Finally,
+     * it triggers the initial load of organizer events via loadEvents()
+     *
+     * @param view               the fragment's root view
+     * @param savedInstanceState previously saved instance state, or null if none
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -145,14 +175,25 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
     }
 
+    /**
+     * Handles the "View Waitlist" click action for a given event.
+     * When the organizer chooses to view entrants for an event, this method opens the
+     * waitlist dialog by delegating to showWaitlistDialog(Event)
+     *
+     * @param event the event whose waitlisted entrants should be displayed
+     */
     @Override
     public void onViewEntrantsClick(Event event) {
         showWaitlistDialog(event);
     }
 
     /**
-     * NEW: Handles "Entrant List" button click.
-     * Navigates to the new fragment to see Accepted/Declined lists.
+     * Handles the "Entrant List" button click for a given event.
+     * This method navigates to a dedicated fragment that displays accepted and declined
+     * entrants for the selected event. The event's unique ID is passed in a Bundle
+     * so the destination fragment can load the correct data.
+     *
+     * @param event the event whose entrant lists should be viewed
      */
     @Override
     public void onEntrantListClick(Event event) {
@@ -169,6 +210,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Navigation.findNavController(requireView()).navigate(R.id.nav_view_entrants_list, bundle);
     }
 
+    /**
+     * Handles overflow menu actions for a specific event row.
+     * This method shows a PopupMenu anchored to the given view, and responds to
+     * menu selections by displaying notifications, showing the event QR code, exporting
+     * accepted entrants as CSV, or opening the edit-event dialog.
+     *
+     * @param event      the event associated with the clicked menu
+     * @param anchorView the view used as an anchor for the popup menu
+     */
     @Override
     public void onMenuClick(Event event, View anchorView) {
         PopupMenu popup = new PopupMenu(getContext(), anchorView);
@@ -195,6 +245,16 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         popup.show();
     }
 
+
+    /**
+     * Builds and displays a dialog containing the CSV export for the given event.
+     * This method calls exportCSV(Event) to generate a comma-separated list
+     * of accepted entrant names, displays the result in a dialog, optionally shows a
+     * registration warning if the event is still open, and provides a button to save
+     * the CSV to the device's Downloads folder.
+     *
+     * @param event the event whose accepted entrants should be exported
+     */
     private void showCSVDialog(Event event) {
         exportCSV(event)
                 .addOnSuccessListener(csvString -> {
@@ -229,6 +289,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 });
     }
 
+    /**
+     * Saves a CSV string to the system Downloads directory using the MediaStore API.
+     * The file name is derived from the event name and the current timestamp, and the
+     * CSV content is written using UTF-8 encoding. A toast message indicates success
+     * or failure.
+     *
+     * @param csvString the CSV content to be written to disk
+     * @param eventName the event name used to construct the output file name
+     */
     private void saveCSVToDownloads(String csvString, String eventName) {
         try {
             String fileName = eventName.replaceAll("[^a-zA-Z0-9]", "_")
@@ -261,6 +330,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
     }
 
+    /**
+     * Exports accepted entrants for an event as a CSV-formatted string.
+     * This method resolves all accepted entrant IDs to Entrant instances, then
+     * constructs a comma-separated list of their full names. If there are no accepted
+     * entrants, an empty string is returned.
+     * @param event the event whose accepted entrants should be exported
+     * @return a Task that completes with a CSV string of accepted entrant names
+     */
     private Task<String> exportCSV(Event event) {
         ArrayList<String> acceptedList = event.getAcceptedEntrants();
         if (acceptedList == null || acceptedList.isEmpty()) {
@@ -296,6 +373,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 });
     }
 
+    /**
+     * Displays a dialog showing the current waitlist and lottery tools for an event.
+     * The dialog lists all waitlisted entrants, provides sorting options, and allows the organizer
+     * to run a random lottery that moves a chosen sample of entrants into the invited list.
+     * Entrants can also be individually accepted. After running
+     * a lottery, the event list is refreshed to keep the UI in sync.
+     *
+     * @param event the event whose waitlist should be displayed and managed
+     */
     private void showWaitlistDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -411,6 +497,17 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         dialog.show();
     }
 
+    /**
+     * Handles accepting a single entrant from the waitlist.
+     * This method looks up the entrant by hardware ID, shows a confirmation dialog that
+     * includes the entrant's name, and moves the entrant to the accepted list if the
+     * organizer confirms. On success, the event list is reloaded; on failure, an error
+     * toast is shown.
+     *
+     * @param event    the event for which the entrant is being accepted
+     * @param entry    the waitlist entry representing the entrant
+     * @param position the adapter position of the entry (currently unused)
+     */
     private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
         if (getContext() == null) return;
 
@@ -468,6 +565,13 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 });
     }
 
+    /**
+     * Shows a dialog for creating a new event.
+     * The dialog collects basic event information, registration window dates, optional
+     * waitlist limits, lottery criteria, and whether geolocation is required. All inputs
+     * are validated (including date ordering and numeric limits), and on success
+     * createEvent is invoked to persist the new event.
+     */
     private void showCreateEventDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -586,6 +690,23 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         dialog.show();
     }
 
+    /**
+     * Creates a new event and saves it to the database.
+     * This method obtains a unique event ID, constructs an Event using the supplied
+     * details, applies any optional waitlist limit and lottery criteria, and updates the
+     * organizer's list of created events. Both the organizer record and event record are
+     * written to the database, and the event list is refreshed on success.
+     *
+     * @param eventName           the name of the event
+     * @param description         a description of the event
+     * @param startTime           the date when the event occurs
+     * @param location            the physical or virtual location of the event
+     * @param registrationStartTime the date when registration opens
+     * @param registrationEndTime   the date when registration closes
+     * @param waitlistLimit       the maximum allowed waitlist size, or null for no limit
+     * @param lotteryCriteria     optional textual description of lottery criteria
+     * @param requiresGeolocation whether geolocation is required for entrant registration
+     */
     private void createEvent(String eventName, String description, Date startTime, String location,
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
                              String lotteryCriteria, boolean requiresGeolocation) {
@@ -641,6 +762,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
     }
 
+    /**
+     * Shows a dialog for editing an existing event.
+     * The dialog is pre-populated with the event's current values and allows the organizer
+     * to modify basic details, registration window dates, waitlist limit, lottery criteria,
+     * and geolocation requirement. After validating inputs, this method calls
+     * updateEvent to persist the changes.
+     *
+     * @param event the event to be edited
+     */
     private void showEditEventDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
@@ -792,6 +922,24 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         dialog.show();
     }
 
+    /**
+     * Updates an existing event with the provided details.
+     * A new Event instance is constructed with the updated fields and written to
+     * the database under the same event ID. On success, the organizer's event list is
+     * reloaded to reflect the changes. on failure, an error is logged and displayed to
+     * the user via a toast.
+     *
+     * @param eventId               the unique identifier of the event being updated
+     * @param eventName             the updated event name
+     * @param description           the updated event description
+     * @param startTime             the updated event start time
+     * @param location              the updated event location
+     * @param registrationStartTime the updated registration start time
+     * @param registrationEndTime   the updated registration end time
+     * @param waitlistLimit         the updated waitlist limit, or null for no limit
+     * @param lotteryCriteria       the updated lottery criteria text
+     * @param requiresGeolocation   whether geolocation is required for registration
+     */
     private void updateEvent(Long eventId, String eventName, String description, Date startTime, String location,
                              Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit,
                              String lotteryCriteria, boolean requiresGeolocation) {
@@ -826,6 +974,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
     }
 
+    /**
+     * Saves a QR code bitmap to the system Downloads directory.
+     * The file name is derived from the event name and a timestamp, and the image is stored
+     * as a PNG using the MediaStore Downloads collection. A toast message indicates whether
+     * the operation succeeded or failed.
+     *
+     * @param bitmap    the QR code bitmap to save
+     * @param eventName the event name used to generate the output file name
+     */
     private void saveQRCodeToDownloads(Bitmap bitmap, String eventName) {
         try {
             String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + ".png";
@@ -850,6 +1007,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
     }
 
+    /**
+     * Displays a dialog containing the QR code for a specific event.
+     * The dialog shows the event name, event ID, a generated QR code bitmap, and buttons
+     * to download or share the QR code. If QR generation fails then an error toast is shown
+     * and the dialog is not displayed.
+     *
+     * @param event the event for which a QR code should be generated and displayed
+     */
     private void showQRCodeDialog(Event event) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_qr_code, null);
@@ -879,6 +1044,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         builder.create().show();
     }
 
+    /**
+     * Shares a QR code bitmap for an event using an intent.
+     * The bitmap is first written to the system Pictures directory using MediaStore, and
+     * then a chooser is launched so the organizer can select an app to share the QR code
+     * image along with a short descriptive message.
+     *
+     * @param bitmap    the QR code bitmap to share
+     * @param eventName the event name included in the shared message and file name
+     */
     private void shareQRCode(Bitmap bitmap, String eventName) {
         try {
             String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + ".png";

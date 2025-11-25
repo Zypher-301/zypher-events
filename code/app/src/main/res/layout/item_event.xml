@@ -62,7 +62,23 @@
             android:layout_marginTop="2dp"
             tools:text="Waiting list: 52 people" />
 
-        <!-- NEW: Lottery criteria label -->
+        <!-- Entrant status -->
+        <TextView
+            android:id="@+id/tvEntrantStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/holo_blue_dark"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="@id/tvTitle"
+            app:layout_constraintEnd_toEndOf="@id/tvTitle"
+            app:layout_constraintTop_toBottomOf="@id/tvWaitlistCount"
+            tools:text="Your status: On waitlist"
+            tools:visibility="visible" />
+
+        <!-- Lottery criteria label -->
         <TextView
             android:id="@+id/tvLotteryCriteriaLabel"
             android:layout_width="0dp"
@@ -73,9 +89,9 @@
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="@id/tvTitle"
             app:layout_constraintEnd_toEndOf="@id/tvTitle"
-            app:layout_constraintTop_toBottomOf="@id/tvWaitlistCount" />
+            app:layout_constraintTop_toBottomOf="@id/tvEntrantStatus" />
 
-        <!-- NEW: Lottery criteria text -->
+        <!-- Lottery criteria text -->
         <TextView
             android:id="@+id/tvLotteryCriteria"
             android:layout_width="0dp"

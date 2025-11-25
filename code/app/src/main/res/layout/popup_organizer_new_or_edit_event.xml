@@ -14,9 +14,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="24dp"
             android:text="Create Event"
-            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <EditText
@@ -24,63 +24,112 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Event Name"
+            android:textSize="16sp"
             android:inputType="textCapWords" />
 
-        <EditText
-            android:id="@+id/edit_time"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Event Start (yyyy-MM-dd)"
-            android:inputType="text" />
+            android:layout_marginTop="16dp"
+            android:text="Event Start Date"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <Button
+            android:id="@+id/btn_event_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Select date"
+            android:textSize="16sp"
+            android:textAllCaps="false"
+            android:gravity="start|center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:minHeight="48dp"
+            android:background="?android:attr/editTextBackground"
+            android:textColor="?android:attr/textColorHint" />
 
         <EditText
             android:id="@+id/edit_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:hint="Location"
+            android:textSize="16sp"
             android:inputType="textCapWords" />
 
-        <EditText
-            android:id="@+id/edit_reg_start"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Registration Start (yyyy-MM-dd)"
-            android:inputType="text" />
+            android:layout_marginTop="16dp"
+            android:text="Registration Start Date"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <Button
+            android:id="@+id/btn_reg_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Select date"
+            android:textSize="16sp"
+            android:textAllCaps="false"
+            android:gravity="start|center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:minHeight="48dp"
+            android:background="?android:attr/editTextBackground"
+            android:textColor="?android:attr/textColorHint" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Registration End Date"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary" />
+
+        <Button
+            android:id="@+id/btn_reg_end"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Select date"
+            android:textSize="16sp"
+            android:textAllCaps="false"
+            android:gravity="start|center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:minHeight="48dp"
+            android:background="?android:attr/editTextBackground"
+            android:textColor="?android:attr/textColorHint" />
 
         <EditText
-            android:id="@+id/edit_reg_end"
+            android:id="@+id/edit_details"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Registration End (yyyy-MM-dd)"
-            android:inputType="text" />
-
-        <EditText
-            android:id="@+id/edit_poster_url"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="Poster image URL (optional)"
-            android:inputType="textUri" />
+            android:layout_marginTop="16dp"
+            android:hint="Description"
+            android:textSize="16sp"
+            android:inputType="textMultiLine"
+            android:minLines="3" />
 
         <EditText
             android:id="@+id/edit_lottery_criteria"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Lottery Criteria/Guidelines (e.g. ages 8-12 can swim 25m"
+            android:layout_marginTop="16dp"
+            android:hint="Lottery Criteria (e.g. ages 8-12 can swim 25m)"
+            android:textSize="16sp"
             android:inputType="textMultiLine"
-            android:minLines="2"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp" />
+            android:minLines="2" />
 
         <Switch
             android:id="@+id/switchLimit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="20dp"
             android:text="Limit Waitlist"
             android:textSize="16sp" />
 
@@ -90,13 +139,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:hint="Waitlist Size"
+            android:textSize="16sp"
             android:inputType="number" />
 
         <Switch
             android:id="@+id/require_geolocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="20dp"
             android:text="Require Geolocation for Entry"
             android:textSize="16sp" />
 
@@ -105,8 +155,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="20dp"
-            android:text="Save" />
+            android:layout_marginTop="24dp"
+            android:text="Save"
+            android:textSize="16sp"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp" />
 
     </LinearLayout>
 </ScrollView>

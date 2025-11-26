@@ -5,6 +5,7 @@ import android.app.DatePickerDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,18 +15,21 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.navigation.Navigation;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -243,7 +247,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         popup.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_notifications) {
-                Toast.makeText(getContext(), "Notifications for " + event.getEventName(), Toast.LENGTH_SHORT).show();
+                showSendNotificationDialog(event);
                 return true;
             } else if (id == R.id.action_view_qr) {
                 showQRCodeDialog(event);
@@ -259,6 +263,292 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         });
 
         popup.show();
+    }
+
+    /**
+     * Shows a dialog for sending customizable notifications to entrants based on their status.
+     *
+     * @param event the event for which to send notifications
+     */
+    private void showSendNotificationDialog(Event event) {
+        if (event.getUniqueEventID() == null) {
+            Toast.makeText(getContext(), "Error: Event ID is missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (organizerUser == null) {
+            Toast.makeText(getContext(), "Error: Organizer information not available.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        LayoutInflater inflater = requireActivity().getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_notifications, null);
+        builder.setView(dialogView);
+
+        // Find views
+        Spinner statusSpinner = dialogView.findViewById(R.id.dropdown);
+        EditText editHeader = dialogView.findViewById(R.id.edit_notification_header);
+        EditText editBody = dialogView.findViewById(R.id.edit_notification_body);
+        TextView charCounter = dialogView.findViewById(R.id.character_counter);
+        Button useTemplateButton = dialogView.findViewById(R.id.use_template_button);
+        Button sendButton = dialogView.findViewById(R.id.send_button);
+
+        // Setup spinner
+        String[] statusOptions = {"Waitlisted", "Accepted", "Declined"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                getContext(),
+                android.R.layout.simple_spinner_item,
+                statusOptions
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        statusSpinner.setAdapter(adapter);
+
+        final String[] selectedStatus = {null};
+
+        // Character counter
+        editBody.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int after) {
+                int length = s.length();
+                charCounter.setText(length + "/500");
+                if (length > 500) {
+                    charCounter.setTextColor(Color.RED);
+                } else {
+                    charCounter.setTextColor(Color.GRAY);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
+        statusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedStatus[0] = statusOptions[position];
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                selectedStatus[0] = null;
+            }
+        });
+
+        // Use temple button
+        useTemplateButton.setOnClickListener(v -> {
+            if (selectedStatus[0] != null) {
+                populateTemplate(editHeader, editBody, selectedStatus[0], event.getEventName());
+                Toast.makeText(getContext(), "Template loaded", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Please select a status group first", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+
+        // Send button click
+        sendButton.setOnClickListener(v -> {
+            if (selectedStatus[0] == null || selectedStatus[0].isEmpty()) {
+                new AlertDialog.Builder(getContext())
+                        .setTitle("No Group Selected")
+                        .setMessage("Please select a group from the dropdown menu before sending notifications.")
+                        .setPositiveButton("OK", null)
+                        .show();
+                return;
+            }
+
+            String customHeader = editHeader.getText().toString().trim();
+            String customBody = editBody.getText().toString().trim();
+
+            if (TextUtils.isEmpty(customHeader)) {
+                Toast.makeText(getContext(), "Please enter a notification title", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (TextUtils.isEmpty(customBody)) {
+                Toast.makeText(getContext(), "Please enter a notification message", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (customBody.length() > 500) {
+                Toast.makeText(getContext(), "Message too long (max 500 characters)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            sendButton.setEnabled(false);
+            sendNotificationsToStatus(event, selectedStatus[0], customHeader, customBody, sendButton, dialog);
+        });
+
+        dialog.show();
+    }
+
+    /**
+     * Populate the notification fields with a template based on the selected status
+     *
+     * @param headerField The EditText for the notification header
+     * @param bodyField The EditText for the notification body
+     * @param status The selected status group
+     * @param eventName The name of the event
+     */
+    private void populateTemplate(EditText headerField, EditText bodyField, String status, String eventName) {
+        String header = "";
+        String body = "";
+
+        switch (status) {
+            case "Accepted":
+                header = "Event Starting Soon: " + eventName;
+                body = "This is a reminder that you have been selected for this event. " +
+                        "Please check the event details and prepare accordingly. We look forward to seeing you!";
+                break;
+
+            case "Waitlisted":
+                header = "Event Update: " + eventName;
+                body = "You are currently on the waitlist for this event. " +
+                        "We will notify you if your status changes.";
+                break;
+
+            case "Declined":
+                header = "Thank you: " + eventName;
+                body = "Thank you for your interest in this event." +
+                        "Unfortunately, all available spots have been filled. " +
+                        "Please watch for future events.";
+                break;
+        }
+
+        headerField.setText(header);
+        bodyField.setText(body);
+    }
+
+    /**
+     * Sends custom notifications to entrants based on their status for the given event.
+     *
+     * @param event The event to send notifications for
+     * @param selectedStatus The status group to notify ("Waitlisted", "Accepted", "Denied")
+     * @param customHeader The custom notification title
+     * @param customBody The custom notification message
+     * @param sendButton The send button to re-enable after completion
+     * @param dialog The dialog to dismiss after sending
+     */
+    private void sendNotificationsToStatus(Event event, String selectedStatus,String customHeader, String customBody, Button sendButton, AlertDialog dialog) {
+        // Get list of entrant IDs based on status
+        List<String> entrantIds = new ArrayList<>();
+
+        switch (selectedStatus) {
+            case "Waitlisted":
+                if (event.getWaitListEntrants() != null) {
+                    for (WaitlistEntry entry : event.getWaitListEntrants()) {
+                        if (entry != null && entry.getEntrantHardwareID() != null) {
+                            entrantIds.add(entry.getEntrantHardwareID());
+                        }
+                    }
+                }
+                break;
+
+            case "Accepted":
+                // This sends to both invited and accepted entrants (currently)
+                if (event.getInvitedEntrants() != null) {
+                    entrantIds.addAll(event.getInvitedEntrants());
+                }
+                if (event.getAcceptedEntrants() != null) {
+                    entrantIds.addAll(event.getAcceptedEntrants());
+                }
+                break;
+
+            case "Declined":
+                if (event.getDeclinedEntrants() != null) {
+                    entrantIds.addAll(event.getDeclinedEntrants());
+                }
+                break;
+        }
+
+        if (entrantIds.isEmpty()) {
+            new AlertDialog.Builder(getContext())
+                    .setTitle("No Entrant Found")
+                    .setMessage("There are currently no " + selectedStatus + " entrants for this event.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            sendButton.setEnabled(true);
+            return;
+        }
+
+        // Remove duplicates
+        List<String> uniqueIds = new ArrayList<>(new java.util.HashSet<>(entrantIds));
+
+        // Confirm before sending notification
+        new AlertDialog.Builder(getContext())
+                .setTitle("Confirm Notification Send")
+                .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus + " entrant(s)?")
+                .setPositiveButton("Send", (confirmDialog, which) -> {
+                    sendBulkNotificationsViaDatabase(uniqueIds, customHeader, customBody, () -> {
+                        Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.", Toast.LENGTH_LONG).show();
+                        sendButton.setEnabled(true);
+                        dialog.dismiss();
+                        }, () -> {
+                        Toast.makeText(getContext(), "Failed to send some notifications.", Toast.LENGTH_SHORT).show();
+                        sendButton.setEnabled(true);
+                    });
+                })
+                .setNegativeButton("Cancel", (confirmDialog, which) -> {
+                    sendButton.setEnabled(true);
+                })
+                .show();
+    }
+
+    /**
+     * Sends bulk notifications using Database directly.
+     */
+    private void sendBulkNotificationsViaDatabase(List<String> entrantIds, String header, String body,
+                                                  Runnable onSuccess, Runnable onFailure) {
+        int totalEntrants = entrantIds.size();
+        final int[] successCount = {0};
+        final int[] failureCount = {0};
+
+        for (String entrantId : entrantIds) {
+            db.getUniqueNotificationID()
+                    .addOnSuccessListener(notificationID -> {
+                        com.example.zypherevent.Notification notification =
+                                new com.example.zypherevent.Notification(
+                                        notificationID,
+                                        organizerUser.getHardwareID(),
+                                        entrantId,
+                                        header,
+                                        body
+                                );
+
+                        db.setNotificationData(notificationID, notification)
+                                .addOnSuccessListener(v -> {
+                                    successCount[0]++;
+                                    Log.d(TAG, "Notification sent to: " + entrantId);
+                                    if (successCount[0] + failureCount[0] == totalEntrants) {
+                                        onSuccess.run();
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    failureCount[0]++;
+                                    Log.e(TAG, "Failed to send notification to: " + entrantId, e);
+                                    if (successCount[0] + failureCount[0] == totalEntrants) {
+                                        if (successCount[0] > 0) {
+                                            onSuccess.run();
+                                        } else {
+                                            onFailure.run();
+                                        }
+                                    }
+                                });
+                    })
+                    .addOnFailureListener(e -> {
+                        failureCount[0]++;
+                        Log.e(TAG, "Failed to get notification ID for: " + entrantId, e);
+                        if (successCount[0] + failureCount[0] == totalEntrants) {
+                            if (successCount[0] > 0) {
+                                onSuccess.run();
+                            } else {
+                                onFailure.run();
+                            }
+                        }
+                    });
+        }
     }
 
     /**

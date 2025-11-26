@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/label1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Notification"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Select a status group and customize your message to notify entrants."
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Status Group Selection -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/label2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send to:"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginEnd="12dp" />
+
+        <Spinner
+            android:id="@+id/dropdown"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:minHeight="48dp" />
+
+    </LinearLayout>
+
+    <!-- Notification Header (Subject) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Notification Title:"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/edit_notification_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="e.g., Event Registration Closing Soon"
+        android:inputType="text"
+        android:maxLines="2"
+        android:padding="12dp"
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Notification Body (Message) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Notification Message:"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/edit_notification_body"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:hint="Enter your custom message here..."
+        android:inputType="textMultiLine"
+        android:gravity="top"
+        android:padding="12dp"
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Character Counter -->
+    <TextView
+        android:id="@+id/character_counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/500"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_gravity="end"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Use Template Button -->
+    <Button
+        android:id="@+id/use_template_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Use Template"
+        android:textColor="@color/black"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"
+        style="?android:attr/borderlessButtonStyle" />
+
+    <!-- Send Button -->
+    <Button
+        android:id="@+id/send_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send Notification"
+        android:textSize="16sp" />
+
+</LinearLayout>

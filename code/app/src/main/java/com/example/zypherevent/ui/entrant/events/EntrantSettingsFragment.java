@@ -334,12 +334,6 @@ public class EntrantSettingsFragment extends Fragment {
      * @param entrant The entrant to remove from events
      * @param hardwareID The entrant's hardware ID
      */
-    /**
-     * Removes the entrant from all events they are in.
-     *
-     * @param entrant    The entrant to remove from events
-     * @param hardwareID The entrant's hardware ID
-     */
     private void removeUserFromEvents(Entrant entrant, String hardwareID) {
 
         ArrayList<Long> registeredEventIDs = entrant.getRegisteredEventHistory();
@@ -442,6 +436,9 @@ public class EntrantSettingsFragment extends Fragment {
     private void handleProfileDeleted() {
         if (getContext() == null) return;
 
+        // clears existing notification cache for deleting user
+        clearNotificationServiceCache();
+
         new AlertDialog.Builder(getContext())
                 .setTitle("Profile Deleted")
                 .setMessage("Your profile and all personal information have been successfully deleted. You have been removed from all events.")
@@ -481,6 +478,23 @@ public class EntrantSettingsFragment extends Fragment {
                 .setMessage(message)
                 .setPositiveButton("OK", null)
                 .show();
+    }
+
+    /**
+     * Clears the notification cache from NotificationService before deletion.
+     * This prevents memory leaks and ensures no stale notifications remain.
+     */
+    private void clearNotificationServiceCache() {
+        EntrantActivity activity = (EntrantActivity) requireActivity();
+
+        // Stop listening and clear cache if service is bound
+        if (activity.getNotificationService() != null) {
+            // stops listening for notifications
+            activity.getNotificationService().stopListeningForNotifications();
+            // clears cache on existing notifications
+            activity.getNotificationService().clearNotificationCache();
+            Log.d("EntrantSettings", "Notification cache cleared before profile deletion");
+        }
     }
 
     /**

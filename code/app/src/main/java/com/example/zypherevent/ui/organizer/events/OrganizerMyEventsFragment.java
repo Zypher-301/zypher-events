@@ -59,10 +59,10 @@ import java.util.List;
  * Fragment that displays and manages events created by the current Organizer.
  * shows a scrollable list of the organizer's events and provides actions to
  * create new events, edit existing ones,
- * export accepted entrants as CSV, run waitlist lotteries, and generate or
- * share QR codes for
- * event check-in or promotion. It serves as the main event management screen
- * for organizer users.
+ * export accepted entrants as CSV, run waitlist lotteries, and generate or share QR codes for
+ * event check-in or promotion.
+ * Also allows the Organizer to send notifications to certain status group entrants notifications
+ * It serves as the main event management screen for organizer users.
  */
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
 

@@ -10,10 +10,13 @@ import java.util.Objects;
  * @version 1.0
  * @see User
  *
- * Represents a notification within the Zypher Event system. Notifications are used
- * to communicate from Organizers to Entrants. Each notification includes identifying information
- * about the sender and receiver, a header, a body message, and a flag indicating whether the
- * notification has been dismissed.
+ *      Represents a notification within the Zypher Event system. Notifications
+ *      are used
+ *      to communicate from Organizers to Entrants. Each notification includes
+ *      identifying information
+ *      about the sender and receiver, a header, a body message, and a flag
+ *      indicating whether the
+ *      notification has been dismissed.
  *
  */
 public class Notification {
@@ -29,7 +32,8 @@ public class Notification {
 
     /**
      * Indicates whether the notification has been dismissed.
-     * If true, the notification will not be shown in the entrant's notifications page.
+     * If true, the notification will not be shown in the entrant's notifications
+     * page.
      */
     private boolean dismissed;
 
@@ -40,23 +44,53 @@ public class Notification {
     private String notificationBody;
 
     /**
+     * The unique identifier of the event associated with this notification
+     * (optional).
+     */
+    private Long eventID;
+
+    /**
      * Constructs a new Notification instance with all attributes specified.
      * The notification is not dismissed by default.
      *
-     * @param notificationID           the unique identifier for this notification
-     * @param sendingUserHardwareID    the hardware ID of the user sending the notification
-     * @param receivingUserHardwareID  the hardware ID of the user receiving the notification
-     * @param notificationHeader       the notification's title or summary
-     * @param notificationBody         the detailed body text of the notification
+     * @param notificationID          the unique identifier for this notification
+     * @param sendingUserHardwareID   the hardware ID of the user sending the
+     *                                notification
+     * @param receivingUserHardwareID the hardware ID of the user receiving the
+     *                                notification
+     * @param notificationHeader      the notification's title or summary
+     * @param notificationBody        the detailed body text of the notification
+     * @param eventID                 the unique identifier of the event associated
+     *                                with this notification (can be null)
      */
     public Notification(Long notificationID, String sendingUserHardwareID, String receivingUserHardwareID,
-                        String notificationHeader, String notificationBody) {
+            String notificationHeader, String notificationBody, Long eventID) {
         this.notificationID = notificationID;
         this.sendingUserHardwareID = sendingUserHardwareID;
         this.receivingUserHardwareID = receivingUserHardwareID;
         this.notificationHeader = notificationHeader;
         this.notificationBody = notificationBody;
+        this.eventID = eventID;
         this.dismissed = false;
+    }
+
+    /**
+     * Constructs a new Notification instance with all attributes specified,
+     * excluding eventID.
+     * The notification is not dismissed by default.
+     *
+     * @param notificationID          the unique identifier for this notification
+     * @param sendingUserHardwareID   the hardware ID of the user sending the
+     *                                notification
+     * @param receivingUserHardwareID the hardware ID of the user receiving the
+     *                                notification
+     * @param notificationHeader      the notification's title or summary
+     * @param notificationBody        the detailed body text of the notification
+     */
+    public Notification(Long notificationID, String sendingUserHardwareID, String receivingUserHardwareID,
+            String notificationHeader, String notificationBody) {
+        this(notificationID, sendingUserHardwareID, receivingUserHardwareID, notificationHeader, notificationBody,
+                null);
     }
 
     /**
@@ -170,31 +204,54 @@ public class Notification {
     }
 
     /**
+     * Returns the event ID associated with the notification.
+     *
+     * @return the event ID, or null if none
+     */
+    public Long getEventID() {
+        return eventID;
+    }
+
+    /**
+     * Updates the event ID associated with the notification.
+     *
+     * @param eventID the new event ID to set
+     */
+    public void setEventID(Long eventID) {
+        this.eventID = eventID;
+    }
+
+    /**
      * Checks if this Notification is equal to another object.
+     * 
      * @param o the object to compare with this Notification.
      * @return {@code true} if the objects are equal, {@code false} otherwise.
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Notification notification = (Notification) o;
         return Objects.equals(notificationID, notification.notificationID) &&
                 Objects.equals(sendingUserHardwareID, notification.sendingUserHardwareID) &&
                 Objects.equals(receivingUserHardwareID, notification.receivingUserHardwareID) &&
                 dismissed == notification.dismissed &&
                 Objects.equals(notificationHeader, notification.notificationHeader) &&
-                Objects.equals(notificationBody, notification.notificationBody);
+                Objects.equals(notificationBody, notification.notificationBody) &&
+                Objects.equals(eventID, notification.eventID);
     }
 
     /**
      * Generates a hash code for this Notification.
+     * 
      * @return a hash code value for this object.
      */
     @Override
     public int hashCode() {
         return Objects.hash(notificationID, sendingUserHardwareID, receivingUserHardwareID,
-                dismissed, notificationHeader, notificationBody);
+                dismissed, notificationHeader, notificationBody, eventID);
     }
 
     // ONWARDS: SHOULD ONLY BE USED BY FIRESTORE!!!!!!

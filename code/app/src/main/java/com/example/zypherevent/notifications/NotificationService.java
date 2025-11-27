@@ -28,12 +28,10 @@ import java.util.Set;
 /**
  * This service has two main functions:
  * Sending notifications to users via Firestore
- * Listening for new notifications in real-time and displaying them as Android
- * system notifications
+ * Listening for new notifications in real-time and displaying them as Android system notifications
  * <p>
  * The service runs in the foreground (persistent) to maintain the listener even
- * when the app is running in the background. Notifications are categorized
- * based on their context taken
+ * when the app is running in the background. Notifications are categorized based on their context taken
  * from the notification title or body.
  *
  * @author Tom Yang
@@ -44,7 +42,7 @@ import java.util.Set;
 public class NotificationService extends Service {
     private static final String TAG = "NotificationService";
 
-    // Foreground service notification
+    //  Foreground service notification
     private static final int FOREGROUND_NOTIFICATION_ID = 1;
     private static final String FOREGROUND_CHANNEL_ID = "notification_service_channel";
 
@@ -100,8 +98,7 @@ public class NotificationService extends Service {
      */
     private void createForegroundNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(FOREGROUND_CHANNEL_ID, "Notification Service",
-                    NotificationManager.IMPORTANCE_LOW); // low importance for no sound or alerts
+            NotificationChannel channel = new NotificationChannel(FOREGROUND_CHANNEL_ID, "Notification Service", NotificationManager.IMPORTANCE_LOW); // low importance for no sound or alerts
             channel.setDescription("Keeps  the app connected to receive event notifications");
             channel.setShowBadge(false);
 
@@ -121,7 +118,8 @@ public class NotificationService extends Service {
     private Notification createForegroundNotification() {
         return notificationHelper.createForegroundNotification(
                 "Zypher Event",
-                "Listening for event notification");
+                "Listening for event notification"
+        );
     }
 
     /**
@@ -131,8 +129,7 @@ public class NotificationService extends Service {
      */
     private void updateForegroundNotification(String status) {
         Intent notificationIntent = new Intent(this, EntrantActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, FOREGROUND_CHANNEL_ID)
                 .setContentTitle("Zypher Event")
@@ -153,30 +150,13 @@ public class NotificationService extends Service {
      * Sends notification to a specific user.
      * Creates the notification in Firestore
      *
-     * @param senderHardwareId   The hardware ID of the user sending the
-     *                           notification
-     * @param receiverHardwareId The hardware ID of the user receiving the
-     *                           notification
-     * @param title              The notification title
-     * @param message            The notification message
+     * @param senderHardwareId The hardware ID of the user sending the notification
+     * @param receiverHardwareId The hardware ID of the user receiving the notification
+     * @param title The notification title
+     * @param message The notification message
      * @return Task that completes when teh notification is saved
      */
-    /**
-     * Sends notification to a specific user.
-     * Creates the notification in Firestore
-     *
-     * @param senderHardwareId   The hardware ID of the user sending the
-     *                           notification
-     * @param receiverHardwareId The hardware ID of the user receiving the
-     *                           notification
-     * @param title              The notification title
-     * @param message            The notification message
-     * @param eventID            The ID of the event associated with the
-     *                           notification (can be null)
-     * @return Task that completes when teh notification is saved
-     */
-    public Task<Void> sendNotification(String senderHardwareId, String receiverHardwareId, String title, String message,
-            Long eventID) {
+    public Task<Void> sendNotification(String senderHardwareId, String receiverHardwareId, String title, String message) {
         return db.getUniqueNotificationID().continueWithTask(task -> {
             if (!task.isSuccessful()) {
                 throw task.getException();
@@ -188,12 +168,14 @@ public class NotificationService extends Service {
                     senderHardwareId,
                     receiverHardwareId,
                     title,
-                    message,
-                    eventID);
+                    message
+            );
 
             return db.setNotificationData(notificationId, notification)
-                    .addOnSuccessListener(v -> Log.d(TAG, "Notification sent to: " + receiverHardwareId))
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to send notification to: " + receiverHardwareId, e));
+                    .addOnSuccessListener(v ->
+                            Log.d(TAG, "Notification sent to: " + receiverHardwareId))
+                    .addOnFailureListener(e ->
+                            Log.e(TAG, "Failed to send notification to: " + receiverHardwareId, e));
         });
     }
 
@@ -202,25 +184,21 @@ public class NotificationService extends Service {
      * Used for bulk notifications like lottery results
      *
      * @param senderHardwareId The hardware ID of the user sending the notification
-     * @param receiverIds      The hardware ID of the user receiving the
-     *                         notification
-     * @param title            The notification title
-     * @param message          The notification message
-     * @param eventID          The ID of the event associated with the notification
-     *                         (can be null)
+     * @param receiverIds The hardware ID of the user receiving the notification
+     * @param title The notification title
+     * @param message The notification message
      */
-    public void sendBulkNotifications(String senderHardwareId, List<String> receiverIds, String title, String message,
-            Long eventID) {
+    public void sendBulkNotifications(String senderHardwareId, List<String> receiverIds, String title, String message) {
         for (String receiverId : receiverIds) {
-            sendNotification(senderHardwareId, receiverId, title, message, eventID)
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to send notification to: " + receiverId, e));
+            sendNotification(senderHardwareId, receiverId, title, message)
+                    .addOnFailureListener(e ->
+                            Log.e(TAG, "Failed to send notification to: " + receiverId, e));
         }
     }
 
     /**
      * Starts listening for new notifications for a specific user.
-     * When new notifications arrive, displays those as android system
-     * notifications.
+     * When new notifications arrive, displays those as android system notifications.
      * Uses keywords from the notification itself to sort the notification priority
      *
      * @param userHardwareId The hardware ID of the user to listen for
@@ -272,8 +250,7 @@ public class NotificationService extends Service {
                                                 titleLower.contains("confirmed") ||
                                                 bodyLower.contains("congratulations")) {
                                             // Set to HIGH priority
-                                            notificationHelper.showInvitationNotification(notificationId.intValue(),
-                                                    title, body);
+                                            notificationHelper.showInvitationNotification(notificationId.intValue(), title, body);
 
                                         } else if (titleLower.contains("rejected") ||
                                                 titleLower.contains("declined") ||
@@ -282,19 +259,16 @@ public class NotificationService extends Service {
                                                 bodyLower.contains("unfortunately") ||
                                                 bodyLower.contains("not accepted")) {
                                             // Set to DEFAULT priority
-                                            notificationHelper.showRejectionNotification(notificationId.intValue(),
-                                                    title, body);
+                                            notificationHelper.showRejectionNotification(notificationId.intValue(), title, body);
 
                                         } else {
-                                            // Set everything else to DEFAULT priority: general updates or waitlist
-                                            // status
-                                            notificationHelper.showUpdateNotification(notificationId.intValue(), title,
-                                                    body);
+                                            // Set everything else to DEFAULT priority: general updates or waitlist status
+                                            notificationHelper.showUpdateNotification(notificationId.intValue(), title, body);
                                         }
 
                                         shownNotificationIds.add(notificationId);
                                         newNotification++;
-                                        Log.d(TAG, "Displayed new notification: " + title);
+                                        Log.d(TAG,"Displayed new notification: " + title);
                                     }
                                 }
                             } catch (Exception e) {
@@ -325,7 +299,8 @@ public class NotificationService extends Service {
                     }
                     Log.d(TAG, "Loaded " + shownNotificationIds.size() + " existing notification IDs");
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to load existing notifications", e));
+                .addOnFailureListener(e ->
+                    Log.e(TAG, "Failed to load existing notifications", e));
     }
 
     /**

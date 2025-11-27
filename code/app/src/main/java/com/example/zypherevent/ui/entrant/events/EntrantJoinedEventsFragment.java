@@ -5,10 +5,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,12 +28,15 @@ import java.util.List;
  * @author Elliot Chrystal
  * @author Tom Yang (added functionality to display entrant's joined event history)
  *
+ * A fragment that displays a comprehensive list of joined events to an Entrant.
+ * It provides the functionality for users to join or leave the waitlist for an event.
+ *
  * @version 1.0
  */
-public class EntrantJoinedEventsFragment extends Fragment {
+public class EntrantJoinedEventsFragment extends Fragment implements EntrantEventAdapter.OnItemClickListener {
     private static final String TAG = "EntrantJoinedEvents";
     private RecyclerView recyclerView;
-    private EntrantJoinedEventsAdapter adapter;
+    private EntrantEventAdapter adapter;
     private Entrant currentUser;
     private List<Event> eventList = new ArrayList<>();
 
@@ -70,7 +76,7 @@ public class EntrantJoinedEventsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // Create adapter
-        adapter = new EntrantJoinedEventsAdapter(eventList, currentUser);
+        adapter = new EntrantEventAdapter(eventList, currentUser, this);
         recyclerView.setAdapter(adapter);
 
         // Load initial data
@@ -111,6 +117,134 @@ public class EntrantJoinedEventsFragment extends Fragment {
                 adapter.notifyDataSetChanged();
             }
         });
+    }
+
+    @Override
+    public void onJoinClick(Event event) {
+        Log.d(TAG, "Joining waitlist for: " + event.getEventName());
+
+        if (event.getRequiresGeolocation() && !currentUser.getUseGeolocation()) {
+            Toast.makeText(getContext(),
+                    "Geolocation is required for this event. Please enable it in your settings.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Event.WaitlistOperationResult result =
+                event.joinWaitlist(currentUser.getHardwareID());
+
+        switch (result) {
+            case ALREADY_INVITED:
+                Toast.makeText(getContext(),
+                        "You are already invited to this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_ACCEPTED:
+                Toast.makeText(getContext(),
+                        "You have already accepted this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_DECLINED:
+                Toast.makeText(getContext(),
+                        "You have already declined this event.", Toast.LENGTH_SHORT).show();
+                return;
+            case ALREADY_ON_WAITLIST:
+                Toast.makeText(getContext(),
+                        "You are already on the waitlist.", Toast.LENGTH_SHORT).show();
+                return;
+            case REGISTRATION_NOT_STARTED:
+                Toast.makeText(getContext(),
+                        "Registration has not started yet.", Toast.LENGTH_SHORT).show();
+                return;
+            case REGISTRATION_CLOSED:
+                Toast.makeText(getContext(),
+                        "Registration has closed.", Toast.LENGTH_SHORT).show();
+                return;
+            case WAITLIST_FULL:
+                Toast.makeText(getContext(),
+                        "Waitlist is full.", Toast.LENGTH_SHORT).show();
+                return;
+            case SUCCESS:
+                break;
+        }
+
+        Database db = new Database();
+        db.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
+                .addOnSuccessListener(aVoid -> {
+                    currentUser.addEventToRegisteredEventHistory(event.getUniqueEventID());
+                    db.setUserData(currentUser.getHardwareID(), currentUser)
+                            .addOnSuccessListener(aVoid1 -> {
+                                Toast.makeText(getContext(),
+                                        "Joined waitlist!", Toast.LENGTH_SHORT).show();
+                                loadEvents();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error saving user data after joining: ", e);
+                                Toast.makeText(getContext(),
+                                        "Error saving to profile: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error joining waitlist", e);
+                    Toast.makeText(getContext(),
+                            e.getMessage() != null ? e.getMessage() : "Failed to join waitlist",
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    @Override
+    public void onLeaveClick(Event event) {
+        Log.d(TAG, "Leaving waitlist for: " + event.getEventName());
+
+        Event.WaitlistOperationResult result =
+                event.leaveWaitlist(currentUser.getHardwareID());
+
+        if (result == Event.WaitlistOperationResult.NOT_ON_WAITLIST) {
+            Toast.makeText(getContext(),
+                    "You are not on the waitlist for this event.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Local user history update
+        currentUser.removeEventFromRegisteredEventHistory(event.getUniqueEventID());
+        adapter.notifyDataSetChanged();
+
+        Database db = new Database();
+        db.removeEntrantFromWaitlist(String.valueOf(event.getUniqueEventID()), currentUser)
+                .addOnSuccessListener(aVoid -> {
+                    db.setUserData(currentUser.getHardwareID(), currentUser)
+                            .addOnSuccessListener(aVoid1 -> {
+                                Toast.makeText(getContext(),
+                                        "Left waitlist.", Toast.LENGTH_SHORT).show();
+                                loadEvents();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error saving user data after leaving: ", e);
+                                Toast.makeText(getContext(),
+                                        "Error updating profile: " + e.getMessage(),
+                                        Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error leaving waitlist", e);
+                    Toast.makeText(getContext(),
+                            "Error leaving waitlist: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    /**
+     * Starts the EntrantEventDetailsFragment when an event is clicked.
+     */
+    @Override
+    public void onItemClick(Event event) {
+        if (event == null) return;
+
+        Bundle args = new Bundle();
+        args.putSerializable(EntrantEventDetailsFragment.ARG_EVENT, event);
+        args.putString(EntrantEventDetailsFragment.ARG_ENTRANT_HARDWARE_ID, currentUser.getHardwareID());
+
+        NavController navController = NavHostFragment.findNavController(this);
+        navController.navigate(R.id.nav_entrant_event_details, args);
     }
 
     /**

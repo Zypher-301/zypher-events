@@ -314,7 +314,100 @@ public class AdminTests {
         assertTrue("List should contain notification 3", fetchedNotifications.contains(notif3));
     }
 
+    /**
+     * Tests US 03.06.01: As an administrator, I want to browse images.
+     * * Logic:
+     * 1. Create two events: one with a poster URL, one without.
+     * 2. Fetch all events.
+     * 3. Filter the list to only those with poster URLs (simulating AdminImagesFragment logic).
+     * 4. Assert that only the event with the poster is identified as having an image.
+     */
+    @Test
+    public void testAdminBrowseImages() throws ExecutionException, InterruptedException, ParseException {
+        // Setup: Create event WITH poster
+        Event eventWithPoster = createTestEvent("Poster Event", "org-poster");
+        eventWithPoster.setPosterURL("https://example.com/poster.jpg");
+        Tasks.await(testDatabase.setEventData(eventWithPoster.getUniqueEventID(), eventWithPoster));
+
+        // Setup: Create event WITHOUT poster
+        Event eventNoPoster = createTestEvent("No Poster Event", "org-no-poster");
+        // Default createTestEvent leaves posterURL null or we explicitly set it null
+        eventNoPoster.setPosterURL(null);
+        Tasks.await(testDatabase.setEventData(eventNoPoster.getUniqueEventID(), eventNoPoster));
+
+        // Execute: Fetch all events
+        List<Event> allEvents = Tasks.await(testDatabase.getAllEventsList());
+
+        // Simulate AdminImagesFragment filtering
+        List<Event> eventsWithImages = new ArrayList<>();
+        for (Event e : allEvents) {
+            if (e.getPosterURL() != null && !e.getPosterURL().isEmpty()) {
+                eventsWithImages.add(e);
+            }
+        }
+
+        // Assert
+        assertTrue("Should contain the event with poster", eventsWithImages.contains(eventWithPoster));
+        assertFalse("Should NOT contain event without poster", eventsWithImages.contains(eventNoPoster));
+    }
+
     // --- ADMIN DELETE TESTS ---
+
+    /**
+     * Tests US 03.01.01: As an administrator, I want to be able to remove events.
+     * * Logic:
+     * 1. Create a test event.
+     * 2. Call the database removal method.
+     * 3. Assert that the event can no longer be retrieved.
+     */
+    @Test
+    public void testAdminDeleteEvent() throws ExecutionException, InterruptedException, ParseException {
+        // Setup: Create an event
+        Event event = createTestEvent("Event To Delete", "org-id-delete");
+        Long eventId = event.getUniqueEventID();
+
+        // Verify it exists
+        Event fetchedBefore = Tasks.await(testDatabase.getEvent(eventId));
+        assertNotNull("Event should exist before deletion", fetchedBefore);
+
+        // Execute: Delete the event (Logic from AdminEventsFragment)
+        Tasks.await(testDatabase.removeEventData(eventId));
+
+        // Assert: Check if it is gone
+        Event fetchedAfter = Tasks.await(testDatabase.getEvent(eventId));
+        assertNull("Event should be null after deletion", fetchedAfter);
+
+        // Remove from cleanup list since it's already deleted
+        eventsToClean.remove(event);
+    }
+
+    /**
+     * Tests US 03.02.01: As an administrator, I want to be able to remove profiles.
+     * * Logic:
+     * 1. Create a standard Entrant profile.
+     * 2. Call the database removal method.
+     * 3. Assert the user object returns null.
+     */
+    @Test
+    public void testAdminDeleteEntrantProfile() throws ExecutionException, InterruptedException {
+        // Setup: Create an entrant
+        Entrant entrant = createTestEntrant("entrant-to-delete");
+        String hardwareId = entrant.getHardwareID();
+
+        // Verify existence
+        User userBefore = Tasks.await(testDatabase.getUser(hardwareId));
+        assertNotNull("User should exist before deletion", userBefore);
+
+        // Execute: Remove user (Logic from AdminProfileFragment)
+        Tasks.await(testDatabase.removeUserData(hardwareId));
+
+        // Assert: User is gone
+        User userAfter = Tasks.await(testDatabase.getUser(hardwareId));
+        assertNull("User should be null after deletion", userAfter);
+
+        // Remove from cleanup list
+        usersToClean.remove(entrant);
+    }
 
     /**
      * Tests US 03.02.01 (Admin remove profile) and US 03.07.01 (Organizer removed, events removed).
@@ -398,6 +491,30 @@ public class AdminTests {
         eventsToClean.remove(event2);
     }
 
+    /**
+     * Tests US 03.03.01: As an administrator, I want to be able to remove images.
+     * * Logic:
+     * 1. Create an event with a poster.
+     * 2. "Remove" the image by setting the posterURL to null (Logic from AdminImagesFragment).
+     * 3. Update the database.
+     * 4. Assert the event still exists, but the posterURL is now null.
+     */
+    @Test
+    public void testAdminRemoveImage() throws ExecutionException, InterruptedException, ParseException {
+        // Setup: Create event with poster
+        Event event = createTestEvent("Image Remove Test", "org-img-rem");
+        event.setPosterURL("https://example.com/delete_me.jpg");
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Execute: Remove image
+        event.setPosterURL(null);
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Assert
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertNotNull("Event should still exist", updatedEvent);
+        assertNull("Poster URL should be null", updatedEvent.getPosterURL());
+    }
 
     // --- HELPER METHODS FOR CREATING TEST DATA ---
 

@@ -119,6 +119,11 @@ public class EntrantJoinedEventsFragment extends Fragment implements EntrantEven
         });
     }
 
+    /**
+     * Handles the "Join Waitlist" action for the given event.
+     *
+     * @param event the event for which the user is attempting to join the waitlist
+     */
     @Override
     public void onJoinClick(Event event) {
         Log.d(TAG, "Joining waitlist for: " + event.getEventName());
@@ -191,6 +196,12 @@ public class EntrantJoinedEventsFragment extends Fragment implements EntrantEven
                 });
     }
 
+
+    /**
+     * Handles the "Leave Waitlist" action for the given event.
+     *
+     * @param event the event for which the user is attempting to leave the waitlist
+     */
     @Override
     public void onLeaveClick(Event event) {
         Log.d(TAG, "Leaving waitlist for: " + event.getEventName());

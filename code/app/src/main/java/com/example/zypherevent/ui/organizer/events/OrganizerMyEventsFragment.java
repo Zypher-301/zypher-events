@@ -479,7 +479,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         // Confirm before sending notification
         new AlertDialog.Builder(getContext())
                 .setTitle("Confirm Notification Send")
-                .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus + " entrant(s)?")
+                .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase() + " entrant(s)?")
                 .setPositiveButton("Send", (confirmDialog, which) -> {
                     sendBulkNotificationsViaDatabase(uniqueIds, customHeader, customBody, () -> {
                         Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.", Toast.LENGTH_LONG).show();

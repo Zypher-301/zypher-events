@@ -1,12 +1,20 @@
 package com.example.zypherevent.ui.organizer.events;
 
+import android.app.AlertDialog;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.zypherevent.Database;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
+import com.example.zypherevent.notifications.NotificationService;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.User;
 import com.google.android.gms.tasks.Task;
@@ -44,6 +53,7 @@ import java.util.List;
  * @see Event
  * @see Entrant
  * @see Database
+ * @see NotificationService
  */
 public class OrganizerSelectedEntrantsFragment extends Fragment {
 
@@ -55,6 +65,10 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     private RecyclerView entrantRecyclerView;
     private EntrantInfoAdapter adapter;
     private TextView groupLabel;
+    private String currentSelectedGroup;
+
+    private NotificationService notificationService;
+    private boolean serviceBound = false;
 
     /**
      * A list of strings representing the different categories of entrants for an event.
@@ -76,6 +90,23 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         this.eventId = eventId;
     }
 
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            NotificationService.LocalBinder binder = (NotificationService.LocalBinder) service;
+            notificationService = binder.getService();
+            serviceBound = true;
+            Log.d(TAG, "NotificationService connected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+            notificationService = null;
+            Log.d(TAG, "NotificationService disconnected");
+        }
+    };
+
     /**
      * Called when the fragment is first created. This is where you should do all of your normal
      * static set up: create views, bind data to lists, etc. This method also runs when the system
@@ -88,6 +119,9 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         db = new Database();
+
+        Intent intent = new Intent(getContext(), NotificationService.class);
+        getContext().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     /**
@@ -140,7 +174,13 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         entrantRecyclerView = view.findViewById(R.id.entrant_info);
         groupLabel = view.findViewById(R.id.label1);
 
-        adapter = new EntrantInfoAdapter(new ArrayList<>());
+        adapter = new EntrantInfoAdapter(new ArrayList<>(), new EntrantInfoAdapter.OnCancelClickListener() {
+            @Override
+            public void onCancelClick(Entrant entrant) {
+                Log.d(TAG, "onCancelClick called for: " + entrant.getFirstName());
+                showCancelConfirmation(entrant);
+            }
+        });
         entrantRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         entrantRecyclerView.setAdapter(adapter);
 
@@ -163,6 +203,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                         return;
                     }
                     setupGroupSpinner();
+                    // Initialize currentSelectedGroup before any button clicked
+                    currentSelectedGroup = groupNames.get(0);
                     loadEntrantsForSelectedGroup(groupNames.get(0));
                 })
                 .addOnFailureListener(e -> {
@@ -248,7 +290,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         List<String> hardwareIds = getHardwareIdsForGroup(selectedGroup);
 
         if (hardwareIds == null || hardwareIds.isEmpty()) {
-            adapter.updateData(new ArrayList<>());
+            adapter.updateData(new ArrayList<>(), selectedGroup.equals("Invited Entrants"));
             return;
         }
 
@@ -260,7 +302,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         }
 
         if (lookupTasks.isEmpty()) {
-            adapter.updateData(new ArrayList<>());
+            adapter.updateData(new ArrayList<>(), selectedGroup.equals("Invited Entrants"));
             return;
         }
 
@@ -278,12 +320,94 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                     return resultEntrants;
                 })
                 .addOnSuccessListener(resultEntrants -> {
-                    adapter.updateData(resultEntrants);
+                    adapter.updateData(resultEntrants, selectedGroup.equals("Invited Entrants"));
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to load entrants", e);
                     Toast.makeText(getContext(), "Failed to load details.", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    /**
+     * Shows a confirmation dialog before canceling a entrant's invitation
+     *
+     * @param entrant The entrant to cancel invitation for
+     */
+    private void showCancelConfirmation(Entrant entrant) {
+        String fullName = entrant.getFirstName() + " " + entrant.getLastName();
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Cancel Invitation?")
+                .setMessage("Are you sure you want to cancel the invitation for " +
+                        fullName + "? " +
+                        "This will remove them from the invited list")
+                .setPositiveButton("Confirm", (dialog, which) -> {
+                        cancelEntrantInvitation(entrant);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Cancels an entrant's invitation by removing them from the invited list
+     *
+     * @param entrant THe entrant to cancel invitation for
+     */
+    private void cancelEntrantInvitation(Entrant entrant) {
+        db.removeEntrantFromInvited(eventId.toString(), entrant)
+                .addOnSuccessListener(v -> {
+                    Toast.makeText(getContext(),
+                            "Invitation cancelled for " + entrant.getFirstName() + " " + entrant.getLastName(),
+                                    Toast.LENGTH_SHORT).show();
+
+                    sendCancellationNotification(entrant);
+
+                    loadEntrantsForSelectedGroup(currentSelectedGroup);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error cancelling invitation");
+                    Toast.makeText(getContext(),
+                            "Failed to cancel invitation: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    /**
+     * Send entrant cancellation notifications through NotificationService
+     *
+     * @param entrant The entrant to send cancellation notification to
+     */
+    private void sendCancellationNotification(Entrant entrant) {
+        if (currentEvent == null) return;
+
+        String header = "Invitation Update: " + currentEvent.getEventName();
+        String body = "Your invitation to this event has been cancelled by the organizer. " +
+                "We apologize for any inconvenience.";
+
+        if (serviceBound && notificationService != null) {
+            // Use the NotificationService to send notification
+            notificationService.sendNotification(
+                    currentEvent.getEventOrganizerHardwareID(),
+                    entrant.getHardwareID(),
+                    header,
+                    body,
+                    currentEvent.getUniqueEventID()
+                    ).addOnSuccessListener(v ->
+                            Log.d(TAG, "Cancellation notification sent to: " + entrant.getHardwareID()))
+                    .addOnFailureListener(e ->
+                            Log.e(TAG, "Failed to send cancellation notification", e));
+        } else {
+            Log.w(TAG, "NotificationService not bound");
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (serviceBound) {
+            getContext().unbindService(serviceConnection);
+            serviceBound = false;
+        }
     }
 
     /**
@@ -294,15 +418,23 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
      */
     private static class EntrantInfoAdapter extends RecyclerView.Adapter<EntrantInfoAdapter.EntrantInfoViewHolder> {
         private List<Entrant> entrants;
+        private boolean showCancelButton;
+        private OnCancelClickListener cancelListener;
 
+        public interface OnCancelClickListener {
+            void onCancelClick(Entrant entrant);
+        }
         /**
          * Constructs an adapter with an initial list of entrants.
          *
          * @param entrants The list of {@link Entrant} objects to be displayed.
          *                 This list can be empty if no data is available initially.
+         * @param listener This listener is for cancel button and cancel invitation functionality
          */
-        public EntrantInfoAdapter(List<Entrant> entrants) {
+        public EntrantInfoAdapter(List<Entrant> entrants, OnCancelClickListener listener) {
             this.entrants = entrants;
+            this.cancelListener = listener;
+            this.showCancelButton = false;
         }
 
         /**
@@ -313,9 +445,10 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
          *
          * @param newEntrants The new list of {@link Entrant} objects to display.
          */
-        public void updateData(List<Entrant> newEntrants) {
+        public void updateData(List<Entrant> newEntrants, Boolean showCancel) {
             this.entrants.clear();
             this.entrants.addAll(newEntrants);
+            this.showCancelButton = showCancel;
             notifyDataSetChanged();
         }
 
@@ -340,7 +473,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         @Override
         public EntrantInfoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
-                    .inflate(android.R.layout.simple_list_item_2, parent, false);
+                    .inflate(R.layout.item_entrant_profile, parent, false);
             return new EntrantInfoViewHolder(view);
         }
 
@@ -361,14 +494,39 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         public void onBindViewHolder(@NonNull EntrantInfoViewHolder holder, int position) {
             Entrant entrant = entrants.get(position);
             String name = entrant.getFirstName() + " " + entrant.getLastName();
-            String details = "Email: " + entrant.getEmail();
+            String email = "Email: " + entrant.getEmail();
+            String phone = "Phone: " + entrant.getPhoneNumber();
+
+            holder.userName.setText(name);
+            holder.userEmail.setText(email);
 
             if (entrant.getPhoneNumber() != null && !entrant.getPhoneNumber().isEmpty()) {
-                details += "\nPhone: " + entrant.getPhoneNumber();
+                holder.userPhone.setText(phone);
+                holder.userPhone.setVisibility(View.VISIBLE);
+            } else {
+                holder.userPhone.setVisibility(View.GONE);
             }
 
-            holder.text1.setText(name);
-            holder.text2.setText(details);
+            // Hide the time joined (not useful for this view)
+            holder.tvTimeJoined.setVisibility(View.GONE);
+
+            // Configure button based on what list of entrants we are showing (Accepted, Invited, Declined)
+            if (showCancelButton) {
+                holder.actionButton.setVisibility(View.VISIBLE);
+                holder.actionButton.setText("Cancel");
+                holder.actionButton.setBackgroundColor(Color.RED);
+                holder.actionButton.setOnClickListener(v -> {
+                    if (cancelListener != null) {
+                        Log.d("EntrantInfoAdapter", "Cancel button clicked for: " + entrant.getFirstName());
+                        cancelListener.onCancelClick(entrant);
+                    } else {
+                        Log.e(TAG, "CancelListener is null");
+                    }
+                });
+            } else {
+                // Don't display the button for entrants lists other than invited
+                holder.actionButton.setVisibility(View.GONE);
+            }
         }
 
         /**
@@ -388,13 +546,20 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
          * two {@link TextView} elements ({@code text1} and {@code text2}).
          */
         public static class EntrantInfoViewHolder extends RecyclerView.ViewHolder {
-            TextView text1;
-            TextView text2;
+            TextView userName;
+            TextView userEmail;
+            TextView userPhone;
+            TextView tvTimeJoined;
+            Button actionButton;
 
             public EntrantInfoViewHolder(@NonNull View itemView) {
                 super(itemView);
-                text1 = itemView.findViewById(android.R.id.text1);
-                text2 = itemView.findViewById(android.R.id.text2);
+                userName = itemView.findViewById(R.id.user_name);
+                userEmail = itemView.findViewById(R.id.user_email);
+                userPhone = itemView.findViewById(R.id.user_phone);
+                tvTimeJoined = itemView.findViewById(R.id.tvTimeJoined);
+                // uses the accept button but change the appearance and functionality for cancelling invitations
+                actionButton = itemView.findViewById(R.id.btnMoveToAccepted);
             }
         }
     }

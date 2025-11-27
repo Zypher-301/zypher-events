@@ -316,4 +316,14 @@ public class OrganizerLotteryFragment extends Fragment {
                 currentEvent.getUniqueEventID());
         Log.d(TAG, "Waitlist notifications sent to " + entrantIDs.size() + " entrants");
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        if (serviceBound && getContext() != null) {
+            getContext().unbindService(serviceConnection);
+            serviceBound = false;
+        }
+    }
 }

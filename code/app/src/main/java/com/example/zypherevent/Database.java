@@ -1112,6 +1112,25 @@ public class Database {
         });
     }
 
+    public Task<Void> removeEntrantFromInvited(String eventId, Entrant entrant) {
+        if (eventId == null || entrant == null || entrant.getHardwareID() == null) {
+            return Tasks.forException(new IllegalArgumentException("Event ID and Entrant cannot be null"));
+        }
+
+        DocumentReference eventRef = eventsCollection.document(eventId);
+
+        return eventRef.update("invitedEntrants", FieldValue.arrayRemove(entrant.getHardwareID()))
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Also remove from the entrant's invited events list
+                    DocumentReference entrantRef = usersCollection.document(entrant.getHardwareID());
+                    return entrantRef.update("invitedEvents", FieldValue.arrayRemove(Long.parseLong(eventId)));
+                });
+    }
+
     /**
      * Manually parses a list from Firestore into a proper ArrayList of WaitlistEntry.
      * Expects each item to be a Map with:

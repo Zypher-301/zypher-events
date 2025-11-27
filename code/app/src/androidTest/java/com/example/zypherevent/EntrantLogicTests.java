@@ -287,4 +287,386 @@ public class EntrantLogicTests {
         User deletedUser = Tasks.await(testDatabase.getUser(hardwareId));
         assertNull(deletedUser);
     }
+
+    // ==========================================
+    // USER STORIES (US 01.04.xx)
+    // ==========================================
+
+    /**
+     * US 01.04.01: As an entrant I want to receive notification when I am chosen
+     * to participate from the waiting list (when I "win" the lottery).
+     * * Logic:
+     * 1. Create an Entrant and an Event.
+     * 2. Simulate the system/organizer sending a "You Won" notification.
+     * 3. Fetch all notifications for this entrant.
+     * 4. Verify the specific "Won" notification is present.
+     */
+    @Test
+    public void testReceiveWinNotification() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Entrant entrant = createEntrant("entrant-winner");
+        Event event = createEvent("Lottery Event", "org-sender");
+        Long notifId = Tasks.await(testDatabase.getUniqueNotificationID());
+
+        // Execute: Simulate System sending a "Win" Notification
+        Notification winNotif = new Notification(
+                notifId,
+                "org-sender",                  // Sender
+                entrant.getHardwareID(),       // Receiver (Our Entrant)
+                "You Won!",                    // Header
+                "You have been selected to participate.", // Body
+                event.getUniqueEventID()       // Linked Event
+        );
+        Tasks.await(testDatabase.setNotificationData(notifId, winNotif));
+
+        // Add to cleanup
+        final Notification cleanNotif = winNotif;
+
+        // Assert: Entrant fetches their notifications
+        List<Notification> allNotifs = Tasks.await(testDatabase.getAllNotifications());
+
+        // Filter for our entrant only
+        List<Notification> myNotifs = allNotifs.stream()
+                .filter(n -> n.getReceivingUserHardwareID().equals(entrant.getHardwareID()))
+                .collect(Collectors.toList());
+
+        assertFalse("Should have notifications", myNotifs.isEmpty());
+        assertTrue("Should contain the Win notification",
+                myNotifs.stream().anyMatch(n -> n.getUniqueNotificationID().equals(notifId)));
+
+        // Cleanup
+        Tasks.await(testDatabase.removeNotificationData(notifId));
+    }
+
+    /**
+     * US 01.04.02: As an entrant I want to receive notification of when I am not chosen
+     * on the app (when I "lose" the lottery).
+     * * Logic:
+     * 1. Create an Entrant.
+     * 2. Simulate the system sending a "You Lost" notification.
+     * 3. Verify the entrant can retrieve it from the database.
+     */
+    @Test
+    public void testReceiveLossNotification() throws ExecutionException, InterruptedException {
+        // Setup
+        Entrant entrant = createEntrant("entrant-loser");
+        Long notifId = Tasks.await(testDatabase.getUniqueNotificationID());
+
+        // Execute: Simulate System sending a "Loss" Notification
+        Notification lossNotif = new Notification(
+                notifId,
+                "system-admin",
+                entrant.getHardwareID(),
+                "Lottery Results",
+                "Unfortunately, you were not selected this time."
+        );
+        Tasks.await(testDatabase.setNotificationData(notifId, lossNotif));
+
+        // Assert
+        List<Notification> allNotifs = Tasks.await(testDatabase.getAllNotifications());
+
+        boolean found = allNotifs.stream()
+                .anyMatch(n -> n.getUniqueNotificationID().equals(notifId) &&
+                        n.getReceivingUserHardwareID().equals(entrant.getHardwareID()));
+
+        assertTrue("Entrant should find the Loss notification", found);
+
+        // Cleanup
+        Tasks.await(testDatabase.removeNotificationData(notifId));
+    }
+
+    /**
+     * US 01.04.03: As an entrant I want to opt out of receiving notifications
+     * from organizers and admins.
+     * * Logic:
+     * 1. Create an Entrant (default notifications enabled).
+     * 2. Toggle the preference to FALSE.
+     * 3. Save to database.
+     * 4. Fetch the user again and verify the preference persisted.
+     */
+    @Test
+    public void testOptOutNotifications() throws ExecutionException, InterruptedException {
+        // Setup: Create entrant, assert default is TRUE
+        Entrant entrant = createEntrant("entrant-opt-out");
+
+        // Ensure it starts as true for this test
+        entrant.setWantsNotifications(true);
+        Tasks.await(testDatabase.setUserData(entrant.getHardwareID(), entrant));
+
+        // Execute: User opts out
+        entrant.setWantsNotifications(false);
+        Tasks.await(testDatabase.setUserData(entrant.getHardwareID(), entrant));
+
+        // Assert: Fetch fresh from DB
+        User fetchedUser = Tasks.await(testDatabase.getUser(entrant.getHardwareID()));
+        assertTrue("User should be Entrant", fetchedUser instanceof Entrant);
+        assertFalse("WantsNotifications should be FALSE in DB", ((Entrant) fetchedUser).getWantsNotifications());
+    }
+
+    // ==========================================
+    // USER STORIES (US 01.05.xx)
+    // ==========================================
+
+    /**
+     * US 01.05.01: As an entrant I want another chance to be chosen from the waiting list
+     * if a selected user declines an invitation to sign up.
+     * * * Test Logic:
+     * This test verifies the data integrity required for "Another Chance".
+     * If User A declines, they must be moved to the 'declined' list, and User B
+     * must remain on the 'waitlist'. This ensures the Organizer's sampling algorithm
+     * has the correct data state to pick User B in a re-draw.
+     */
+    @Test
+    public void testDeclineOpensSlot() throws ExecutionException, InterruptedException, ParseException {
+        // Setup: Event with 1 Invited user and 1 Waitlisted user
+        Event event = createEvent("Re-Draw Event", "org-1");
+        Entrant userInvited = createEntrant("user-invite-decline");
+        Entrant userWaitlist = createEntrant("user-waitlist-hopeful");
+
+        // Manually set up the state
+        event.addEntrantToInvitedList(userInvited.getHardwareID());
+        event.addEntrantToWaitList(userWaitlist.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Execute: User A Declines
+        event.removeEntrantFromInvitedList(userInvited.getHardwareID());
+        event.addEntrantToDeclinedList(userInvited.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Assert: Verify State for Re-Draw
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+
+        // 1. User A is definitely declined
+        assertTrue("Invited user should be in declined list",
+                updatedEvent.getDeclinedEntrants().contains(userInvited.getHardwareID()));
+        assertFalse("Invited user should NOT be in invited list",
+                updatedEvent.getInvitedEntrants().contains(userInvited.getHardwareID()));
+
+        // 2. User B is still available on waitlist
+        boolean userB_StillWaiting = updatedEvent.getWaitListEntrants().stream()
+                .anyMatch(e -> e.getEntrantHardwareID().equals(userWaitlist.getHardwareID()));
+        assertTrue("Waitlist user should still be available for the next draw", userB_StillWaiting);
+    }
+
+    /**
+     * US 01.05.02: As an entrant I want to be able to accept the invitation
+     * to register/sign up when chosen to participate in an event.
+     * * Logic:
+     * 1. Place Entrant in 'Invited' list.
+     * 2. Simulate 'Accept' action (Remove from Invited -> Add to Accepted).
+     * 3. Verify persistence.
+     */
+    @Test
+    public void testAcceptInvitation() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Event event = createEvent("Accept Event", "org-1");
+        Entrant entrant = createEntrant("entrant-accept");
+
+        // Set initial state: Invited
+        event.addEntrantToInvitedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Execute: Accept Invitation
+        event.removeEntrantFromInvitedList(entrant.getHardwareID());
+        event.addEntrantToAcceptedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Assert
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertTrue("Entrant should be in accepted list",
+                updatedEvent.getAcceptedEntrants().contains(entrant.getHardwareID()));
+        assertFalse("Entrant should NOT be in invited list",
+                updatedEvent.getInvitedEntrants().contains(entrant.getHardwareID()));
+    }
+
+    /**
+     * US 01.05.03: As an entrant I want to be able to decline an invitation
+     * when chosen to participate in an event.
+     * * Logic:
+     * 1. Place Entrant in 'Invited' list.
+     * 2. Simulate 'Decline' action (Remove from Invited -> Add to Declined).
+     * 3. Verify persistence.
+     */
+    @Test
+    public void testDeclineInvitation() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Event event = createEvent("Decline Event", "org-1");
+        Entrant entrant = createEntrant("entrant-decline");
+
+        // Set initial state: Invited
+        event.addEntrantToInvitedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Execute: Decline Invitation
+        event.removeEntrantFromInvitedList(entrant.getHardwareID());
+        event.addEntrantToDeclinedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Assert
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertTrue("Entrant should be in declined list",
+                updatedEvent.getDeclinedEntrants().contains(entrant.getHardwareID()));
+        assertFalse("Entrant should NOT be in invited list",
+                updatedEvent.getInvitedEntrants().contains(entrant.getHardwareID()));
+    }
+
+    /**
+     * US 01.05.04: As an entrant, I want to know how many total entrants are on the waiting list.
+     * * Logic:
+     * 1. Add 3 entrants to the waitlist.
+     * 2. Retrieve the event.
+     * 3. Verify the size of the waitlist list is 3.
+     */
+    @Test
+    public void testSeeWaitlistCount() throws ExecutionException, InterruptedException, ParseException {
+        Event event = createEvent("Popular Event", "org-1");
+        Entrant e1 = createEntrant("e1");
+        Entrant e2 = createEntrant("e2");
+        Entrant e3 = createEntrant("e3");
+
+        // Add 3 entrants
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), e1));
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), e2));
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(event.getUniqueEventID()), e3));
+
+        // Assert
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertNotNull(updatedEvent.getWaitListEntrants());
+        assertEquals("Waitlist count should be 3", 3, updatedEvent.getWaitListEntrants().size());
+    }
+
+    /**
+     * US 01.05.05: As an entrant, I want to be informed about the criteria or guidelines
+     * for the lottery selection process.
+     * * Logic:
+     * 1. Create an event with specific lottery criteria text.
+     * 2. Save it.
+     * 3. Retrieve it and verify the text is accessible.
+     */
+    @Test
+    public void testViewLotteryCriteria() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Event event = createEvent("Strict Event", "org-1");
+        String criteriaText = "Must have prior hiking experience and valid safety gear.";
+
+        event.setLotteryCriteria(criteriaText);
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Assert
+        Event fetchedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertNotNull("Criteria should not be null", fetchedEvent.getLotteryCriteria());
+        assertEquals("Criteria text should match", criteriaText, fetchedEvent.getLotteryCriteria());
+    }
+
+    // ==========================================
+    // USER STORIES (US 01.06.xx)
+    // ==========================================
+
+    /**
+     * US 01.06.01: As an entrant I want to view event details within the app
+     * by scanning the promotional QR code.
+     * * Logic:
+     * 1. Create a target event in the database.
+     * 2. Construct a simulated QR code string ("EVENT:{id}").
+     * 3. Use the App's utility to extract the ID (simulating the scan).
+     * 4. Fetch the event and verify the details match.
+     */
+    @Test
+    public void testViewEventDetailsFromQR() throws ExecutionException, InterruptedException, ParseException {
+        // Setup: Create the event that the QR code points to
+        Event originalEvent = createEvent("QR Promo Event", "org-qr");
+        originalEvent.setEventDescription("Exclusive gala.");
+        originalEvent.setPosterURL("www.poster.com/img.png");
+        Tasks.await(testDatabase.setEventData(originalEvent.getUniqueEventID(), originalEvent));
+
+        // Execute: Simulate scanning a QR code string
+        String simulatedQRContent = "EVENT:" + originalEvent.getUniqueEventID();
+
+        // Use the actual app logic to parse it
+        Long scannedId = Utils.extractEventId(simulatedQRContent);
+        assertNotNull("Utils should extract a valid ID", scannedId);
+
+        // Fetch the "Details" using that ID
+        Event fetchedEvent = Tasks.await(testDatabase.getEvent(scannedId));
+
+        // Assert: Verify we got the correct details
+        assertNotNull("Should find event from extracted ID", fetchedEvent);
+        assertEquals("Name matches", "QR Promo Event", fetchedEvent.getEventName());
+        assertEquals("Description matches", "Exclusive gala.", fetchedEvent.getEventDescription());
+        assertEquals("Poster URL matches", "www.poster.com/img.png", fetchedEvent.getPosterURL());
+    }
+
+    /**
+     * US 01.06.02: As an entrant I want to be able to sign up for an event
+     * from the event details.
+     * * Logic:
+     * 1. Create Entrant and Event.
+     * 2. Fetch the event object (mimicking the "View Details" page load).
+     * 3. Call the join waitlist logic on this fetched object.
+     * 4. Verify the entrant is successfully added to the database waitlist.
+     */
+    @Test
+    public void testSignUpFromEventDetails() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Entrant entrant = createEntrant("entrant-qr-signer");
+        Event event = createEvent("QR Signup Event", "org-qr");
+
+        // 1. Simulate viewing details
+        Event detailsPageEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertNotNull(detailsPageEvent);
+
+        // 2. Execute: User clicks "Join Waitlist" on the details page
+        Tasks.await(testDatabase.addEntrantToWaitlist(String.valueOf(detailsPageEvent.getUniqueEventID()), entrant));
+
+        // 3. Update User history
+        entrant.addEventToRegisteredEventHistory(detailsPageEvent.getUniqueEventID());
+        Tasks.await(testDatabase.setUserData(entrant.getHardwareID(), entrant));
+
+        // Assert: Verify entrant is on waitlist
+        Event updatedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+
+        boolean onWaitlist = updatedEvent.getWaitListEntrants().stream()
+                .anyMatch(e -> e.getEntrantHardwareID().equals(entrant.getHardwareID()));
+
+        assertTrue("Entrant should be on waitlist after signing up from details", onWaitlist);
+    }
+
+    // ==========================================
+    // USER STORIES (US 01.07.xx)
+    // ==========================================
+
+    /**
+     * US 01.07.01: As an entrant, I want to be identified by my device,
+     * so that I don't have to use a username and password.
+     * * Logic:
+     * 1. Simulate a unique device ID (hardware ID).
+     * 2. Create a user linked to this ID.
+     * 3. Verify that we can retrieve the specific user profile solely using this ID
+     * (Authentication by ID).
+     * 4. Verify that a different/unknown ID returns null (New user scenario).
+     */
+    @Test
+    public void testDeviceIdentification() throws ExecutionException, InterruptedException {
+        String existingDeviceId = "device-id-existing";
+        String newDeviceId = "device-id-new";
+
+        // 1. Setup: User with specific device ID exists
+        Entrant existingUser = new Entrant(existingDeviceId, "Device", "User", "device@test.com");
+        Tasks.await(testDatabase.setUserData(existingDeviceId, existingUser));
+        usersToClean.add(existingUser);
+
+        // 2. Execute: "Log in" by fetching user with the Device ID
+        User fetchedUser = Tasks.await(testDatabase.getUser(existingDeviceId));
+
+        // 3. Assert: Existing user is identified/found without password
+        assertNotNull("Should identify existing user by ID", fetchedUser);
+        assertEquals("Should match the correct user", existingDeviceId, fetchedUser.getHardwareID());
+        assertTrue("Should be an Entrant", fetchedUser instanceof Entrant);
+
+        // 4. Execute: "Log in" with unknown Device ID
+        User unknownUser = Tasks.await(testDatabase.getUser(newDeviceId));
+
+        // 5. Assert: Unknown ID is treated as new (null result)
+        assertNull("Unknown device ID should return null (prompt creation)", unknownUser);
+    }
 }

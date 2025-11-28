@@ -11,16 +11,15 @@
         android:layout_height="wrap_content"
         android:theme="@style/Theme.ZypherEvent.AppBarOverlay">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             app:popupTheme="@style/Theme.ZypherEvent.PopupOverlay"
-            app:title="Organizer"
-            app:titleMargin="4dp"
-            app:titleMarginStart="152dp"
-            app:titleTextAppearance="@style/TextAppearance.AppCompat.Display1" />
+            app:titleCentered="true"
+            app:titleTextAppearance="@style/ToolbarTitleStyle"
+            tools:title="Organizer" />
 
     </com.google.android.material.appbar.AppBarLayout>
 

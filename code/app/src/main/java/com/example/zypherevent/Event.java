@@ -241,7 +241,13 @@ public class Event implements Serializable {
         this.eventDescription = eventDescription;
     }
 
+    public String getDescription() {
+        return eventDescription;
+    }
 
+    public void setDescription(String description) {
+        this.eventDescription = description;
+    }
 
     /**
      * returns lottery criteria

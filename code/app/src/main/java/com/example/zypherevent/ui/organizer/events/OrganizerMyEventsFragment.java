@@ -221,11 +221,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return;
         }
 
-        // Create bundle with the event ID
         Bundle bundle = new Bundle();
         bundle.putLong("eventId", event.getUniqueEventID());
 
-        // Navigate to the new fragment (ensure ID matches organizer_navigation.xml)
         Navigation.findNavController(requireView()).navigate(R.id.nav_view_entrants_list, bundle);
     }
 
@@ -286,7 +284,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         View dialogView = inflater.inflate(R.layout.dialog_notifications, null);
         builder.setView(dialogView);
 
-        // Find views
         Spinner statusSpinner = dialogView.findViewById(R.id.dropdown);
         EditText editHeader = dialogView.findViewById(R.id.edit_notification_header);
         EditText editBody = dialogView.findViewById(R.id.edit_notification_body);
@@ -294,7 +291,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button useTemplateButton = dialogView.findViewById(R.id.use_template_button);
         Button sendButton = dialogView.findViewById(R.id.send_button);
 
-        // Setup spinner
         String[] statusOptions = {"Waitlisted", "Accepted", "Declined"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 getContext(),
@@ -306,7 +302,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         final String[] selectedStatus = {null};
 
-        // Character counter
         editBody.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -338,7 +333,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
         });
 
-        // Use temple button
         useTemplateButton.setOnClickListener(v -> {
             if (selectedStatus[0] != null) {
                 populateTemplate(editHeader, editBody, selectedStatus[0], event.getEventName());
@@ -350,7 +344,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         AlertDialog dialog = builder.create();
 
-        // Send button click
         sendButton.setOnClickListener(v -> {
             if (selectedStatus[0] == null || selectedStatus[0].isEmpty()) {
                 new AlertDialog.Builder(getContext())
@@ -432,7 +425,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param dialog The dialog to dismiss after sending
      */
     private void sendNotificationsToStatus(Event event, String selectedStatus,String customHeader, String customBody, Button sendButton, AlertDialog dialog) {
-        // Get list of entrant IDs based on status
         List<String> entrantIds = new ArrayList<>();
 
         switch (selectedStatus) {
@@ -447,7 +439,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 break;
 
             case "Accepted":
-                // This sends to both invited and accepted entrants (currently)
                 if (event.getInvitedEntrants() != null) {
                     entrantIds.addAll(event.getInvitedEntrants());
                 }
@@ -473,10 +464,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return;
         }
 
-        // Remove duplicates
         List<String> uniqueIds = new ArrayList<>(new java.util.HashSet<>(entrantIds));
 
-        // Confirm before sending notification
         new AlertDialog.Builder(getContext())
                 .setTitle("Confirm Notification Send")
                 .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase() + " entrant(s)?")
@@ -485,7 +474,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                         Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.", Toast.LENGTH_LONG).show();
                         sendButton.setEnabled(true);
                         dialog.dismiss();
-                        }, () -> {
+                    }, () -> {
                         Toast.makeText(getContext(), "Failed to send some notifications.", Toast.LENGTH_SHORT).show();
                         sendButton.setEnabled(true);
                     });
@@ -646,24 +635,21 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     private Task<String> exportCSV(Event event) {
         ArrayList<String> acceptedList = event.getAcceptedEntrants();
         if (acceptedList == null || acceptedList.isEmpty()) {
-            return Tasks.forResult(""); // immediately resolved Task with empty CSV
+            return Tasks.forResult("");
         }
 
         List<Task<Entrant>> userTasks = new ArrayList<>();
 
         for (String entrantId : acceptedList) {
             Task<Entrant> t = db.getUser(entrantId).continueWith(task -> {
-                // if failed
                 if (!task.isSuccessful()) {
                     throw task.getException();
                 }
-                // adjust type if getUser returns User instead of Entrant
                 return (Entrant) task.getResult();
             });
             userTasks.add(t);
         }
 
-        // Wait for all user fetches to finish, then build the CSV
         return Tasks.whenAllSuccess(userTasks).continueWith(task -> {
             @SuppressWarnings("unchecked") List<Entrant> entrants = (List<Entrant>) (List<?>) task.getResult();
 
@@ -777,11 +763,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     String hardwareId = entry.getEntrantHardwareID();
                     if (hardwareId == null || hardwareId.isEmpty()) continue;
 
-                    // Minimal Entrant object — moveEntrantToAccepted only uses hardwareID
                     Entrant stubEntrant = new Entrant(hardwareId, "", "", "");
 
                     db.moveEntrantToInvited(event.getUniqueEventID().toString(), stubEntrant).addOnSuccessListener(unused -> {
-                        /* no-op or log if you like */
                     }).addOnFailureListener(err -> Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage()));
 
                     invitedCount++;
@@ -789,7 +773,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
                 Toast.makeText(getContext(), "Selected and invited " + invitedCount + " entrant(s).", Toast.LENGTH_LONG).show();
 
-                // Refresh events so UI elsewhere stays in sync
                 loadEvents();
             });
         }
@@ -821,7 +804,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return;
         }
 
-        // look up the Entrant object so we can show a name in the dialog
         db.getUser(hardwareId).addOnSuccessListener(user -> {
             if (!(user instanceof Entrant)) {
                 Toast.makeText(getContext(), "User is not an entrant or could not be loaded", Toast.LENGTH_SHORT).show();
@@ -880,7 +862,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         }
 
-        //Filter the pool so we only consider entrant who haven't already accepted/declined/invited
         ArrayList<String> invited = event.getInvitedEntrants();
         ArrayList<String> accepted = event.getAcceptedEntrants();
         ArrayList<String> declined = event.getDeclinedEntrants();
@@ -895,7 +876,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String id = entry.getEntrantHardwareID();
             if (id == null || id.isEmpty()) continue;
 
-            //skip if already invited/accepted/declined
             if (invited.contains(id) || accepted.contains(id) || declined.contains(id)) {
                 continue;
             }
@@ -907,7 +887,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        //simple "pooling": pick one random eligible entrant
         Collections.shuffle(eligible);
         WaitlistEntry chosen = eligible.get(0);
         String chosenId = chosen.getEntrantHardwareID();
@@ -919,7 +898,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     Toast.makeText(getContext(),
                             "Replacement entrant invited from the pool.",
                             Toast.LENGTH_SHORT).show();
-                    loadEvents(); // refresh organizer UI
+                    loadEvents();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to move replacement to invited: " + e.getMessage(), e);
@@ -929,7 +908,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 });
 
     }
-
 
     /**
      * Shows a dialog for creating a new event.
@@ -952,6 +930,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button btnRegStart = dialogView.findViewById(R.id.btn_reg_start);
         Button btnRegEnd = dialogView.findViewById(R.id.btn_reg_end);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
+        EditText editDescription = dialogView.findViewById(R.id.edit_description);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
@@ -998,6 +977,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String eventName = editName.getText().toString().trim();
             String location = editLocation.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
+            String eventDescription = editDescription.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
@@ -1055,7 +1035,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            createEvent(eventName, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, null, requiresGeo);
+            createEvent(eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, null, requiresGeo);
 
             dialog.dismiss();
         });
@@ -1074,6 +1054,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * written to the database, and the event list is refreshed on success.
      *
      * @param eventName             the name of the event
+     * @param eventDescription      a brief description of the event
      * @param startTime             the date when the event occurs
      * @param location              the physical or virtual location of the event
      * @param registrationStartTime the date when registration opens
@@ -1081,10 +1062,11 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param waitlistLimit         the maximum allowed waitlist size, or null for
      *                              no limit
      * @param lotteryCriteria       optional textual description of lottery criteria
+     * @param posterUrl             the Firebase path to the event's optional promotional poster
      * @param requiresGeolocation   whether geolocation is required for entrant
      *                              registration
      */
-    private void createEvent(String eventName, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
+    private void createEvent(String eventName, String eventDescription, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -1100,7 +1082,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 return;
             }
 
-            Event newEvent = new Event(eventID, eventName, "", startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
+            Event newEvent = new Event(eventID, eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
 
             if (waitlistLimit != null) {
                 newEvent.setWaitlistLimit(waitlistLimit);
@@ -1148,6 +1130,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button btnRegStart = dialogView.findViewById(R.id.btn_reg_start);
         Button btnRegEnd = dialogView.findViewById(R.id.btn_reg_end);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
+        EditText editDescription = dialogView.findViewById(R.id.edit_description);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
@@ -1164,6 +1147,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         editName.setText(event.getEventName());
 
         editLocation.setText(event.getLocation());
+
+        editDescription.setText(event.getDescription());
 
         if (event.getStartTime() != null) {
             btnEventDate.setText(displayFormat.format(event.getStartTime()));
@@ -1226,6 +1211,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String eventName = editName.getText().toString().trim();
             String location = editLocation.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
+            String eventDescription = editDescription.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
@@ -1288,7 +1274,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            updateEvent(event.getUniqueEventID(), eventName, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, event.getPosterURL(), requiresGeo);
+            updateEvent(event.getUniqueEventID(), eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, event.getPosterURL(), requiresGeo);
 
             dialog.dismiss();
         });
@@ -1308,18 +1294,20 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      *
      * @param eventId               the unique identifier of the event being updated
      * @param eventName             the updated event name
+     * @param eventDescription      the updated event description
      * @param startTime             the updated event start time
      * @param location              the updated event location
      * @param registrationStartTime the updated registration start time
      * @param registrationEndTime   the updated registration end time
      * @param waitlistLimit         the updated waitlist limit, or null for no limit
      * @param lotteryCriteria       the updated lottery criteria text
+     * @param posterUrl             the updated poster URL
      * @param requiresGeolocation   whether geolocation is required for registration
      */
-    private void updateEvent(Long eventId, String eventName, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
+    private void updateEvent(Long eventId, String eventName, String eventDescription, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
-        Event updatedEvent = new Event(eventId, eventName, "", startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
+        Event updatedEvent = new Event(eventId, eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
 
         updatedEvent.setWaitlistLimit(waitlistLimit);
         updatedEvent.setLotteryCriteria(lotteryCriteria);

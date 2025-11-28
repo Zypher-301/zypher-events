@@ -880,7 +880,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         }
 
-        //Filter the pool so we only consider entrant who havent already accepted/declined/invited
+        //Filter the pool so we only consider entrant who haven't already accepted/declined/invited
         ArrayList<String> invited = event.getInvitedEntrants();
         ArrayList<String> accepted = event.getAcceptedEntrants();
         ArrayList<String> declined = event.getDeclinedEntrants();

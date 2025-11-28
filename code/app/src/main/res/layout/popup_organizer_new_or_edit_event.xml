@@ -105,6 +105,17 @@
             android:background="?android:attr/editTextBackground"
             android:textColor="?android:attr/textColorHint" />
 
+        <EditText
+            android:id="@+id/edit_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
 
         <EditText
             android:id="@+id/edit_lottery_criteria"

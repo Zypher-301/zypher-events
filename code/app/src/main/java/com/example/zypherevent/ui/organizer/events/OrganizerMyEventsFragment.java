@@ -931,6 +931,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button btnRegEnd = dialogView.findViewById(R.id.btn_reg_end);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         EditText editDescription = dialogView.findViewById(R.id.edit_description);
+        EditText posterUrlInput = dialogView.findViewById(R.id.editPosterUrl);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
@@ -978,6 +979,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             String eventDescription = editDescription.getText().toString().trim();
+            String posterUrl = posterUrlInput.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
@@ -1035,13 +1037,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            createEvent(eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, null, requiresGeo);
+            createEvent(eventName, eventDescription, startTime, location,
+                    registrationStartTime, registrationEndTime,
+                    waitlistLimit, lotteryCriteria, posterUrl, requiresGeo);
 
             dialog.dismiss();
         });
 
         dialog.show();
-
     }
 
     /**
@@ -1066,7 +1069,16 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param requiresGeolocation   whether geolocation is required for entrant
      *                              registration
      */
-    private void createEvent(String eventName, String eventDescription, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
+    private void createEvent(String eventName,
+                             String eventDescription,
+                             Date startTime,
+                             String location,
+                             Date registrationStartTime,
+                             Date registrationEndTime,
+                             Integer waitlistLimit,
+                             String lotteryCriteria,
+                             String posterUrl,
+                             boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -1082,7 +1094,18 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 return;
             }
 
-            Event newEvent = new Event(eventID, eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
+            Event newEvent = new Event(
+                    eventID,
+                    eventName,
+                    eventDescription,
+                    startTime,
+                    location,
+                    registrationStartTime,
+                    registrationEndTime,
+                    organizerUser.getHardwareID(),
+                    posterUrl,
+                    requiresGeolocation
+            );
 
             if (waitlistLimit != null) {
                 newEvent.setWaitlistLimit(waitlistLimit);
@@ -1101,7 +1124,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     loadEvents();
                 } else {
                     Log.e(TAG, "Error saving event to database", saveTask.getException());
-                    Toast.makeText(getContext(), "Error creating event: " + (saveTask.getException() != null ? saveTask.getException().getMessage() : "Unknown error"), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),
+                            "Error creating event: " +
+                                    (saveTask.getException() != null
+                                            ? saveTask.getException().getMessage()
+                                            : "Unknown error"),
+                            Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -1131,6 +1159,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button btnRegEnd = dialogView.findViewById(R.id.btn_reg_end);
         EditText editLotteryCriteria = dialogView.findViewById(R.id.edit_lottery_criteria);
         EditText editDescription = dialogView.findViewById(R.id.edit_description);
+        EditText posterUrlInput = dialogView.findViewById(R.id.editPosterUrl);
         Switch switchLimit = dialogView.findViewById(R.id.switchLimit);
         EditText limitNum = dialogView.findViewById(R.id.limit_num);
         Switch requireGeolocation = dialogView.findViewById(R.id.require_geolocation);
@@ -1145,10 +1174,19 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM d, yyyy");
 
         editName.setText(event.getEventName());
-
         editLocation.setText(event.getLocation());
-
         editDescription.setText(event.getDescription());
+
+        // fill lottery criteria and poster URL
+        String existingCriteria = event.getLotteryCriteria();
+        if (existingCriteria != null) {
+            editLotteryCriteria.setText(existingCriteria);
+        }
+
+        String existingPosterUrl = event.getPosterURL();
+        if (existingPosterUrl != null) {
+            posterUrlInput.setText(existingPosterUrl);
+        }
 
         if (event.getStartTime() != null) {
             btnEventDate.setText(displayFormat.format(event.getStartTime()));
@@ -1181,11 +1219,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             btnRegEnd.setTextColor(getResources().getColor(android.R.color.primary_text_light, null));
         }));
 
-        String existingCriteria = event.getLotteryCriteria();
-        if (existingCriteria != null) {
-            editLotteryCriteria.setText(existingCriteria);
-        }
-
         Integer currentLimit = event.getWaitlistLimit();
         if (currentLimit != null) {
             switchLimit.setChecked(true);
@@ -1212,6 +1245,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             String location = editLocation.getText().toString().trim();
             String lotteryCriteria = editLotteryCriteria.getText().toString().trim();
             String eventDescription = editDescription.getText().toString().trim();
+            String posterUrl = posterUrlInput.getText().toString().trim();
             boolean hasLimit = switchLimit.isChecked();
             String limitStr = limitNum.getText().toString().trim();
             boolean requiresGeo = requireGeolocation.isChecked();
@@ -1262,9 +1296,13 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                         Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    int currentWaitlistSize = event.getWaitListEntrants() != null ? event.getWaitListEntrants().size() : 0;
+                    int currentWaitlistSize = event.getWaitListEntrants() != null
+                            ? event.getWaitListEntrants().size()
+                            : 0;
                     if (limit < currentWaitlistSize) {
-                        Toast.makeText(getContext(), "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(),
+                                "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")",
+                                Toast.LENGTH_LONG).show();
                         return;
                     }
                     waitlistLimit = limit;
@@ -1274,13 +1312,24 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 }
             }
 
-            updateEvent(event.getUniqueEventID(), eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, waitlistLimit, lotteryCriteria, event.getPosterURL(), requiresGeo);
+            updateEvent(
+                    event.getUniqueEventID(),
+                    eventName,
+                    eventDescription,
+                    startTime,
+                    location,
+                    registrationStartTime,
+                    registrationEndTime,
+                    waitlistLimit,
+                    lotteryCriteria,
+                    posterUrl,
+                    requiresGeo
+            );
 
             dialog.dismiss();
         });
 
         dialog.show();
-
     }
 
     /**
@@ -1304,10 +1353,31 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param posterUrl             the updated poster URL
      * @param requiresGeolocation   whether geolocation is required for registration
      */
-    private void updateEvent(Long eventId, String eventName, String eventDescription, Date startTime, String location, Date registrationStartTime, Date registrationEndTime, Integer waitlistLimit, String lotteryCriteria, String posterUrl, boolean requiresGeolocation) {
+    private void updateEvent(Long eventId,
+                             String eventName,
+                             String eventDescription,
+                             Date startTime,
+                             String location,
+                             Date registrationStartTime,
+                             Date registrationEndTime,
+                             Integer waitlistLimit,
+                             String lotteryCriteria,
+                             String posterUrl,
+                             boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
-        Event updatedEvent = new Event(eventId, eventName, eventDescription, startTime, location, registrationStartTime, registrationEndTime, organizerUser.getHardwareID(), posterUrl, requiresGeolocation);
+        Event updatedEvent = new Event(
+                eventId,
+                eventName,
+                eventDescription,
+                startTime,
+                location,
+                registrationStartTime,
+                registrationEndTime,
+                organizerUser.getHardwareID(),
+                posterUrl,
+                requiresGeolocation
+        );
 
         updatedEvent.setWaitlistLimit(waitlistLimit);
         updatedEvent.setLotteryCriteria(lotteryCriteria);
@@ -1319,7 +1389,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 loadEvents();
             } else {
                 Log.e(TAG, "Error updating event in database", task.getException());
-                Toast.makeText(getContext(), "Error updating event: " + (task.getException() != null ? task.getException().getMessage() : "Unknown error"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        getContext(),
+                        "Error updating event: " +
+                                (task.getException() != null
+                                        ? task.getException().getMessage()
+                                        : "Unknown error"),
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
     }

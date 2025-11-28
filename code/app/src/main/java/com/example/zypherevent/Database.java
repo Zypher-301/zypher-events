@@ -242,6 +242,9 @@ public class Database {
                                 posterURL,
                                 requiresGeolocation);
 
+                        // add lottery criteria...
+                        event.setLotteryCriteria(doc.getString("lotteryCriteria"));
+
                         // Parse optional fields
                         if (doc.contains("waitlistLimit")) {
                             Long limitLong = doc.getLong("waitlistLimit");
@@ -669,6 +672,9 @@ public class Database {
                                     posterURL,
                                     requiresGeolocation);
 
+                            // Add lottery criteria
+                            event.setLotteryCriteria(doc.getString("lotteryCriteria"));
+
                             // optional waitlist limit
                             if (doc.contains("waitlistLimit")) {
                                 Long limitLong = doc.getLong("waitlistLimit");
@@ -768,6 +774,9 @@ public class Database {
                                     eventOrganizerHardwareID,
                                     posterURL,
                                     requiresGeolocation);
+
+                            // add lottery criteria
+                            event.setLotteryCriteria(doc.getString("lotteryCriteria"));
 
                             // optional waitlist limit
                             if (doc.contains("waitlistLimit")) {

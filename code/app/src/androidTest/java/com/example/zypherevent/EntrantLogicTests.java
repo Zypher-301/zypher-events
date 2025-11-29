@@ -27,6 +27,10 @@ import java.util.stream.Collectors;
  * Covers:
  * - 01.01.xx: Joining/Leaving waitlists, Browsing, Filtering
  * - 01.02.xx: Profile Creation, Updating, History, Deletion
+ * - 01.04.xx: Notifications (Win/Loss, Opt-out)
+ * - 01.05.xx: Invitation Management (Accept/Decline, Another Chance, Waitlist Count, Criteria)
+ * - 01.06.xx: QR Code Event Details and Sign-up
+ * - 01.07.xx: Device Identification
  */
 @RunWith(AndroidJUnit4.class)
 public class EntrantLogicTests {
@@ -672,6 +676,7 @@ public class EntrantLogicTests {
         assertNotNull("Should identify existing user by ID", fetchedUser);
         assertEquals("Should match the correct user", existingDeviceId, fetchedUser.getHardwareID());
         assertTrue("Should be an Entrant", fetchedUser instanceof Entrant);
+        User unknownUser = Tasks.await(testDatabase.getUser(newDeviceId));
 
         // 5. Assert: Unknown ID is treated as new (null result)
         assertNull("Unknown device ID should return null (prompt creation)", unknownUser);

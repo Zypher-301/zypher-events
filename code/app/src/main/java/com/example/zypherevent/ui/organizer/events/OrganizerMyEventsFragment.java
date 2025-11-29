@@ -59,9 +59,11 @@ import java.util.List;
  * Fragment that displays and manages events created by the current Organizer.
  * shows a scrollable list of the organizer's events and provides actions to
  * create new events, edit existing ones,
- * export accepted entrants as CSV, run waitlist lotteries, and generate or share QR codes for
+ * export accepted entrants as CSV, run waitlist lotteries, and generate or
+ * share QR codes for
  * event check-in or promotion.
- * Also allows the Organizer to send notifications to certain status group entrants notifications
+ * Also allows the Organizer to send notifications to certain status group
+ * entrants notifications
  * It serves as the main event management screen for organizer users.
  */
 public class OrganizerMyEventsFragment extends Fragment implements OrganizerEventsAdapter.OnItemClickListener {
@@ -96,7 +98,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_organizer_my_events, container, false);
     }
 
@@ -264,7 +267,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     /**
-     * Shows a dialog for sending customizable notifications to entrants based on their status.
+     * Shows a dialog for sending customizable notifications to entrants based on
+     * their status.
      *
      * @param event the event for which to send notifications
      */
@@ -291,20 +295,20 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         Button useTemplateButton = dialogView.findViewById(R.id.use_template_button);
         Button sendButton = dialogView.findViewById(R.id.send_button);
 
-        String[] statusOptions = {"Waitlisted", "Accepted", "Declined"};
+        String[] statusOptions = { "Waitlisted", "Accepted", "Declined" };
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 getContext(),
                 android.R.layout.simple_spinner_item,
-                statusOptions
-        );
+                statusOptions);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         statusSpinner.setAdapter(adapter);
 
-        final String[] selectedStatus = {null};
+        final String[] selectedStatus = { null };
 
         editBody.addTextChangedListener(new android.text.TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int after) {
@@ -318,7 +322,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             }
 
             @Override
-            public void afterTextChanged(android.text.Editable s) {}
+            public void afterTextChanged(android.text.Editable s) {
+            }
         });
 
         statusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -381,9 +386,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * Populate the notification fields with a template based on the selected status
      *
      * @param headerField The EditText for the notification header
-     * @param bodyField The EditText for the notification body
-     * @param status The selected status group
-     * @param eventName The name of the event
+     * @param bodyField   The EditText for the notification body
+     * @param status      The selected status group
+     * @param eventName   The name of the event
      */
     private void populateTemplate(EditText headerField, EditText bodyField, String status, String eventName) {
         String header = "";
@@ -415,16 +420,19 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     }
 
     /**
-     * Sends custom notifications to entrants based on their status for the given event.
+     * Sends custom notifications to entrants based on their status for the given
+     * event.
      *
-     * @param event The event to send notifications for
-     * @param selectedStatus The status group to notify ("Waitlisted", "Accepted", "Denied")
-     * @param customHeader The custom notification title
-     * @param customBody The custom notification message
-     * @param sendButton The send button to re-enable after completion
-     * @param dialog The dialog to dismiss after sending
+     * @param event          The event to send notifications for
+     * @param selectedStatus The status group to notify ("Waitlisted", "Accepted",
+     *                       "Denied")
+     * @param customHeader   The custom notification title
+     * @param customBody     The custom notification message
+     * @param sendButton     The send button to re-enable after completion
+     * @param dialog         The dialog to dismiss after sending
      */
-    private void sendNotificationsToStatus(Event event, String selectedStatus,String customHeader, String customBody, Button sendButton, AlertDialog dialog) {
+    private void sendNotificationsToStatus(Event event, String selectedStatus, String customHeader, String customBody,
+            Button sendButton, AlertDialog dialog) {
         List<String> entrantIds = new ArrayList<>();
 
         switch (selectedStatus) {
@@ -468,10 +476,12 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         new AlertDialog.Builder(getContext())
                 .setTitle("Confirm Notification Send")
-                .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase() + " entrant(s)?")
+                .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase()
+                        + " entrant(s)?")
                 .setPositiveButton("Send", (confirmDialog, which) -> {
                     sendBulkNotificationsViaDatabase(uniqueIds, customHeader, customBody, () -> {
-                        Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.",
+                                Toast.LENGTH_LONG).show();
                         sendButton.setEnabled(true);
                         dialog.dismiss();
                     }, () -> {
@@ -489,22 +499,22 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * Sends bulk notifications using Database directly.
      */
     private void sendBulkNotificationsViaDatabase(List<String> entrantIds, String header, String body,
-                                                  Runnable onSuccess, Runnable onFailure) {
+            Runnable onSuccess, Runnable onFailure) {
         int totalEntrants = entrantIds.size();
-        final int[] successCount = {0};
-        final int[] failureCount = {0};
+        final int[] successCount = { 0 };
+        final int[] failureCount = { 0 };
 
         for (String entrantId : entrantIds) {
             db.getUniqueNotificationID()
                     .addOnSuccessListener(notificationID -> {
-                        com.example.zypherevent.Notification notification =
-                                new com.example.zypherevent.Notification(
-                                        notificationID,
-                                        organizerUser.getHardwareID(),
-                                        entrantId,
-                                        header,
-                                        body
-                                );
+                        com.example.zypherevent.Notification notification = new com.example.zypherevent.Notification(
+                                notificationID,
+                                organizerUser.getHardwareID(),
+                                entrantId,
+                                header,
+                                body,
+                                null,
+                                false);
 
                         db.setNotificationData(notificationID, notification)
                                 .addOnSuccessListener(v -> {
@@ -651,7 +661,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         return Tasks.whenAllSuccess(userTasks).continueWith(task -> {
-            @SuppressWarnings("unchecked") List<Entrant> entrants = (List<Entrant>) (List<?>) task.getResult();
+            @SuppressWarnings("unchecked")
+            List<Entrant> entrants = (List<Entrant>) (List<?>) task.getResult();
 
             List<String> names = new ArrayList<>();
             for (Entrant e : entrants) {
@@ -690,7 +701,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         RecyclerView waitlistRecyclerView = dialogView.findViewById(R.id.entrant_waitlist);
 
         WaitlistEntrantAdapter[] waitlistAdapterHolder = new WaitlistEntrantAdapter[1];
-        waitlistAdapterHolder[0] = new WaitlistEntrantAdapter(waitlistEntrants, (entry, position) -> handleAcceptEntrant(event, entry, position));
+        waitlistAdapterHolder[0] = new WaitlistEntrantAdapter(waitlistEntrants,
+                (entry, position) -> handleAcceptEntrant(event, entry, position));
 
         WaitlistEntrantAdapter waitlistAdapter = waitlistAdapterHolder[0];
 
@@ -717,7 +729,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
         Button btnDrawReplacement = dialogView.findViewById(R.id.btn_draw_replacement);
 
-        if (btnDrawReplacement != null){
+        if (btnDrawReplacement != null) {
             btnDrawReplacement.setOnClickListener(v -> drawReplacementFromPool(event));
         }
 
@@ -761,17 +773,21 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 for (WaitlistEntry entry : selected) {
 
                     String hardwareId = entry.getEntrantHardwareID();
-                    if (hardwareId == null || hardwareId.isEmpty()) continue;
+                    if (hardwareId == null || hardwareId.isEmpty())
+                        continue;
 
                     Entrant stubEntrant = new Entrant(hardwareId, "", "", "");
 
-                    db.moveEntrantToInvited(event.getUniqueEventID().toString(), stubEntrant).addOnSuccessListener(unused -> {
-                    }).addOnFailureListener(err -> Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage()));
+                    db.moveEntrantToInvited(event.getUniqueEventID().toString(), stubEntrant)
+                            .addOnSuccessListener(unused -> {
+                            }).addOnFailureListener(
+                                    err -> Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage()));
 
                     invitedCount++;
                 }
 
-                Toast.makeText(getContext(), "Selected and invited " + invitedCount + " entrant(s).", Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), "Selected and invited " + invitedCount + " entrant(s).", Toast.LENGTH_LONG)
+                        .show();
 
                 loadEvents();
             });
@@ -796,7 +812,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param position the adapter position of the entry (currently unused)
      */
     private void handleAcceptEntrant(Event event, WaitlistEntry entry, int position) {
-        if (getContext() == null) return;
+        if (getContext() == null)
+            return;
 
         String hardwareId = entry.getEntrantHardwareID();
         if (hardwareId == null || hardwareId.isEmpty()) {
@@ -806,7 +823,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         db.getUser(hardwareId).addOnSuccessListener(user -> {
             if (!(user instanceof Entrant)) {
-                Toast.makeText(getContext(), "User is not an entrant or could not be loaded", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "User is not an entrant or could not be loaded", Toast.LENGTH_SHORT)
+                        .show();
                 return;
             }
 
@@ -828,7 +846,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     Toast.makeText(getContext(), finalFullName + " accepted!", Toast.LENGTH_SHORT).show();
                     loadEvents();
                 }).addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Failed to accept entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Failed to accept entrant: " + e.getMessage(), Toast.LENGTH_SHORT)
+                            .show();
                 });
             });
 
@@ -849,15 +868,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param event the event to draw a replacement entrant
      */
 
-    private void  drawReplacementFromPool (Event event) {
+    private void drawReplacementFromPool(Event event) {
         if (event == null || event.getUniqueEventID() == null) {
             return;
         }
 
         ArrayList<WaitlistEntry> waitlist = event.getWaitListEntrants();
         if (waitlist == null || waitlist.isEmpty()) {
-            Toast.makeText(getContext()
-                    , "No entrants left in the waitlist pool.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "No entrants left in the waitlist pool.", Toast.LENGTH_SHORT).show();
             return;
 
         }
@@ -866,15 +884,20 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         ArrayList<String> accepted = event.getAcceptedEntrants();
         ArrayList<String> declined = event.getDeclinedEntrants();
 
-        if (invited == null) invited = new ArrayList<>();
-        if (accepted == null) accepted = new ArrayList<>();
-        if (declined == null) declined = new ArrayList<>();
+        if (invited == null)
+            invited = new ArrayList<>();
+        if (accepted == null)
+            accepted = new ArrayList<>();
+        if (declined == null)
+            declined = new ArrayList<>();
 
         ArrayList<WaitlistEntry> eligible = new ArrayList<>();
         for (WaitlistEntry entry : waitlist) {
-            if (entry == null) continue;
+            if (entry == null)
+                continue;
             String id = entry.getEntrantHardwareID();
-            if (id == null || id.isEmpty()) continue;
+            if (id == null || id.isEmpty())
+                continue;
 
             if (invited.contains(id) || accepted.contains(id) || declined.contains(id)) {
                 continue;
@@ -940,9 +963,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Create Event");
 
-        final Date[] eventDate = {null};
-        final Date[] regStartDate = {null};
-        final Date[] regEndDate = {null};
+        final Date[] eventDate = { null };
+        final Date[] regStartDate = { null };
+        final Date[] regEndDate = { null };
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM d, yyyy");
 
         btnEventDate.setOnClickListener(v -> showDatePickerDialog(date -> {
@@ -1013,12 +1036,16 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             Date registrationStartTime = regStartDate[0];
             Date registrationEndTime = regEndDate[0];
 
-            if (registrationStartTime != null && registrationEndTime != null && registrationStartTime.after(registrationEndTime)) {
-                Toast.makeText(getContext(), "Registration start time must be before end time", Toast.LENGTH_SHORT).show();
+            if (registrationStartTime != null && registrationEndTime != null
+                    && registrationStartTime.after(registrationEndTime)) {
+                Toast.makeText(getContext(), "Registration start time must be before end time", Toast.LENGTH_SHORT)
+                        .show();
                 return;
             }
-            if (startTime != null && registrationEndTime != null && (startTime.before(registrationEndTime) || startTime.equals(registrationEndTime))) {
-                Toast.makeText(getContext(), "Event start time should be after registration end time", Toast.LENGTH_SHORT).show();
+            if (startTime != null && registrationEndTime != null
+                    && (startTime.before(registrationEndTime) || startTime.equals(registrationEndTime))) {
+                Toast.makeText(getContext(), "Event start time should be after registration end time",
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1027,7 +1054,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 try {
                     int limit = Integer.parseInt(limitStr);
                     if (limit <= 0) {
-                        Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT)
+                                .show();
                         return;
                     }
                     waitlistLimit = limit;
@@ -1065,20 +1093,21 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param waitlistLimit         the maximum allowed waitlist size, or null for
      *                              no limit
      * @param lotteryCriteria       optional textual description of lottery criteria
-     * @param posterUrl             the Firebase path to the event's optional promotional poster
+     * @param posterUrl             the Firebase path to the event's optional
+     *                              promotional poster
      * @param requiresGeolocation   whether geolocation is required for entrant
      *                              registration
      */
     private void createEvent(String eventName,
-                             String eventDescription,
-                             Date startTime,
-                             String location,
-                             Date registrationStartTime,
-                             Date registrationEndTime,
-                             Integer waitlistLimit,
-                             String lotteryCriteria,
-                             String posterUrl,
-                             boolean requiresGeolocation) {
+            String eventDescription,
+            Date startTime,
+            String location,
+            Date registrationStartTime,
+            Date registrationEndTime,
+            Integer waitlistLimit,
+            String lotteryCriteria,
+            String posterUrl,
+            boolean requiresGeolocation) {
 
         db.getUniqueEventID().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
@@ -1104,8 +1133,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     registrationEndTime,
                     organizerUser.getHardwareID(),
                     posterUrl,
-                    requiresGeolocation
-            );
+                    requiresGeolocation);
 
             if (waitlistLimit != null) {
                 newEvent.setWaitlistLimit(waitlistLimit);
@@ -1168,9 +1196,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         TextView label = dialogView.findViewById(R.id.label1);
         label.setText("Edit Event");
 
-        final Date[] eventDate = {event.getStartTime()};
-        final Date[] regStartDate = {event.getRegistrationStartTime()};
-        final Date[] regEndDate = {event.getRegistrationEndTime()};
+        final Date[] eventDate = { event.getStartTime() };
+        final Date[] regStartDate = { event.getRegistrationStartTime() };
+        final Date[] regEndDate = { event.getRegistrationEndTime() };
         SimpleDateFormat displayFormat = new SimpleDateFormat("MMM d, yyyy");
 
         editName.setText(event.getEventName());
@@ -1279,12 +1307,16 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             Date registrationStartTime = regStartDate[0];
             Date registrationEndTime = regEndDate[0];
 
-            if (registrationStartTime != null && registrationEndTime != null && registrationStartTime.after(registrationEndTime)) {
-                Toast.makeText(getContext(), "Registration start time must be before end time", Toast.LENGTH_SHORT).show();
+            if (registrationStartTime != null && registrationEndTime != null
+                    && registrationStartTime.after(registrationEndTime)) {
+                Toast.makeText(getContext(), "Registration start time must be before end time", Toast.LENGTH_SHORT)
+                        .show();
                 return;
             }
-            if (startTime != null && registrationEndTime != null && (startTime.before(registrationEndTime) || startTime.equals(registrationEndTime))) {
-                Toast.makeText(getContext(), "Event start time should be after registration end time", Toast.LENGTH_SHORT).show();
+            if (startTime != null && registrationEndTime != null
+                    && (startTime.before(registrationEndTime) || startTime.equals(registrationEndTime))) {
+                Toast.makeText(getContext(), "Event start time should be after registration end time",
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1293,7 +1325,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 try {
                     int limit = Integer.parseInt(limitStr);
                     if (limit <= 0) {
-                        Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Waitlist limit must be greater than 0", Toast.LENGTH_SHORT)
+                                .show();
                         return;
                     }
                     int currentWaitlistSize = event.getWaitListEntrants() != null
@@ -1301,7 +1334,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                             : 0;
                     if (limit < currentWaitlistSize) {
                         Toast.makeText(getContext(),
-                                "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize + ")",
+                                "Waitlist limit cannot be less than current waitlist size (" + currentWaitlistSize
+                                        + ")",
                                 Toast.LENGTH_LONG).show();
                         return;
                     }
@@ -1323,8 +1357,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     waitlistLimit,
                     lotteryCriteria,
                     posterUrl,
-                    requiresGeo
-            );
+                    requiresGeo);
 
             dialog.dismiss();
         });
@@ -1354,16 +1387,16 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      * @param requiresGeolocation   whether geolocation is required for registration
      */
     private void updateEvent(Long eventId,
-                             String eventName,
-                             String eventDescription,
-                             Date startTime,
-                             String location,
-                             Date registrationStartTime,
-                             Date registrationEndTime,
-                             Integer waitlistLimit,
-                             String lotteryCriteria,
-                             String posterUrl,
-                             boolean requiresGeolocation) {
+            String eventName,
+            String eventDescription,
+            Date startTime,
+            String location,
+            Date registrationStartTime,
+            Date registrationEndTime,
+            Integer waitlistLimit,
+            String lotteryCriteria,
+            String posterUrl,
+            boolean requiresGeolocation) {
         Log.d(TAG, "Updating event: " + eventName);
 
         Event updatedEvent = new Event(
@@ -1376,8 +1409,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 registrationEndTime,
                 organizerUser.getHardwareID(),
                 posterUrl,
-                requiresGeolocation
-        );
+                requiresGeolocation);
 
         updatedEvent.setWaitlistLimit(waitlistLimit);
         updatedEvent.setLotteryCriteria(lotteryCriteria);
@@ -1395,8 +1427,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                                 (task.getException() != null
                                         ? task.getException().getMessage()
                                         : "Unknown error"),
-                        Toast.LENGTH_SHORT
-                ).show();
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -1414,7 +1445,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
      */
     private void saveQRCodeToDownloads(Bitmap bitmap, String eventName) {
         try {
-            String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis() + ".png";
+            String fileName = "QR_" + eventName.replaceAll("[^a-zA-Z0-9]", "_") + "_" + System.currentTimeMillis()
+                    + ".png";
 
             ContentValues values = new ContentValues();
             values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
@@ -1495,7 +1527,8 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
             values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
-            Uri uri = requireContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            Uri uri = requireContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    values);
             if (uri != null) {
                 OutputStream outputStream = requireContext().getContentResolver().openOutputStream(uri);
                 if (outputStream != null) {
@@ -1525,12 +1558,13 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
-        DatePickerDialog dialog = new DatePickerDialog(requireContext(), (view, selectedYear, selectedMonth, selectedDay) -> {
-            Calendar selected = Calendar.getInstance();
-            selected.set(selectedYear, selectedMonth, selectedDay, 0, 0, 0);
-            selected.set(Calendar.MILLISECOND, 0);
-            callback.onDateSelected(selected.getTime());
-        }, year, month, day);
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(),
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    Calendar selected = Calendar.getInstance();
+                    selected.set(selectedYear, selectedMonth, selectedDay, 0, 0, 0);
+                    selected.set(Calendar.MILLISECOND, 0);
+                    callback.onDateSelected(selected.getTime());
+                }, year, month, day);
         dialog.show();
     }
 }

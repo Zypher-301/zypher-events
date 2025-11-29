@@ -173,10 +173,11 @@ public class NotificationService extends Service {
      * @param message            The notification message
      * @param eventID            The ID of the event associated with the
      *                           notification (can be null)
+     * @param isInvitation       true if this is an event invitation
      * @return Task that completes when teh notification is saved
      */
     public Task<Void> sendNotification(String senderHardwareId, String receiverHardwareId, String title, String message,
-            Long eventID) {
+            Long eventID, boolean isInvitation) {
         return db.getUniqueNotificationID().continueWithTask(task -> {
             if (!task.isSuccessful()) {
                 throw task.getException();
@@ -189,7 +190,8 @@ public class NotificationService extends Service {
                     receiverHardwareId,
                     title,
                     message,
-                    eventID);
+                    eventID,
+                    isInvitation);
 
             return db.setNotificationData(notificationId, notification)
                     .addOnSuccessListener(v -> Log.d(TAG, "Notification sent to: " + receiverHardwareId))
@@ -208,11 +210,12 @@ public class NotificationService extends Service {
      * @param message          The notification message
      * @param eventID          The ID of the event associated with the notification
      *                         (can be null)
+     * @param isInvitation     true if this is an event invitation
      */
     public void sendBulkNotifications(String senderHardwareId, List<String> receiverIds, String title, String message,
-            Long eventID) {
+            Long eventID, boolean isInvitation) {
         for (String receiverId : receiverIds) {
-            sendNotification(senderHardwareId, receiverId, title, message, eventID)
+            sendNotification(senderHardwareId, receiverId, title, message, eventID, isInvitation)
                     .addOnFailureListener(e -> Log.e(TAG, "Failed to send notification to: " + receiverId, e));
         }
     }

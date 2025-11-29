@@ -85,27 +85,56 @@ public class EntrantNotificationsAdapter
         holder.body.setText(notification.getNotificationBody());
 
         // Check if this is an invitation and if we should show buttons
-        boolean showButtons = false;
-        if (eventMap != null && currentUserId != null && notification.getEventID() != null) {
-            Event event = eventMap.get(notification.getEventID());
-            if (event != null && event.getInvitedEntrants() != null &&
-                    event.getInvitedEntrants().contains(currentUserId)) {
-                showButtons = true;
-            }
-        }
+        if (notification.getIsInvitation()) {
+            boolean isAccepted = false;
+            boolean isDeclined = false;
 
-        if (showButtons) {
-            holder.acceptButton.setVisibility(View.VISIBLE);
-            holder.declineButton.setVisibility(View.VISIBLE);
-            holder.acceptButton.setOnClickListener(v -> {
-                if (actionListener != null)
-                    actionListener.onAccept(notification);
-            });
-            holder.declineButton.setOnClickListener(v -> {
-                if (actionListener != null)
-                    actionListener.onDecline(notification);
-            });
+            if (eventMap != null && notification.getEventID() != null) {
+                Event event = eventMap.get(notification.getEventID());
+                if (event != null && currentUserId != null) {
+                    if (event.getAcceptedEntrants() != null && event.getAcceptedEntrants().contains(currentUserId)) {
+                        isAccepted = true;
+                    } else if (event.getDeclinedEntrants() != null
+                            && event.getDeclinedEntrants().contains(currentUserId)) {
+                        isDeclined = true;
+                    }
+                }
+            }
+
+            if (isAccepted) {
+                holder.acceptButton.setVisibility(View.GONE);
+                holder.declineButton.setVisibility(View.GONE);
+                holder.status.setVisibility(View.VISIBLE);
+                holder.status.setText("Status: Accepted");
+                holder.status.setTextColor(android.graphics.Color.parseColor("#4CAF50")); // Green
+            } else if (isDeclined) {
+                holder.acceptButton.setVisibility(View.GONE);
+                holder.declineButton.setVisibility(View.GONE);
+                holder.status.setVisibility(View.VISIBLE);
+                holder.status.setText("Status: Declined");
+                holder.status.setTextColor(android.graphics.Color.parseColor("#F44336")); // Red
+            } else {
+                holder.status.setVisibility(View.GONE);
+                holder.acceptButton.setVisibility(View.VISIBLE);
+                holder.declineButton.setVisibility(View.VISIBLE);
+                holder.acceptButton.setEnabled(true);
+                holder.declineButton.setEnabled(true);
+
+                holder.acceptButton.setOnClickListener(v -> {
+                    holder.acceptButton.setEnabled(false);
+                    holder.declineButton.setEnabled(false);
+                    if (actionListener != null)
+                        actionListener.onAccept(notification);
+                });
+                holder.declineButton.setOnClickListener(v -> {
+                    holder.acceptButton.setEnabled(false);
+                    holder.declineButton.setEnabled(false);
+                    if (actionListener != null)
+                        actionListener.onDecline(notification);
+                });
+            }
         } else {
+            holder.status.setVisibility(View.GONE);
             holder.acceptButton.setVisibility(View.GONE);
             holder.declineButton.setVisibility(View.GONE);
             holder.acceptButton.setOnClickListener(null);
@@ -119,7 +148,7 @@ public class EntrantNotificationsAdapter
     }
 
     static class NotificationViewHolder extends RecyclerView.ViewHolder {
-        TextView header, body;
+        TextView header, body, status;
         Button acceptButton, declineButton;
         CardView cardView;
 
@@ -127,6 +156,7 @@ public class EntrantNotificationsAdapter
             super(itemView);
             header = itemView.findViewById(R.id.notification_header);
             body = itemView.findViewById(R.id.notification_body);
+            status = itemView.findViewById(R.id.notification_status);
             acceptButton = itemView.findViewById(R.id.accept_button);
             declineButton = itemView.findViewById(R.id.decline_button);
             cardView = (CardView) itemView;

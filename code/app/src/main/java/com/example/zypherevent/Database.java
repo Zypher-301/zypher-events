@@ -345,6 +345,7 @@ public class Database {
         data.put("notificationBody", notification.getNotificationBody());
         data.put("dismissed", notification.isDismissed());
         data.put("eventID", notification.getEventID());
+        data.put("isInvitation", notification.getIsInvitation());
         return notificationCollection.document(String.valueOf(notificationID)).set(data);
     }
 
@@ -477,9 +478,12 @@ public class Database {
                             String header = doc.getString("notificationHeader");
                             String body = doc.getString("notificationBody");
                             Long eventID = doc.getLong("eventID");
+                            boolean isInvitation = doc.contains("isInvitation") ? doc.getBoolean("isInvitation")
+                                    : false;
 
                             // Use the main constructor to build the object
-                            Notification notification = new Notification(id, sender, receiver, header, body, eventID);
+                            Notification notification = new Notification(id, sender, receiver, header, body, eventID,
+                                    isInvitation);
 
                             // This prevents a crash if the field is missing or null.
                             boolean dismissed = doc.contains("dismissed") ? doc.getBoolean("dismissed") : false;

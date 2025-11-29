@@ -47,7 +47,8 @@ public class EntrantLogicTests {
 
     @BeforeClass
     public static void setUpClass() throws ExecutionException, InterruptedException {
-        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION, TEST_EXTRAS_COLLECTION);
+        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION,
+                TEST_EXTRAS_COLLECTION);
         firestoreDb = FirebaseFirestore.getInstance();
         resetUniqueCounters();
     }
@@ -71,8 +72,10 @@ public class EntrantLogicTests {
 
     @After
     public void tearDown() throws ExecutionException, InterruptedException {
-        for (User u : usersToClean) Tasks.await(testDatabase.removeUserData(u.getHardwareID()));
-        for (Event e : eventsToClean) Tasks.await(testDatabase.removeEventData(e.getUniqueEventID()));
+        for (User u : usersToClean)
+            Tasks.await(testDatabase.removeUserData(u.getHardwareID()));
+        for (Event e : eventsToClean)
+            Tasks.await(testDatabase.removeEventData(e.getUniqueEventID()));
     }
 
     // --- HELPER METHODS ---
@@ -88,7 +91,8 @@ public class EntrantLogicTests {
         QuerySnapshot qs = Tasks.await(firestoreDb.collection(collection).get());
         if (!qs.isEmpty()) {
             WriteBatch batch = firestoreDb.batch();
-            for (DocumentSnapshot doc : qs.getDocuments()) batch.delete(doc.getReference());
+            for (DocumentSnapshot doc : qs.getDocuments())
+                batch.delete(doc.getReference());
             Tasks.await(batch.commit());
         }
     }
@@ -100,7 +104,8 @@ public class EntrantLogicTests {
         return e;
     }
 
-    private Event createEvent(String name, String orgId) throws ExecutionException, InterruptedException, ParseException {
+    private Event createEvent(String name, String orgId)
+            throws ExecutionException, InterruptedException, ParseException {
         Long id = Tasks.await(testDatabase.getUniqueEventID());
         Event e = new Event(id, name, "Desc", Utils.createWholeDayDate("2025-12-01"), "Location",
                 Utils.createWholeDayDate("2024-01-01"), Utils.createWholeDayDate("2025-11-30"),
@@ -311,11 +316,12 @@ public class EntrantLogicTests {
         // Execute: Simulate System sending a "Win" Notification
         Notification winNotif = new Notification(
                 notifId,
-                "org-sender",                  // Sender
-                entrant.getHardwareID(),       // Receiver (Our Entrant)
-                "You Won!",                    // Header
+                "org-sender", // Sender
+                entrant.getHardwareID(), // Receiver (Our Entrant)
+                "You Won!", // Header
                 "You have been selected to participate.", // Body
-                event.getUniqueEventID()       // Linked Event
+                event.getUniqueEventID(), // Linked Event
+                true // isInvitation
         );
         Tasks.await(testDatabase.setNotificationData(notifId, winNotif));
 
@@ -339,7 +345,8 @@ public class EntrantLogicTests {
     }
 
     /**
-     * US 01.04.02: As an entrant I want to receive notification of when I am not chosen
+     * US 01.04.02: As an entrant I want to receive notification of when I am not
+     * chosen
      * on the app (when I "lose" the lottery).
      * * Logic:
      * 1. Create an Entrant.
@@ -358,8 +365,7 @@ public class EntrantLogicTests {
                 "system-admin",
                 entrant.getHardwareID(),
                 "Lottery Results",
-                "Unfortunately, you were not selected this time."
-        );
+                "Unfortunately, you were not selected this time.");
         Tasks.await(testDatabase.setNotificationData(notifId, lossNotif));
 
         // Assert
@@ -408,12 +414,14 @@ public class EntrantLogicTests {
     // ==========================================
 
     /**
-     * US 01.05.01: As an entrant I want another chance to be chosen from the waiting list
+     * US 01.05.01: As an entrant I want another chance to be chosen from the
+     * waiting list
      * if a selected user declines an invitation to sign up.
      * * * Test Logic:
      * This test verifies the data integrity required for "Another Chance".
      * If User A declines, they must be moved to the 'declined' list, and User B
-     * must remain on the 'waitlist'. This ensures the Organizer's sampling algorithm
+     * must remain on the 'waitlist'. This ensures the Organizer's sampling
+     * algorithm
      * has the correct data state to pick User B in a re-draw.
      */
     @Test
@@ -511,7 +519,8 @@ public class EntrantLogicTests {
     }
 
     /**
-     * US 01.05.04: As an entrant, I want to know how many total entrants are on the waiting list.
+     * US 01.05.04: As an entrant, I want to know how many total entrants are on the
+     * waiting list.
      * * Logic:
      * 1. Add 3 entrants to the waitlist.
      * 2. Retrieve the event.
@@ -536,7 +545,8 @@ public class EntrantLogicTests {
     }
 
     /**
-     * US 01.05.05: As an entrant, I want to be informed about the criteria or guidelines
+     * US 01.05.05: As an entrant, I want to be informed about the criteria or
+     * guidelines
      * for the lottery selection process.
      * * Logic:
      * 1. Create an event with specific lottery criteria text.
@@ -663,10 +673,58 @@ public class EntrantLogicTests {
         assertEquals("Should match the correct user", existingDeviceId, fetchedUser.getHardwareID());
         assertTrue("Should be an Entrant", fetchedUser instanceof Entrant);
 
-        // 4. Execute: "Log in" with unknown Device ID
-        User unknownUser = Tasks.await(testDatabase.getUser(newDeviceId));
-
         // 5. Assert: Unknown ID is treated as new (null result)
         assertNull("Unknown device ID should return null (prompt creation)", unknownUser);
+    }
+
+    /**
+     * US 01.05.02: Verify behavior when multiple invitation notifications exist for
+     * the same event.
+     * Logic:
+     * 1. Create Event and Entrant.
+     * 2. Add Entrant to Invited list.
+     * 3. Create TWO notifications for this invitation.
+     * 4. Simulate accepting the invitation (updating Event).
+     * 5. Verify that the Entrant is in the Accepted list.
+     * 6. (Implicit) In the UI, both notifications check this same Event state, so
+     * both will show "Accepted".
+     */
+    @Test
+    public void testDuplicateInvitationNotifications() throws ExecutionException, InterruptedException, ParseException {
+        // Setup
+        Event event = createEvent("Double Invite Event", "org-1");
+        Entrant entrant = createEntrant("entrant-double-invite");
+
+        // Invite entrant
+        event.addEntrantToInvitedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
+
+        // Create Notification 1
+        Long notifId1 = Tasks.await(testDatabase.getUniqueNotificationID());
+        Notification n1 = new Notification(notifId1, "org-1", entrant.getHardwareID(), "Invite 1", "Body 1",
+                event.getUniqueEventID(), true);
+        Tasks.await(testDatabase.setNotificationData(notifId1, n1));
+
+        // Create Notification 2
+        Long notifId2 = Tasks.await(testDatabase.getUniqueNotificationID());
+        Notification n2 = new Notification(notifId2, "org-1", entrant.getHardwareID(), "Invite 2", "Body 2",
+                event.getUniqueEventID(), true);
+        Tasks.await(testDatabase.setNotificationData(notifId2, n2));
+
+        // Execute: Simulate User accepting via Notification 1
+        // This logic mirrors handleAcceptInvitation in the Fragment
+        Event fetchedEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        fetchedEvent.removeEntrantFromInvitedList(entrant.getHardwareID());
+        fetchedEvent.addEntrantToAcceptedList(entrant.getHardwareID());
+        Tasks.await(testDatabase.setEventData(fetchedEvent.getUniqueEventID(), fetchedEvent));
+
+        // Assert: Verify Event State
+        Event finalEvent = Tasks.await(testDatabase.getEvent(event.getUniqueEventID()));
+        assertTrue("Entrant should be accepted", finalEvent.getAcceptedEntrants().contains(entrant.getHardwareID()));
+        assertFalse("Entrant should not be invited", finalEvent.getInvitedEntrants().contains(entrant.getHardwareID()));
+
+        // The UI Adapter uses this exact 'finalEvent' object to determine status for
+        // BOTH n1 and n2.
+        // Therefore, both will display "Status: Accepted".
     }
 }

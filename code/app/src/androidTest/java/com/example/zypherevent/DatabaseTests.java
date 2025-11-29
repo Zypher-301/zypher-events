@@ -57,12 +57,14 @@ public class DatabaseTests {
 
     /**
      * Runs once before all tests.
-     * Initializes the database connection and sets the unique event ID & unique notification ID
+     * Initializes the database connection and sets the unique event ID & unique
+     * notification ID
      * counter to a known, predictable value for testing.
      */
     @BeforeClass
     public static void setUpClass() throws ExecutionException, InterruptedException {
-        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION, TEST_EXTRAS_COLLECTION);
+        testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION,
+                TEST_EXTRAS_COLLECTION);
 
         // Set the unique ID counter to a known value for testing
         DocumentReference uniqueRef = FirebaseFirestore.getInstance()
@@ -141,7 +143,7 @@ public class DatabaseTests {
         }
     }
 
-    //  USER TESTS
+    // USER TESTS
 
     /**
      * Tests setUserData and getUser for an Entrant
@@ -216,7 +218,7 @@ public class DatabaseTests {
         assertNull("User should be null after being removed", fetchedUser);
     }
 
-    //  EVENT TESTS
+    // EVENT TESTS
 
     /**
      * Tests setEventData and getEvent. Also verifies that the implementation
@@ -236,8 +238,7 @@ public class DatabaseTests {
                 Utils.createWholeDayDate("2025-10-25"),
                 testOrganizer.getHardwareID(),
                 "http://example.com/poster.png",
-                false
-        );
+                false);
 
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
         Event fetchedEvent = Tasks.await(testDatabase.getEvent(testEvent.getUniqueEventID()));
@@ -247,7 +248,8 @@ public class DatabaseTests {
         assertEquals("Event IDs should match", testEvent.getUniqueEventID(), fetchedEvent.getUniqueEventID());
         assertEquals("Event names should match", testEvent.getEventName(), fetchedEvent.getEventName());
         assertEquals("Event locations should match", testEvent.getLocation(), fetchedEvent.getLocation());
-        assertEquals("Organizer IDs should match", testEvent.getEventOrganizerHardwareID(), fetchedEvent.getEventOrganizerHardwareID());
+        assertEquals("Organizer IDs should match", testEvent.getEventOrganizerHardwareID(),
+                fetchedEvent.getEventOrganizerHardwareID());
         assertEquals("Poster URLs should match", testEvent.getPosterURL(), fetchedEvent.getPosterURL());
 
         // Test object's equal method
@@ -275,8 +277,7 @@ public class DatabaseTests {
                 "Original Location", registrationStart, registrationEnd,
                 testOrganizer.getHardwareID(),
                 "http://example.com/poster.png",
-                false
-        );
+                false);
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
 
         // update
@@ -307,8 +308,7 @@ public class DatabaseTests {
         testEvent = new Event(
                 newEventID, "Event To Delete", "...", start, "...", registrationStart, registrationEnd,
                 testOrganizer.getHardwareID(),
-                false
-        );
+                false);
         Tasks.await(testDatabase.setEventData(testEvent.getUniqueEventID(), testEvent));
 
         Tasks.await(testDatabase.removeEventData(testEvent.getUniqueEventID()));
@@ -322,7 +322,8 @@ public class DatabaseTests {
     // NOTIFICATION TESTS
 
     /**
-     * Tests setNotificationData and getNotification. Also verifies that the implementation
+     * Tests setNotificationData and getNotification. Also verifies that the
+     * implementation
      * of equals() for Events are correct.
      */
     @Test
@@ -337,24 +338,65 @@ public class DatabaseTests {
                 "Test Notification",
                 "Notification for testing");
 
-
         Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
-        Notification fetchedNotification = Tasks.await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
+        Notification fetchedNotification = Tasks
+                .await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
 
         // Test fields individually
+        // Test fields individually
         assertNotNull("Fetched notification should not be null", fetchedNotification);
-        assertEquals("Notification IDs should match", testNotification.getUniqueNotificationID(), fetchedNotification.getUniqueNotificationID());
-        assertEquals("Notification senders should match", testNotification.getSendingUserHardwareID(), fetchedNotification.getSendingUserHardwareID());
-        assertEquals("Notification receivers should match", testNotification.getReceivingUserHardwareID(), fetchedNotification.getReceivingUserHardwareID());
-        assertEquals("Notification headers should match", testNotification.getNotificationHeader(), fetchedNotification.getNotificationHeader());
-        assertEquals("Notification bodies should match", testNotification.getNotificationBody(), fetchedNotification.getNotificationBody());
+        assertEquals("Notification IDs should match", testNotification.getUniqueNotificationID(),
+                fetchedNotification.getUniqueNotificationID());
+        assertEquals("Notification senders should match", testNotification.getSendingUserHardwareID(),
+                fetchedNotification.getSendingUserHardwareID());
+        assertEquals("Notification receivers should match", testNotification.getReceivingUserHardwareID(),
+                fetchedNotification.getReceivingUserHardwareID());
+        assertEquals("Notification headers should match", testNotification.getNotificationHeader(),
+                fetchedNotification.getNotificationHeader());
+        assertEquals("Notification bodies should match", testNotification.getNotificationBody(),
+                fetchedNotification.getNotificationBody());
+        assertFalse("Default isInvitation should be false", fetchedNotification.getIsInvitation());
 
         // Test object's equal method
         assertEquals("Event objects should be equal", testNotification, fetchedNotification);
     }
 
     /**
-     * Tests setNotificationData for a Notification. Also tests the equals method for Notifications.
+     * Tests setNotificationData and getNotification for an Invitation Notification.
+     */
+    @Test
+    public void testAddAndGetInvitationNotification() throws ExecutionException, InterruptedException {
+        Long newNotifID = Tasks.await(testDatabase.getUniqueNotificationID());
+
+        // Create a notification with isInvitation = true
+        testNotification = new Notification(
+                newNotifID,
+                testOrganizer.getHardwareID(),
+                testEntrant.getHardwareID(),
+                "Invitation Header",
+                "Invitation Body",
+                12345L, // Dummy Event ID
+                true // isInvitation
+        );
+
+        Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
+        Notification fetchedNotification = Tasks
+                .await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
+
+        // Test fields individually
+        assertNotNull("Fetched notification should not be null", fetchedNotification);
+        assertEquals("Notification IDs should match", testNotification.getUniqueNotificationID(),
+                fetchedNotification.getUniqueNotificationID());
+        assertTrue("isInvitation should be true", fetchedNotification.getIsInvitation());
+        assertEquals("Event ID should match", testNotification.getEventID(), fetchedNotification.getEventID());
+
+        // Test object's equal method
+        assertEquals("Notification objects should be equal", testNotification, fetchedNotification);
+    }
+
+    /**
+     * Tests setNotificationData for a Notification. Also tests the equals method
+     * for Notifications.
      */
     @Test
     public void testUpdateNotification() throws ExecutionException, InterruptedException {
@@ -365,8 +407,7 @@ public class DatabaseTests {
                 testOrganizer.getHardwareID(),
                 testEntrant.getHardwareID(),
                 "Original Notification Header",
-                "Original Notification Body"
-        );
+                "Original Notification Body");
         Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
 
         // update
@@ -375,13 +416,17 @@ public class DatabaseTests {
         Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
 
         // get
-        Notification fetchedNotification = Tasks.await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
+        Notification fetchedNotification = Tasks
+                .await(testDatabase.getNotification(testNotification.getUniqueNotificationID()));
 
         // Test fields individually
         assertNotNull("Fetched notification should not be null", fetchedNotification);
-        assertEquals("Notification header should be updated", "Updated Notification Header", fetchedNotification.getNotificationHeader());
-        assertEquals("Notification body should be updated", "Updated Notification Body", fetchedNotification.getNotificationBody());
-        assertEquals("Fetched notification's ID should match", testNotification.getUniqueNotificationID(), fetchedNotification.getUniqueNotificationID());
+        assertEquals("Notification header should be updated", "Updated Notification Header",
+                fetchedNotification.getNotificationHeader());
+        assertEquals("Notification body should be updated", "Updated Notification Body",
+                fetchedNotification.getNotificationBody());
+        assertEquals("Fetched notification's ID should match", testNotification.getUniqueNotificationID(),
+                fetchedNotification.getUniqueNotificationID());
         assertEquals("Notification objects should be equal", testNotification, fetchedNotification);
 
     }
@@ -397,8 +442,7 @@ public class DatabaseTests {
                 testOrganizer.getHardwareID(),
                 testEntrant.getHardwareID(),
                 "Notification To Delete",
-                "This is a test notification to delete"
-        );
+                "This is a test notification to delete");
         Tasks.await(testDatabase.setNotificationData(testNotification.getUniqueNotificationID(), testNotification));
 
         Tasks.await(testDatabase.removeNotificationData(testNotification.getUniqueNotificationID()));
@@ -409,7 +453,7 @@ public class DatabaseTests {
         testNotification = null; // set to null so @After doesn't try to delete it again
     }
 
-    //  EXTRA DATABASE TESTS
+    // EXTRA DATABASE TESTS
 
     /**
      * Tests that the getUniqueEventID counter is sequential.
@@ -455,7 +499,8 @@ public class DatabaseTests {
      * Tests that waitlist limit is enforced in database transactions.
      */
     @Test
-    public void testWaitlistLimitEnforcementInDatabase() throws ExecutionException, InterruptedException, ParseException {
+    public void testWaitlistLimitEnforcementInDatabase()
+            throws ExecutionException, InterruptedException, ParseException {
         Long newEventID = Tasks.await(testDatabase.getUniqueEventID());
         testEvent = new Event(
                 newEventID,
@@ -466,8 +511,7 @@ public class DatabaseTests {
                 Utils.createWholeDayDate("2025-01-01"),
                 Utils.createWholeDayDate("2025-12-31"),
                 testOrganizer.getHardwareID(),
-                false
-        );
+                false);
         testEvent.setWaitlistLimit(1);
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 
@@ -500,8 +544,7 @@ public class DatabaseTests {
                 Utils.createWholeDayDate("2025-01-01"),
                 Utils.createWholeDayDate("2025-12-31"),
                 testOrganizer.getHardwareID(),
-                false
-        );
+                false);
         // No limit set (null)
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 
@@ -528,11 +571,10 @@ public class DatabaseTests {
                 "Registration hasn't started",
                 Utils.createWholeDayDate("2030-12-01"),
                 "Test Location",
-                Utils.createWholeDayDate("2030-11-01"),  // Future start
+                Utils.createWholeDayDate("2030-11-01"), // Future start
                 Utils.createWholeDayDate("2030-11-30"),
                 testOrganizer.getHardwareID(),
-                false
-        );
+                false);
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 
         try {
@@ -557,10 +599,9 @@ public class DatabaseTests {
                 Utils.createWholeDayDate("2020-12-01"),
                 "Test Location",
                 Utils.createWholeDayDate("2020-11-01"),
-                Utils.createWholeDayDate("2020-11-30"),  // Past end
+                Utils.createWholeDayDate("2020-11-30"), // Past end
                 testOrganizer.getHardwareID(),
-                false
-        );
+                false);
         Tasks.await(testDatabase.setEventData(newEventID, testEvent));
 
         try {

@@ -39,14 +39,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * A fragment that displays lists of entrants for a specific event, categorized into groups.
- * Organizers can use a dropdown spinner to switch between viewing "Accepted", "Invited", and
- * "Declined" entrants. For each selected group, it fetches the corresponding entrant details
+ * A fragment that displays lists of entrants for a specific event, categorized
+ * into groups.
+ * Organizers can use a dropdown spinner to switch between viewing "Accepted",
+ * "Invited", and
+ * "Declined" entrants. For each selected group, it fetches the corresponding
+ * entrant details
  * from the database and displays them in a RecyclerView.
  *
- * <p>This fragment requires an {@code eventId} to be passed in its arguments bundle to identify
- * which event's entrants to display. It handles fetching event data, populating the spinner,
- * and dynamically loading entrant information based on the organizer's selection.
+ * <p>
+ * This fragment requires an {@code eventId} to be passed in its arguments
+ * bundle to identify
+ * which event's entrants to display. It handles fetching event data, populating
+ * the spinner,
+ * and dynamically loading entrant information based on the organizer's
+ * selection.
  * </p>
  *
  * @author Arunavo Dutta
@@ -71,15 +78,17 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     private boolean serviceBound = false;
 
     /**
-     * A list of strings representing the different categories of entrants for an event.
-     * These strings are used to populate the spinner (dropdown menu) that allows the organizer
-     * to filter and view entrants based on their status: accepted, invited, or declined.
+     * A list of strings representing the different categories of entrants for an
+     * event.
+     * These strings are used to populate the spinner (dropdown menu) that allows
+     * the organizer
+     * to filter and view entrants based on their status: accepted, invited, or
+     * declined.
      */
     private final List<String> groupNames = Arrays.asList(
             "Accepted Entrants",
             "Invited Entrants",
-            "Declined Entrants"
-    );
+            "Declined Entrants");
 
     public OrganizerSelectedEntrantsFragment() {
         // Required empty public constructor
@@ -108,12 +117,15 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     };
 
     /**
-     * Called when the fragment is first created. This is where you should do all of your normal
-     * static set up: create views, bind data to lists, etc. This method also runs when the system
+     * Called when the fragment is first created. This is where you should do all of
+     * your normal
+     * static set up: create views, bind data to lists, etc. This method also runs
+     * when the system
      * re-creates the fragment for configuration changes.
      * It initializes the {@link Database} instance.
      *
-     * @param savedInstanceState If the fragment is being re-created from a previous saved state, this is the state.
+     * @param savedInstanceState If the fragment is being re-created from a previous
+     *                           saved state, this is the state.
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -125,36 +137,49 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     }
 
     /**
-     * Called to have the fragment instantiate its user interface view. This method inflates the layout
+     * Called to have the fragment instantiate its user interface view. This method
+     * inflates the layout
      * for this fragment's view from the XML resource file.
      *
-     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
-     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
-     *                  The fragment should not add the view itself, but this can be used to generate
-     *                  the LayoutParams of the view.
-     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous
+     * @param inflater           The LayoutInflater object that can be used to
+     *                           inflate any views in the fragment.
+     * @param container          If non-null, this is the parent view that the
+     *                           fragment's UI should be attached to.
+     *                           The fragment should not add the view itself, but
+     *                           this can be used to generate
+     *                           the LayoutParams of the view.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed
+     *                           from a previous
      *                           saved state as given here.
      * @return Return the View for the fragment's UI, or null.
      */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.popup_organizer_selected_entrants, container, false);
     }
 
     /**
-     * Called immediately after {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}
+     * Called immediately after
+     * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}
      * has returned, but before any saved state has been restored in to the view.
      * This gives subclasses a chance to initialize themselves once
      * they know their view hierarchy has been completely created.
      *
-     * <p>This method initializes the UI components of the fragment, retrieves the event ID
-     * from the fragment's arguments, and triggers the loading of event data. It sets up
-     * the RecyclerView for displaying entrants and handles cases where the event ID is missing.</p>
+     * <p>
+     * This method initializes the UI components of the fragment, retrieves the
+     * event ID
+     * from the fragment's arguments, and triggers the loading of event data. It
+     * sets up
+     * the RecyclerView for displaying entrants and handles cases where the event ID
+     * is missing.
+     * </p>
      *
-     * @param view The View returned by {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
+     * @param view               The View returned by
+     *                           {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
      * @param savedInstanceState If non-null, this fragment is being re-constructed
-     * from a previous saved state as given here.
+     *                           from a previous saved state as given here.
      */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -166,7 +191,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
 
         if (eventId == null || eventId == 0) {
             Toast.makeText(getContext(), "Error: Event ID missing.", Toast.LENGTH_SHORT).show();
-            if (getActivity() != null) getActivity().getSupportFragmentManager().popBackStack();
+            if (getActivity() != null)
+                getActivity().getSupportFragmentManager().popBackStack();
             return;
         }
 
@@ -199,7 +225,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                     currentEvent = event;
                     if (currentEvent == null) {
                         Toast.makeText(getContext(), "Event not found.", Toast.LENGTH_SHORT).show();
-                        if (getActivity() != null) getActivity().getSupportFragmentManager().popBackStack();
+                        if (getActivity() != null)
+                            getActivity().getSupportFragmentManager().popBackStack();
                         return;
                     }
                     setupGroupSpinner();
@@ -214,20 +241,23 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     }
 
     /**
-     * Initializes and configures the spinner (dropdown menu) for selecting entrant groups.
-     * This method creates an {@link ArrayAdapter} using the predefined {@code groupNames} list
+     * Initializes and configures the spinner (dropdown menu) for selecting entrant
+     * groups.
+     * This method creates an {@link ArrayAdapter} using the predefined
+     * {@code groupNames} list
      * and sets it to the {@code groupSpinner}. It also sets an
      * {@link AdapterView.OnItemSelectedListener} to handle user selections.
-     * When a user selects a group from the spinner, the listener updates a label to show the
-     * selected category (e.g., "Accepted") and calls {@link #loadEntrantsForSelectedGroup(String)}
+     * When a user selects a group from the spinner, the listener updates a label to
+     * show the
+     * selected category (e.g., "Accepted") and calls
+     * {@link #loadEntrantsForSelectedGroup(String)}
      * to fetch and display the corresponding list of entrants.
      */
     private void setupGroupSpinner() {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 requireContext(),
                 android.R.layout.simple_spinner_item,
-                groupNames
-        );
+                groupNames);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         groupSpinner.setAdapter(adapter);
 
@@ -241,22 +271,30 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
     }
 
     /**
-     * Retrieves the appropriate list of hardware IDs based on the selected entrant group.
-     * This method acts as a helper to select the correct list of IDs (accepted, invited,
-     * or declined) from the {@code currentEvent} object based on the string provided
+     * Retrieves the appropriate list of hardware IDs based on the selected entrant
+     * group.
+     * This method acts as a helper to select the correct list of IDs (accepted,
+     * invited,
+     * or declined) from the {@code currentEvent} object based on the string
+     * provided
      * from the group spinner.
      *
-     * @param selectedGroup A string representing the chosen group, e.g., "Accepted Entrants (Final List)".
-     * @return A {@link List} of strings containing the hardware IDs for the specified group.
-     *         Returns an empty list if the {@code currentEvent} is null or if the group name is not recognized.
+     * @param selectedGroup A string representing the chosen group, e.g., "Accepted
+     *                      Entrants (Final List)".
+     * @return A {@link List} of strings containing the hardware IDs for the
+     *         specified group.
+     *         Returns an empty list if the {@code currentEvent} is null or if the
+     *         group name is not recognized.
      */
     private List<String> getHardwareIdsForGroup(String selectedGroup) {
-        if (currentEvent == null) return new ArrayList<>();
+        if (currentEvent == null)
+            return new ArrayList<>();
 
         switch (selectedGroup) {
             case "Accepted Entrants":
@@ -271,20 +309,30 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
     }
 
     /**
-     * Asynchronously loads the details of entrants for a given group and updates the RecyclerView.
+     * Asynchronously loads the details of entrants for a given group and updates
+     * the RecyclerView.
      * <p>
-     * This method first retrieves the list of hardware IDs corresponding to the selected group
-     * (e.g., "Accepted Entrants"). If the list is empty, it clears the adapter. Otherwise,
-     * it creates a list of asynchronous tasks to fetch {@link User} data for each hardware ID.
+     * This method first retrieves the list of hardware IDs corresponding to the
+     * selected group
+     * (e.g., "Accepted Entrants"). If the list is empty, it clears the adapter.
+     * Otherwise,
+     * it creates a list of asynchronous tasks to fetch {@link User} data for each
+     * hardware ID.
      * <p>
-     * Using {@link Tasks#whenAllComplete(java.util.Collection)}, it waits for all database lookups
-     * to finish. It then processes the results, filters for successful lookups that return an
-     * {@link Entrant}, and compiles a list of these entrants. Finally, it updates the
-     * {@link EntrantInfoAdapter} with the new list of entrants on the main thread, or displays
+     * Using {@link Tasks#whenAllComplete(java.util.Collection)}, it waits for all
+     * database lookups
+     * to finish. It then processes the results, filters for successful lookups that
+     * return an
+     * {@link Entrant}, and compiles a list of these entrants. Finally, it updates
+     * the
+     * {@link EntrantInfoAdapter} with the new list of entrants on the main thread,
+     * or displays
      * an error message if any part of the process fails.
      *
-     * @param selectedGroup The name of the entrant group to load, corresponding to one of the
-     *                      values in {@code groupNames} (e.g., "Accepted Entrants (Final List)").
+     * @param selectedGroup The name of the entrant group to load, corresponding to
+     *                      one of the
+     *                      values in {@code groupNames} (e.g., "Accepted Entrants
+     *                      (Final List)").
      */
     private void loadEntrantsForSelectedGroup(String selectedGroup) {
         List<String> hardwareIds = getHardwareIdsForGroup(selectedGroup);
@@ -342,7 +390,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                         fullName + "? " +
                         "This will remove them from the invited list")
                 .setPositiveButton("Confirm", (dialog, which) -> {
-                        cancelEntrantInvitation(entrant);
+                    cancelEntrantInvitation(entrant);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -358,7 +406,7 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                 .addOnSuccessListener(v -> {
                     Toast.makeText(getContext(),
                             "Invitation cancelled for " + entrant.getFirstName() + " " + entrant.getLastName(),
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.LENGTH_SHORT).show();
 
                     sendCancellationNotification(entrant);
 
@@ -378,7 +426,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
      * @param entrant The entrant to send cancellation notification to
      */
     private void sendCancellationNotification(Entrant entrant) {
-        if (currentEvent == null) return;
+        if (currentEvent == null)
+            return;
 
         String header = "Invitation Update: " + currentEvent.getEventName();
         String body = "Your invitation to this event has been cancelled by the organizer. " +
@@ -391,11 +440,11 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                     entrant.getHardwareID(),
                     header,
                     body,
-                    currentEvent.getUniqueEventID()
-                    ).addOnSuccessListener(v ->
-                            Log.d(TAG, "Cancellation notification sent to: " + entrant.getHardwareID()))
-                    .addOnFailureListener(e ->
-                            Log.e(TAG, "Failed to send cancellation notification", e));
+                    currentEvent.getUniqueEventID(),
+                    false)
+                    .addOnSuccessListener(
+                            v -> Log.d(TAG, "Cancellation notification sent to: " + entrant.getHardwareID()))
+                    .addOnFailureListener(e -> Log.e(TAG, "Failed to send cancellation notification", e));
         } else {
             Log.w(TAG, "NotificationService not bound");
         }
@@ -424,12 +473,14 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         public interface OnCancelClickListener {
             void onCancelClick(Entrant entrant);
         }
+
         /**
          * Constructs an adapter with an initial list of entrants.
          *
          * @param entrants The list of {@link Entrant} objects to be displayed.
          *                 This list can be empty if no data is available initially.
-         * @param listener This listener is for cancel button and cancel invitation functionality
+         * @param listener This listener is for cancel button and cancel invitation
+         *                 functionality
          */
         public EntrantInfoAdapter(List<Entrant> entrants, OnCancelClickListener listener) {
             this.entrants = entrants;
@@ -453,19 +504,25 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         }
 
         /**
-         * Called when RecyclerView needs a new {@link EntrantInfoViewHolder} of the given type to represent an item.
+         * Called when RecyclerView needs a new {@link EntrantInfoViewHolder} of the
+         * given type to represent an item.
          * <p>
-         * This new ViewHolder should be constructed with a new View that can represent the items
-         * of the given type. You can either create a new View manually or inflate it from an XML
+         * This new ViewHolder should be constructed with a new View that can represent
+         * the items
+         * of the given type. You can either create a new View manually or inflate it
+         * from an XML
          * layout file.
          * <p>
          * The new ViewHolder will be used to display items of the adapter using
-         * {@link #onBindViewHolder(EntrantInfoViewHolder, int)}. Since it will be re-used to display
-         * different items in the data set, it is a good idea to cache references to sub-views of
+         * {@link #onBindViewHolder(EntrantInfoViewHolder, int)}. Since it will be
+         * re-used to display
+         * different items in the data set, it is a good idea to cache references to
+         * sub-views of
          * the View to avoid unnecessary {@link View#findViewById(int)} calls.
          *
-         * @param parent The ViewGroup into which the new View will be added after it is bound to
-         *               an adapter position.
+         * @param parent   The ViewGroup into which the new View will be added after it
+         *                 is bound to
+         *                 an adapter position.
          * @param viewType The view type of the new View.
          * @return A new EntrantInfoViewHolder that holds a View of the given view type.
          */
@@ -478,15 +535,23 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         }
 
         /**
-         * Called by RecyclerView to display the data at the specified position. This method
-         * updates the contents of the {@link EntrantInfoViewHolder#itemView} to reflect the
+         * Called by RecyclerView to display the data at the specified position. This
+         * method
+         * updates the contents of the {@link EntrantInfoViewHolder#itemView} to reflect
+         * the
          * entrant at the given position in the data set.
          *
-         * <p>It retrieves the {@link Entrant} object from the list, formats a string with the
-         * entrant's full name, and another string with their email and phone number (if available).
-         * These strings are then set as the text for the two {@link TextView}s in the holder's view.</p>
+         * <p>
+         * It retrieves the {@link Entrant} object from the list, formats a string with
+         * the
+         * entrant's full name, and another string with their email and phone number (if
+         * available).
+         * These strings are then set as the text for the two {@link TextView}s in the
+         * holder's view.
+         * </p>
          *
-         * @param holder   The ViewHolder which should be updated to represent the contents of the
+         * @param holder   The ViewHolder which should be updated to represent the
+         *                 contents of the
          *                 item at the given position in the data set.
          * @param position The position of the item within the adapter's data set.
          */
@@ -510,7 +575,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
             // Hide the time joined (not useful for this view)
             holder.tvTimeJoined.setVisibility(View.GONE);
 
-            // Configure button based on what list of entrants we are showing (Accepted, Invited, Declined)
+            // Configure button based on what list of entrants we are showing (Accepted,
+            // Invited, Declined)
             if (showCancelButton) {
                 holder.actionButton.setVisibility(View.VISIBLE);
                 holder.actionButton.setText("Cancel");
@@ -540,9 +606,12 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
         }
 
         /**
-         * A {@link RecyclerView.ViewHolder} that holds the view for a single entrant item in the list.
-         * It displays the entrant's full name and their contact details (email and phone number).
-         * The layout is based on {@code android.R.layout.simple_list_item_2}, which provides
+         * A {@link RecyclerView.ViewHolder} that holds the view for a single entrant
+         * item in the list.
+         * It displays the entrant's full name and their contact details (email and
+         * phone number).
+         * The layout is based on {@code android.R.layout.simple_list_item_2}, which
+         * provides
          * two {@link TextView} elements ({@code text1} and {@code text2}).
          */
         public static class EntrantInfoViewHolder extends RecyclerView.ViewHolder {
@@ -558,7 +627,8 @@ public class OrganizerSelectedEntrantsFragment extends Fragment {
                 userEmail = itemView.findViewById(R.id.user_email);
                 userPhone = itemView.findViewById(R.id.user_phone);
                 tvTimeJoined = itemView.findViewById(R.id.tvTimeJoined);
-                // uses the accept button but change the appearance and functionality for cancelling invitations
+                // uses the accept button but change the appearance and functionality for
+                // cancelling invitations
                 actionButton = itemView.findViewById(R.id.btnMoveToAccepted);
             }
         }

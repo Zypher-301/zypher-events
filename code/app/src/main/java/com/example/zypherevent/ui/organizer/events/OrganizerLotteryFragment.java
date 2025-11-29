@@ -287,7 +287,7 @@ public class OrganizerLotteryFragment extends Fragment {
         }
 
         notificationService.sendBulkNotifications(organizerID, entrantIDs, title, message,
-                currentEvent.getUniqueEventID());
+                currentEvent.getUniqueEventID(), true);
         Log.d(TAG, "Invitation notification sent to: " + entrantIDs.size() + " entrants");
     }
 
@@ -313,7 +313,7 @@ public class OrganizerLotteryFragment extends Fragment {
         }
 
         notificationService.sendBulkNotifications(organizerID, entrantIDs, title, message,
-                currentEvent.getUniqueEventID());
+                currentEvent.getUniqueEventID(), false);
         Log.d(TAG, "Waitlist notifications sent to " + entrantIDs.size() + " entrants");
     }
 

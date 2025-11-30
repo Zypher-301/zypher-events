@@ -105,6 +105,11 @@ public class Event implements Serializable {
     private ArrayList<String> declinedEntrants;
 
     /**
+     * A list of entrant hardware IDs who were previously selected but later cancelled.
+     */
+    private ArrayList<String> cancelledEntrants;
+
+    /**
      * The status of the join and leave waitlist operation.
      */
     public enum WaitlistOperationResult {
@@ -162,6 +167,7 @@ public class Event implements Serializable {
         this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
+        this.cancelledEntrants = new ArrayList<>();
     }
 
     /**
@@ -194,6 +200,7 @@ public class Event implements Serializable {
         this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
+        this.cancelledEntrants = new ArrayList<>();
     }
 
     /**
@@ -417,6 +424,15 @@ public class Event implements Serializable {
      */
     public ArrayList<String> getDeclinedEntrants() {
         return declinedEntrants;
+    }
+
+    /**
+     * Returns a list of entrants hardware IDs who previously cancelled.
+     *
+     * @return the list of cancelled entrants hardware IDs
+     */
+    public ArrayList<String> getCancelledEntrants() {
+        return cancelledEntrants;
     }
 
     /**
@@ -683,6 +699,7 @@ public class Event implements Serializable {
         this.invitedEntrants = new ArrayList<>();
         this.acceptedEntrants = new ArrayList<>();
         this.declinedEntrants = new ArrayList<>();
+        this.cancelledEntrants = new ArrayList<>();
     }
 
     /**
@@ -728,6 +745,15 @@ public class Event implements Serializable {
      */
     public void setDeclinedEntrants(ArrayList<String> declinedEntrants) {
         this.declinedEntrants = Objects.requireNonNullElseGet(declinedEntrants, ArrayList::new);
+    }
+
+    /**
+     * Sets the event's cancelled list. ONLY to be used by firestore.
+     *
+     * @param cancelledEntrants the new list of cancelled entrants
+     */
+    public void setCancelledEntrants(ArrayList<String> cancelledEntrants) {
+        this.cancelledEntrants = Objects.requireNonNullElseGet(cancelledEntrants, ArrayList::new);
     }
 
     /**

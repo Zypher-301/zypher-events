@@ -883,6 +883,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         ArrayList<String> invited = event.getInvitedEntrants();
         ArrayList<String> accepted = event.getAcceptedEntrants();
         ArrayList<String> declined = event.getDeclinedEntrants();
+        ArrayList<String> cancelled = event.getCancelledEntrants();
+
+
 
         if (invited == null)
             invited = new ArrayList<>();
@@ -890,6 +893,9 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             accepted = new ArrayList<>();
         if (declined == null)
             declined = new ArrayList<>();
+        if (cancelled == null)
+            cancelled = new ArrayList<>();
+
 
         ArrayList<WaitlistEntry> eligible = new ArrayList<>();
         for (WaitlistEntry entry : waitlist) {
@@ -899,7 +905,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             if (id == null || id.isEmpty())
                 continue;
 
-            if (invited.contains(id) || accepted.contains(id) || declined.contains(id)) {
+            if (invited.contains(id) || accepted.contains(id) || declined.contains(id) || cancelled.contains(id)) {
                 continue;
             }
             eligible.add(entry);

@@ -34,10 +34,13 @@ import java.util.List;
  * @author Elliot Chrystal
  * @version 1.0
  *
- * Entry point activity for the Zypher Event app. On launch, this activity attempts to look up
- * the current device's user by hardware ID and routes recognized users to the appropriate
- * activity (Entrant, Organizer, or Administrator). If no user is found, it presents a simple
- * profile creation flow.
+ *          Entry point activity for the Zypher Event app. On launch, this
+ *          activity attempts to look up
+ *          the current device's user by hardware ID and routes recognized users
+ *          to the appropriate
+ *          activity (Entrant, Organizer, or Administrator). If no user is
+ *          found, it presents a simple
+ *          profile creation flow.
  */
 public class MainActivity extends AppCompatActivity {
     /** Navigation configuration for top-level destinations (if/when set). */
@@ -57,12 +60,14 @@ public class MainActivity extends AppCompatActivity {
      * 1. shows a blank page
      * 2. requests data from the database about the user
      * 3. sends the user (if found) to the corresponding activity
-     * 4. if no user is found in database, then prompt the user to create a profile as an
-     *    entrant or organizer.
+     * 4. if no user is found in database, then prompt the user to create a profile
+     * as an
+     * entrant or organizer.
      *
      * @param savedInstanceState If the activity is being re-initialized after
-     *     previously being shut down then this Bundle contains the data it most
-     *     recently supplied in onSaveInstanceState.
+     *                           previously being shut down then this Bundle
+     *                           contains the data it most
+     *                           recently supplied in onSaveInstanceState.
      *
      */
     @Override
@@ -74,20 +79,22 @@ public class MainActivity extends AppCompatActivity {
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-//        userHardwareID = "organizer1";
+        // userHardwareID = "demoOrganizer1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
-        // For testing, to create a user entry in the database, uncomment one of the following!
+        // For testing, to create a user entry in the database, uncomment one of the
+        // following!
 
-//             setCurrentToEntrant(db);
-//           setCurrentToOrganizer(db);
-//        setCurrentToAdministrator(db);
-        // By leaving these commented, if there is not a pre-existing entry for the hwid in the
+        // setCurrentToEntrant(db);
+        // setCurrentToOrganizer(db);
+        // setCurrentToAdministrator(db);
+        // By leaving these commented, if there is not a pre-existing entry for the hwid
+        // in the
         // database, then you will be prompted as a new user!
 
-        // Create a sample database -----  CAREFUL PLEASE!!!!!!
-//        createSampleDatabase();
+        // Create a sample database. CAREFUL
+        // createSampleDatabase();
 
         // Start the task for getting the user from hardware ID
         db.getUser(userHardwareID).addOnCompleteListener(task -> {
@@ -127,12 +134,18 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Populates the database with sample users, events, and notifications.
-     * This method creates a set of organizers, entrants, and an administrator, assigns locations
-     * to entrants, and persists them to the database. It then creates three sample events with
-     * predefined registration windows, participants in various waitlisted, accepted, and declined
-     * states, and updates each entrant's registered event history and each organizer's created
-     * events list. Finally, it generates a small set of test notifications addressed to a sample
-     * entrant. All event and notification records use IDs obtained from the database's unique ID
+     * This method creates a set of organizers, entrants, and an administrator,
+     * assigns locations
+     * to entrants, and persists them to the database. It then creates three sample
+     * events with
+     * predefined registration windows, participants in various waitlisted,
+     * accepted, and declined
+     * states, and updates each entrant's registered event history and each
+     * organizer's created
+     * events list. Finally, it generates a small set of test notifications
+     * addressed to a sample
+     * entrant. All event and notification records use IDs obtained from the
+     * database's unique ID
      * generators.
      */
     private void createSampleDatabase() {
@@ -149,16 +162,18 @@ public class MainActivity extends AppCompatActivity {
         db.setUserData(organizer3.getHardwareID(), organizer3);
 
         // --- Entrants ---
-        Entrant entrant1  = new Entrant("entrant1",  "Joshua",   "Smith",   "joshua.smith@email.com");
-        Entrant entrant2  = new Entrant("entrant2",  "Jacob",    "McMann",  "jacob.mcmann@email.com",  "7801231234", true);
-        Entrant entrant3  = new Entrant("entrant3",  "Emily",    "Turner",  "emily.turner@email.com");
-        Entrant entrant4  = new Entrant("entrant4",  "Michael",  "Andrews", "michael.andrews@email.com", "5875550192", false);
-        Entrant entrant5  = new Entrant("entrant5",  "Sophie",   "Lee",     "sophie.lee@email.com", "5875570192", true);
-        Entrant entrant6  = new Entrant("entrant6",  "Daniel",   "Harris",  "daniel.harris@email.com", "4039914421", true);
-        Entrant entrant7  = new Entrant("entrant7",  "Victoria", "Nguyen",  "victoria.nguyen@email.com", "123123123", true);
-        Entrant entrant8  = new Entrant("entrant8",  "Ethan",    "Marshall","ethan.marshall@email.com", "8257129943", true);
-        Entrant entrant9  = new Entrant("entrant9",  "Olivia",   "Khan",    "olivia.khan@email.com", "123123123123123", true);
-        Entrant entrant10 = new Entrant("entrant10", "Liam",     "Fraser",  "liam.fraser@email.com", "7802239811", true);
+        Entrant entrant1 = new Entrant("entrant1", "Joshua", "Smith", "joshua.smith@email.com");
+        Entrant entrant2 = new Entrant("entrant2", "Jacob", "McMann", "jacob.mcmann@email.com", "7801231234", true);
+        Entrant entrant3 = new Entrant("entrant3", "Emily", "Turner", "emily.turner@email.com");
+        Entrant entrant4 = new Entrant("entrant4", "Michael", "Andrews", "michael.andrews@email.com", "5875550192",
+                false);
+        Entrant entrant5 = new Entrant("entrant5", "Sophie", "Lee", "sophie.lee@email.com", "5875570192", true);
+        Entrant entrant6 = new Entrant("entrant6", "Daniel", "Harris", "daniel.harris@email.com", "4039914421", true);
+        Entrant entrant7 = new Entrant("entrant7", "Victoria", "Nguyen", "victoria.nguyen@email.com", "123123123",
+                true);
+        Entrant entrant8 = new Entrant("entrant8", "Ethan", "Marshall", "ethan.marshall@email.com", "8257129943", true);
+        Entrant entrant9 = new Entrant("entrant9", "Olivia", "Khan", "olivia.khan@email.com", "123123123123123", true);
+        Entrant entrant10 = new Entrant("entrant10", "Liam", "Fraser", "liam.fraser@email.com", "7802239811", true);
 
         entrant1.setLocation(new GeoPoint(53.5552, -113.6284));
         entrant2.setLocation(new GeoPoint(53.5927, -113.4219));
@@ -198,8 +213,7 @@ public class MainActivity extends AppCompatActivity {
                     new Date("December 10, 2025 00:00:00"),
                     organizer1.getHardwareID(),
                     "https://upload.wikimedia.org/wikipedia/commons/a/a7/40._Schwimmzonen-_und_Mastersmeeting_Enns_2017_100m_Brust_Herren_USC_Traun-9897.jpg",
-                    false
-            );
+                    false);
 
             // These calls will succeed as long as today is within the reg window.
             event1.addEntrantToWaitList(entrant1.getHardwareID());
@@ -251,8 +265,7 @@ public class MainActivity extends AppCompatActivity {
                     new Date("November 29, 2025 00:00:00"),
                     organizer2.getHardwareID(),
                     "https://upload.wikimedia.org/wikipedia/commons/6/6f/ChessSet.jpg",
-                    false
-            );
+                    false);
 
             event2.addEntrantToInvitedList(entrant1.getHardwareID());
 
@@ -281,6 +294,19 @@ public class MainActivity extends AppCompatActivity {
             db.setUserData(organizer2.getHardwareID(), organizer2);
 
             db.setEventData(uniqueEventID, event2);
+
+            // Create an invitation notification for entrant1
+            db.getUniqueNotificationID().addOnSuccessListener(notifID -> {
+                Notification invite = new Notification(
+                        notifID,
+                        organizer2.getHardwareID(),
+                        entrant1.getHardwareID(),
+                        "Invitation to Chess Club",
+                        "You have been selected to join the Chess Club Meeting!",
+                        uniqueEventID,
+                        true);
+                db.setNotificationData(notifID, invite);
+            });
         });
 
         // --- Event 3 ---
@@ -294,8 +320,7 @@ public class MainActivity extends AppCompatActivity {
                     new Date("November 1, 2025 00:00:00"),
                     new Date("December 20, 2025 00:00:00"),
                     organizer3.getHardwareID(),
-                    true
-            );
+                    true);
 
             event3.addEntrantToAcceptedList(entrant5.getHardwareID());
             event3.addEntrantToAcceptedList(entrant6.getHardwareID());
@@ -341,8 +366,7 @@ public class MainActivity extends AppCompatActivity {
                     new Date("November 1, 2025 00:00:00"),
                     new Date("December 20, 2025 00:00:00"),
                     organizer1.getHardwareID(),
-                    false
-            );
+                    false);
 
             event4.addEntrantToWaitList(entrant1.getHardwareID());
             event4.addEntrantToWaitList(entrant2.getHardwareID());
@@ -382,8 +406,7 @@ public class MainActivity extends AppCompatActivity {
                     organizer1.getHardwareID(),
                     entrant1.getHardwareID(),
                     "Test Notification 1",
-                    "Notification Body"
-            );
+                    "Notification Body");
             db.setNotificationData(notificationID, notification1);
         });
 
@@ -393,8 +416,7 @@ public class MainActivity extends AppCompatActivity {
                     organizer2.getHardwareID(),
                     entrant1.getHardwareID(),
                     "Test Notification 2",
-                    "Notification Body"
-            );
+                    "Notification Body");
             db.setNotificationData(notificationID, notification2);
         });
 
@@ -404,14 +426,14 @@ public class MainActivity extends AppCompatActivity {
                     organizer3.getHardwareID(),
                     entrant1.getHardwareID(),
                     "Test Notification 3",
-                    "Notification Body"
-            );
+                    "Notification Body");
             db.setNotificationData(notificationID, notification3);
         });
     }
 
     /**
-     * Displays the role selection page for new users, allowing them to choose Entrant or Organizer.
+     * Displays the role selection page for new users, allowing them to choose
+     * Entrant or Organizer.
      */
     private void showProfileInformationPage() {
         // Set the view to the startup role declaration page
@@ -437,8 +459,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows the Entrant profile creation page and handles input validation and persistence.
-     * On save, creates an Entrant with the provided information, stores it in the database,
+     * Shows the Entrant profile creation page and handles input validation and
+     * persistence.
+     * On save, creates an Entrant with the provided information, stores it in the
+     * database,
      * and routes to the Entrant activity.
      */
     private void showProfileInformationPageEntrant() {
@@ -484,11 +508,11 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             // Phone number is optional!!!
-//            if (phone.isEmpty()) {
-//                editTextPhone.setError("Phone number is required");
-//                editTextPhone.requestFocus();
-//                return;
-//            }
+            // if (phone.isEmpty()) {
+            // editTextPhone.setError("Phone number is required");
+            // editTextPhone.requestFocus();
+            // return;
+            // }
             if (phone != null && !phone.isEmpty()) {
                 if (!Patterns.PHONE.matcher(phone).matches()) {
                     editTextPhone.setError("Enter a valid phone number");
@@ -510,7 +534,8 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Shows the Organizer profile creation page, limiting inputs to name fields.
-     * On save, creates an Organizer, stores it in the database, and routes to the Organizer activity.
+     * On save, creates an Organizer, stores it in the database, and routes to the
+     * Organizer activity.
      */
     private void showProfileInformationPageOrganizer() {
         // set the view to the profile information page for entrants
@@ -566,6 +591,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Used to switch to the Entrant activity from the main activity.
      * Sends along the user object for the activity to use
+     * 
      * @param curUser
      */
     private void goToEntrant(User curUser) {
@@ -581,6 +607,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Used to switch to the Organizer activity from the main activity.
      * Sends along the user object for the activity to use
+     * 
      * @param curUser
      */
     private void goToOrganizer(User curUser) {
@@ -596,6 +623,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Used to switch to the Administrator activity from the main activity.
      * Sends along the user object for the activity to use
+     * 
      * @param curUser
      */
     private void goToAdministrator(User curUser) {
@@ -609,7 +637,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * This function will set the database information for the current hardware ID to create
+     * This function will set the database information for the current hardware ID
+     * to create
      * a pre-existing Entrant in the database! FOR TESTING ONLY!!
      *
      * @param db
@@ -626,7 +655,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * This function will set the database information for the current hardware ID to create
+     * This function will set the database information for the current hardware ID
+     * to create
      * a pre-existing Organizer in the database! FOR TESTING ONLY!!
      *
      * @param db
@@ -642,7 +672,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * This function will set the database information for the current hardware ID to create
+     * This function will set the database information for the current hardware ID
+     * to create
      * a pre-existing Administrator in the database! FOR TESTING ONLY!!
      *
      * @param db

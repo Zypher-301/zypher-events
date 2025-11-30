@@ -3,20 +3,46 @@ package com.example.zypherevent.ui.entrant.events;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.zypherevent.Event;
 import com.example.zypherevent.Notification;
 import com.example.zypherevent.R;
 
 import java.util.List;
+import java.util.Map;
 
-public class EntrantNotificationsAdapter extends RecyclerView.Adapter<EntrantNotificationsAdapter.NotificationViewHolder> {
+public class EntrantNotificationsAdapter
+        extends RecyclerView.Adapter<EntrantNotificationsAdapter.NotificationViewHolder> {
 
     private List<Notification> notificationList;
+    private Map<Long, Event> eventMap;
+    private String currentUserId;
+    private OnNotificationActionListener actionListener;
+
+    /**
+     * Listener for handling actions on notifications, specifically Accept and
+     * Decline.
+     */
+    public interface OnNotificationActionListener {
+        void onAccept(Notification notification);
+
+        void onDecline(Notification notification);
+    }
+
+    /**
+     * Sets the listener for notification actions.
+     * 
+     * @param listener The listener to handle actions
+     */
+    public void setOnNotificationActionListener(OnNotificationActionListener listener) {
+        this.actionListener = listener;
+    }
 
     public EntrantNotificationsAdapter(List<Notification> notificationList) {
         this.notificationList = notificationList;
@@ -24,6 +50,22 @@ public class EntrantNotificationsAdapter extends RecyclerView.Adapter<EntrantNot
 
     public void updateData(List<Notification> newNotifications) {
         this.notificationList = newNotifications;
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Updates the list of notifications and provides context for handling
+     * invitations.
+     *
+     * @param newNotifications List of new notifications to display
+     * @param eventMap         Map of Event objects corresponding to notifications
+     *                         (for checking invitation status)
+     * @param currentUserId    The hardware ID of the current user
+     */
+    public void updateData(List<Notification> newNotifications, Map<Long, Event> eventMap, String currentUserId) {
+        this.notificationList = newNotifications;
+        this.eventMap = eventMap;
+        this.currentUserId = currentUserId;
         notifyDataSetChanged();
     }
 
@@ -41,6 +83,63 @@ public class EntrantNotificationsAdapter extends RecyclerView.Adapter<EntrantNot
 
         holder.header.setText(notification.getNotificationHeader());
         holder.body.setText(notification.getNotificationBody());
+
+        // Check if this is an invitation and if we should show buttons
+        if (notification.getIsInvitation()) {
+            boolean isAccepted = false;
+            boolean isDeclined = false;
+
+            if (eventMap != null && notification.getEventID() != null) {
+                Event event = eventMap.get(notification.getEventID());
+                if (event != null && currentUserId != null) {
+                    if (event.getAcceptedEntrants() != null && event.getAcceptedEntrants().contains(currentUserId)) {
+                        isAccepted = true;
+                    } else if (event.getDeclinedEntrants() != null
+                            && event.getDeclinedEntrants().contains(currentUserId)) {
+                        isDeclined = true;
+                    }
+                }
+            }
+
+            if (isAccepted) {
+                holder.acceptButton.setVisibility(View.GONE);
+                holder.declineButton.setVisibility(View.GONE);
+                holder.status.setVisibility(View.VISIBLE);
+                holder.status.setText("Status: Accepted");
+                holder.status.setTextColor(android.graphics.Color.parseColor("#4CAF50")); // Green
+            } else if (isDeclined) {
+                holder.acceptButton.setVisibility(View.GONE);
+                holder.declineButton.setVisibility(View.GONE);
+                holder.status.setVisibility(View.VISIBLE);
+                holder.status.setText("Status: Declined");
+                holder.status.setTextColor(android.graphics.Color.parseColor("#F44336")); // Red
+            } else {
+                holder.status.setVisibility(View.GONE);
+                holder.acceptButton.setVisibility(View.VISIBLE);
+                holder.declineButton.setVisibility(View.VISIBLE);
+                holder.acceptButton.setEnabled(true);
+                holder.declineButton.setEnabled(true);
+
+                holder.acceptButton.setOnClickListener(v -> {
+                    holder.acceptButton.setEnabled(false);
+                    holder.declineButton.setEnabled(false);
+                    if (actionListener != null)
+                        actionListener.onAccept(notification);
+                });
+                holder.declineButton.setOnClickListener(v -> {
+                    holder.acceptButton.setEnabled(false);
+                    holder.declineButton.setEnabled(false);
+                    if (actionListener != null)
+                        actionListener.onDecline(notification);
+                });
+            }
+        } else {
+            holder.status.setVisibility(View.GONE);
+            holder.acceptButton.setVisibility(View.GONE);
+            holder.declineButton.setVisibility(View.GONE);
+            holder.acceptButton.setOnClickListener(null);
+            holder.declineButton.setOnClickListener(null);
+        }
     }
 
     @Override
@@ -49,13 +148,17 @@ public class EntrantNotificationsAdapter extends RecyclerView.Adapter<EntrantNot
     }
 
     static class NotificationViewHolder extends RecyclerView.ViewHolder {
-        TextView header, body;
+        TextView header, body, status;
+        Button acceptButton, declineButton;
         CardView cardView;
 
         public NotificationViewHolder(@NonNull View itemView) {
             super(itemView);
             header = itemView.findViewById(R.id.notification_header);
             body = itemView.findViewById(R.id.notification_body);
+            status = itemView.findViewById(R.id.notification_status);
+            acceptButton = itemView.findViewById(R.id.accept_button);
+            declineButton = itemView.findViewById(R.id.decline_button);
             cardView = (CardView) itemView;
         }
     }

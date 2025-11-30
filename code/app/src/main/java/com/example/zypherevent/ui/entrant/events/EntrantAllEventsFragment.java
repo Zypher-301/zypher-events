@@ -36,7 +36,6 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * BUG: DOUBLE CLICKING NEEDED FOR LEAVING THE WAITLIST
  * A fragment that displays a comprehensive list of all available events to an Entrant.
  * It provides the functionality for users to join or leave the waitlist for an event.
  * This class is responsible for fetching event data from the database, displaying it in a

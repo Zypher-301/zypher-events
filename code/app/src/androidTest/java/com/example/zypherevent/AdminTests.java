@@ -53,13 +53,12 @@ import java.util.concurrent.ExecutionException;
 @RunWith(AndroidJUnit4.class)
 public class AdminTests {
 
-    // Use separate test collections to avoid changing production data
+    // Test Collection
     private static final String TEST_USERS_COLLECTION = "test_users";
     private static final String TEST_EVENTS_COLLECTION = "test_events";
     private static final String TEST_NOTIFICATIONS_COLLECTION = "test_notifications";
     private static final String TEST_EXTRAS_COLLECTION = "test_extras";
 
-    // Start unique IDs at a high number
     private static final Long TEST_ID_START_VALUE = 910000L;
 
     private static Database testDatabase;
@@ -85,10 +84,8 @@ public class AdminTests {
         testDatabase = new Database(TEST_USERS_COLLECTION, TEST_EVENTS_COLLECTION, TEST_NOTIFICATIONS_COLLECTION, TEST_EXTRAS_COLLECTION);
         firestoreDb = FirebaseFirestore.getInstance();
 
-        // Create/reset counters doc up-front
         resetUniqueCounters();
 
-        // Optional: also purge once at class start to guarantee a clean run
         clearCollection(TEST_USERS_COLLECTION);
         clearCollection(TEST_EVENTS_COLLECTION);
         clearCollection(TEST_NOTIFICATIONS_COLLECTION);
@@ -110,7 +107,6 @@ public class AdminTests {
                 .document("uniqueIdentifierData");
         Tasks.await(uniqueRef.delete());
 
-        // really make sure its gone lol
         clearCollection(TEST_USERS_COLLECTION);
         clearCollection(TEST_EVENTS_COLLECTION);
         clearCollection(TEST_NOTIFICATIONS_COLLECTION);
@@ -124,17 +120,14 @@ public class AdminTests {
      */
     @Before
     public void setUp() throws ExecutionException, InterruptedException {
-        // Clear tracking lists
         usersToClean.clear();
         eventsToClean.clear();
         notificationsToClean.clear();
 
-        // Ensure clean slate for this test
         clearCollection(TEST_USERS_COLLECTION);
         clearCollection(TEST_EVENTS_COLLECTION);
         clearCollection(TEST_NOTIFICATIONS_COLLECTION);
 
-        // Reset counters so IDs are predictable per test
         resetUniqueCounters();
     }
 
@@ -214,15 +207,15 @@ public class AdminTests {
      */
     @Test
     public void testAdminBrowseEvents() throws ExecutionException, InterruptedException, ParseException {
-        // Setup: Create 3 events
+        // Create 3 events
         Event event1 = createTestEvent("Event 1", "org-id-1");
         Event event2 = createTestEvent("Event 2", "org-id-1");
         Event event3 = createTestEvent("Event 3", "org-id-2");
 
-        // Execute: Call the method used by AdminEventsFragment
+        // Call the method used by AdminEventsFragment
         List<Event> fetchedEvents = Tasks.await(testDatabase.getAllEventsList());
 
-        // Assert: Check if all events were fetched
+        // Check if all events were fetched
         assertNotNull("Fetched event list should not be null", fetchedEvents);
         assertEquals("Fetched event list should contain 3 events", 3, fetchedEvents.size());
         assertTrue("List should contain event 1", fetchedEvents.contains(event1));
@@ -242,15 +235,15 @@ public class AdminTests {
      */
     @Test
     public void testAdminBrowseProfiles() throws ExecutionException, InterruptedException {
-        // Setup: Create one of each user type
+        // Create one of each user type
         User entrant = createTestEntrant("test-entrant-browse");
         User organizer = createTestOrganizer("test-organizer-browse");
         User admin = createTestAdmin("test-admin-browse");
 
-        // Execute: Call the method used by AdminProfileFragment
+        // Call the method used by AdminProfileFragment
         List<User> fetchedUsers = Tasks.await(testDatabase.getAllUsers());
 
-        // Assert: Check list size and types
+        // Check list size and types
         assertNotNull("Fetched user list should not be null", fetchedUsers);
         assertEquals("Fetched user list should contain 3 users", 3, fetchedUsers.size());
 
@@ -298,15 +291,15 @@ public class AdminTests {
      */
     @Test
     public void testAdminBrowseNotificationLogs() throws ExecutionException, InterruptedException {
-        // Setup: Create 3 notifications
+        // Create 3 notifications
         Notification notif1 = createTestNotification("org-1", "ent-1", "Header 1");
         Notification notif2 = createTestNotification("org-1", "ent-2", "Header 2");
         Notification notif3 = createTestNotification("org-2", "ent-1", "Header 3");
 
-        // Execute: Call the method used by AdminNotificationLogFragment
+        // Call the method used by AdminNotificationLogFragment
         List<Notification> fetchedNotifications = Tasks.await(testDatabase.getAllNotifications());
 
-        // Assert: Check if all notifications were fetched
+        // Check if all notifications were fetched
         assertNotNull("Fetched notification list should not be null", fetchedNotifications);
         assertEquals("Fetched notification list should contain 3 notifications", 3, fetchedNotifications.size());
         assertTrue("List should contain notification 1", fetchedNotifications.contains(notif1));
@@ -324,18 +317,18 @@ public class AdminTests {
      */
     @Test
     public void testAdminBrowseImages() throws ExecutionException, InterruptedException, ParseException {
-        // Setup: Create event WITH poster
+        // Create event WITH poster
         Event eventWithPoster = createTestEvent("Poster Event", "org-poster");
         eventWithPoster.setPosterURL("https://example.com/poster.jpg");
         Tasks.await(testDatabase.setEventData(eventWithPoster.getUniqueEventID(), eventWithPoster));
 
-        // Setup: Create event WITHOUT poster
+        // Create event WITHOUT poster
         Event eventNoPoster = createTestEvent("No Poster Event", "org-no-poster");
         // Default createTestEvent leaves posterURL null or we explicitly set it null
         eventNoPoster.setPosterURL(null);
         Tasks.await(testDatabase.setEventData(eventNoPoster.getUniqueEventID(), eventNoPoster));
 
-        // Execute: Fetch all events
+        // Fetch all events
         List<Event> allEvents = Tasks.await(testDatabase.getAllEventsList());
 
         // Simulate AdminImagesFragment filtering
@@ -362,7 +355,7 @@ public class AdminTests {
      */
     @Test
     public void testAdminDeleteEvent() throws ExecutionException, InterruptedException, ParseException {
-        // Setup: Create an event
+        // Create an event
         Event event = createTestEvent("Event To Delete", "org-id-delete");
         Long eventId = event.getUniqueEventID();
 
@@ -370,14 +363,14 @@ public class AdminTests {
         Event fetchedBefore = Tasks.await(testDatabase.getEvent(eventId));
         assertNotNull("Event should exist before deletion", fetchedBefore);
 
-        // Execute: Delete the event (Logic from AdminEventsFragment)
+        // Delete the event (Logic from AdminEventsFragment)
         Tasks.await(testDatabase.removeEventData(eventId));
 
-        // Assert: Check if it is gone
+        // Check if it is gone
         Event fetchedAfter = Tasks.await(testDatabase.getEvent(eventId));
         assertNull("Event should be null after deletion", fetchedAfter);
 
-        // Remove from cleanup list since it's already deleted
+        // Remove from cleanup list
         eventsToClean.remove(event);
     }
 
@@ -390,7 +383,7 @@ public class AdminTests {
      */
     @Test
     public void testAdminDeleteEntrantProfile() throws ExecutionException, InterruptedException {
-        // Setup: Create an entrant
+        // Create an entrant
         Entrant entrant = createTestEntrant("entrant-to-delete");
         String hardwareId = entrant.getHardwareID();
 
@@ -398,10 +391,10 @@ public class AdminTests {
         User userBefore = Tasks.await(testDatabase.getUser(hardwareId));
         assertNotNull("User should exist before deletion", userBefore);
 
-        // Execute: Remove user (Logic from AdminProfileFragment)
+        // Remove user
         Tasks.await(testDatabase.removeUserData(hardwareId));
 
-        // Assert: User is gone
+        // User is gone
         User userAfter = Tasks.await(testDatabase.getUser(hardwareId));
         assertNull("User should be null after deletion", userAfter);
 
@@ -430,22 +423,21 @@ public class AdminTests {
      */
     @Test
     public void testAdminDeleteOrganizerAndCascadeEvents() throws ExecutionException, InterruptedException, ParseException {
-        // Setup:
         // Create an Organizer
         Organizer organizer = createTestOrganizer("test-organizer-cascade-delete");
         String organizerId = organizer.getHardwareID();
 
-        // Create an Entrant (to prove they are unaffected)
+        // Create an Entrant
         Entrant entrant = createTestEntrant("test-entrant-unaffected");
         String entrantId = entrant.getHardwareID();
         // Create 2 events for the Organizer
         Event event1 = createTestEvent("Organizer's Event 1", organizerId);
         Event event2 = createTestEvent("Organizer's Event 2", organizerId);
 
-        // Create 1 event for a *different* organizer (to prove it's unaffected)
+        // Create 1 event for a *different* organizer
         Event event3 = createTestEvent("Other Organizer's Event", "other-org-id");
 
-        // Execute: Simulate the logic from AdminProfileFragment
+        // Simulate the logic from AdminProfileFragment
         Log.d("AdminTests", "Simulating cascading delete for organizer: " + organizerId);
 
         // Find all events for the organizer
@@ -468,7 +460,6 @@ public class AdminTests {
         Tasks.await(testDatabase.removeUserData(organizerId));
         Log.d("AdminTests", "Organizer profile deleted.");
 
-        // Assert:
         // The Organizer is deleted
         User deletedOrganizer = Tasks.await(testDatabase.getUser(organizerId));
         assertNull("The Organizer should be deleted", deletedOrganizer);
@@ -501,12 +492,12 @@ public class AdminTests {
      */
     @Test
     public void testAdminRemoveImage() throws ExecutionException, InterruptedException, ParseException {
-        // Setup: Create event with poster
+        // Create event with poster
         Event event = createTestEvent("Image Remove Test", "org-img-rem");
         event.setPosterURL("https://example.com/delete_me.jpg");
         Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
 
-        // Execute: Remove image
+        // Remove image
         event.setPosterURL(null);
         Tasks.await(testDatabase.setEventData(event.getUniqueEventID(), event));
 

@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @RunWith(AndroidJUnit4.class)
 public class EntrantTests {
 
-    // Isolated test collections
+    // Test collections
     private static final String TEST_USERS_COLLECTION = "test_users";
     private static final String TEST_EVENTS_COLLECTION = "test_events";
     private static final String TEST_NOTIFICATIONS_COLLECTION = "test_notifications";

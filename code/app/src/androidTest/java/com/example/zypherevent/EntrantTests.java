@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * - 01.07.xx: Device Identification
  */
 @RunWith(AndroidJUnit4.class)
-public class EntrantLogicTests {
+public class EntrantTests {
 
     // Isolated test collections
     private static final String TEST_USERS_COLLECTION = "test_users";

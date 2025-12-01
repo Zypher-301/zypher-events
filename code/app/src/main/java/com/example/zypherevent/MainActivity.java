@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Get hardware ID from user's device
         userHardwareID = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        // userHardwareID = "demoOrganizer1";
+//        userHardwareID = "demoOrganizer1";
 
         Log.d("MainActivityLogic", "User hardware id: " + userHardwareID);
 
@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         // database, then you will be prompted as a new user!
 
         // Create a sample database. CAREFUL
-        // createSampleDatabase();
+//         createSampleDatabase();
 
         // Start the task for getting the user from hardware ID
         db.getUser(userHardwareID).addOnCompleteListener(task -> {
@@ -259,10 +259,10 @@ public class MainActivity extends AppCompatActivity {
                     uniqueEventID,
                     "Chess Club Meeting",
                     "Playing chess, talking about chess, making friends!",
-                    new Date("December 1, 2025 00:00:00"),
+                    new Date("December 6, 2025 00:00:00"),
                     "Vancouver Chess Stadium",
                     new Date("November 1, 2025 00:00:00"),
-                    new Date("November 29, 2025 00:00:00"),
+                    new Date("Dec 1, 2025 00:00:00"),
                     organizer2.getHardwareID(),
                     "https://upload.wikimedia.org/wikipedia/commons/6/6f/ChessSet.jpg",
                     false);

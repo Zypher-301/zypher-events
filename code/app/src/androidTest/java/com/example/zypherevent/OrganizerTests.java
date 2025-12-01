@@ -318,4 +318,195 @@ public class OrganizerTests {
                 .anyMatch(e -> e.getEntrantHardwareID().equals(userB.getHardwareID()));
         assertFalse("User B removed from waitlist", userBOnWaitlist);
     }
+
+    /**
+     * US 02.01.04: As an organizer, I want to set a registration period.
+     */
+    @Test
+    public void testRegistrationPeriod() throws ExecutionException, InterruptedException, ParseException {
+        Organizer organizer = createOrganizer("org-reg-period");
+        Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+
+        // Create dates relative to now
+        Date now = new Date();
+        Date pastStart = new Date(now.getTime() - 86400000L); // 1 day ago
+        Date futureEnd = new Date(now.getTime() + 86400000L); // 1 day future
+        Date futureStart = new Date(now.getTime() + 86400000L); // 1 day future
+        Date pastEnd = new Date(now.getTime() - 86400000L); // 1 day ago
+
+        // Open Registration (past start, future end)
+        Event openEvent = new Event(eventId, "Open Event", "Desc", null, "Loc", pastStart, futureEnd,
+                organizer.getHardwareID(), false);
+        Tasks.await(testDatabase.setEventData(eventId, openEvent));
+        eventsToClean.add(openEvent);
+
+        Event fetchedOpen = Tasks.await(testDatabase.getEvent(eventId));
+        assertTrue("Registration should be open", fetchedOpen.isRegistrationOpen());
+        assertEquals("Status should be empty (open)", "", fetchedOpen.getRegistrationStatus());
+
+        // Not Started (future start)
+        Long eventId2 = Tasks.await(testDatabase.getUniqueEventID());
+        Event futureEvent = new Event(eventId2, "Future Event", "Desc", null, "Loc", futureStart, null,
+                organizer.getHardwareID(), false);
+        Tasks.await(testDatabase.setEventData(eventId2, futureEvent));
+        eventsToClean.add(futureEvent);
+
+        Event fetchedFuture = Tasks.await(testDatabase.getEvent(eventId2));
+        assertFalse("Registration should not be open", fetchedFuture.isRegistrationOpen());
+        assertEquals("Status should be 'Registration opens soon'", "Registration opens soon",
+                fetchedFuture.getRegistrationStatus());
+
+        // Closed (past end)
+        Long eventId3 = Tasks.await(testDatabase.getUniqueEventID());
+        Event closedEvent = new Event(eventId3, "Closed Event", "Desc", null, "Loc", null, pastEnd,
+                organizer.getHardwareID(), false);
+        Tasks.await(testDatabase.setEventData(eventId3, closedEvent));
+        eventsToClean.add(closedEvent);
+
+        Event fetchedClosed = Tasks.await(testDatabase.getEvent(eventId3));
+        assertFalse("Registration should not be open", fetchedClosed.isRegistrationOpen());
+        assertEquals("Status should be 'Registration closed'", "Registration closed",
+                fetchedClosed.getRegistrationStatus());
+    }
+
+    /**
+     * US 02.04.01 & 02.04.02: As an organizer I want to upload/update an event
+     * poster.
+     */
+    @Test
+    public void testPosterManagement() throws ExecutionException, InterruptedException, ParseException {
+        Organizer organizer = createOrganizer("org-poster");
+        Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+
+        // Create event with no poster
+        Event event = new Event(eventId, "Poster Event", "Desc", null, "Loc", null, null, organizer.getHardwareID(),
+                false);
+        Tasks.await(testDatabase.setEventData(eventId, event));
+        eventsToClean.add(event);
+
+        // Verify initial state
+        Event fetched1 = Tasks.await(testDatabase.getEvent(eventId));
+        assertNull("Poster URL should be null initially", fetched1.getPosterURL());
+
+        // Update poster URL (Upload)
+        String posterUrl = "https://example.com/poster.jpg";
+        fetched1.setPosterURL(posterUrl);
+        Tasks.await(testDatabase.setEventData(eventId, fetched1));
+
+        // Verify update
+        Event fetched2 = Tasks.await(testDatabase.getEvent(eventId));
+        assertEquals("Poster URL should match", posterUrl, fetched2.getPosterURL());
+
+        // Update poster URL again (Update)
+        String newPosterUrl = "https://example.com/new_poster.jpg";
+        fetched2.setPosterURL(newPosterUrl);
+        Tasks.await(testDatabase.setEventData(eventId, fetched2));
+
+        // Verify second update
+        Event fetched3 = Tasks.await(testDatabase.getEvent(eventId));
+        assertEquals("New Poster URL should match", newPosterUrl, fetched3.getPosterURL());
+    }
+
+    /**
+     * US 02.06.01, 02.06.02, 02.06.03: View invited, cancelled, enrolled entrants.
+     */
+    @Test
+    public void testViewEntrantLists() throws ExecutionException, InterruptedException, ParseException {
+        Organizer organizer = createOrganizer("org-lists");
+        Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+
+        Event event = new Event(eventId, "List View Event", "Desc", null, "Loc", null, null, organizer.getHardwareID(),
+                false);
+        Tasks.await(testDatabase.setEventData(eventId, event));
+        eventsToClean.add(event);
+
+        Entrant invited = createEntrant("entrant-invited");
+        Entrant cancelled = createEntrant("entrant-cancelled");
+        Entrant enrolled = createEntrant("entrant-enrolled");
+
+        // Setup lists
+        event.addEntrantToInvitedList(invited.getHardwareID());
+        event.addEntrantToCancelledList(cancelled.getHardwareID());
+        event.addEntrantToAcceptedList(enrolled.getHardwareID());
+        Tasks.await(testDatabase.setEventData(eventId, event));
+
+        // Fetch and Verify
+        Event fetched = Tasks.await(testDatabase.getEvent(eventId));
+
+        // US 02.06.01
+        assertTrue("Should contain invited entrant", fetched.getInvitedEntrants().contains(invited.getHardwareID()));
+        // US 02.06.02
+        assertTrue("Should contain cancelled entrant",
+                fetched.getCancelledEntrants().contains(cancelled.getHardwareID()));
+        // US 02.06.03
+        assertTrue("Should contain enrolled (accepted) entrant",
+                fetched.getAcceptedEntrants().contains(enrolled.getHardwareID()));
+    }
+
+    /**
+     * US 02.07.01, 02.07.02, 02.07.03: Send notifications to entrants.
+     * Tests that notifications are correctly saved to the database.
+     */
+    @Test
+    public void testSendNotifications() throws ExecutionException, InterruptedException {
+        Organizer organizer = createOrganizer("org-notif");
+        Entrant recipient = createEntrant("entrant-recipient");
+        Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+
+        // Create a notification
+        Long notifId = Tasks.await(testDatabase.getUniqueNotificationID());
+        Notification notification = new Notification(notifId, organizer.getHardwareID(), recipient.getHardwareID(),
+                "Test Title", "Test Body", eventId, false);
+
+        Tasks.await(testDatabase.setNotificationData(notifId, notification));
+        notificationsToClean.add(notification);
+
+        // Verify it exists in DB
+        Notification fetched = Tasks.await(testDatabase.getNotification(notifId));
+        assertNotNull("Notification should exist", fetched);
+        assertEquals("Title should match", "Test Title", fetched.getNotificationHeader());
+        assertEquals("Body should match", "Test Body", fetched.getNotificationBody());
+        assertEquals("Recipient should match", recipient.getHardwareID(), fetched.getReceivingUserHardwareID());
+    }
+
+    /**
+     * US 02.06.05: Export to CSV.
+     * Simulates the CSV generation logic.
+     */
+    @Test
+    public void testCSVExportLogic() throws ExecutionException, InterruptedException {
+        Organizer organizer = createOrganizer("org-csv");
+        Long eventId = Tasks.await(testDatabase.getUniqueEventID());
+
+        Event event = new Event(eventId, "CSV Event", "Desc", null, "Loc", null, null, organizer.getHardwareID(),
+                false);
+
+        Entrant e1 = createEntrant("csv-1");
+        e1.setFirstName("John");
+        e1.setLastName("Doe");
+        Tasks.await(testDatabase.setUserData(e1.getHardwareID(), e1));
+
+        Entrant e2 = createEntrant("csv-2");
+        e2.setFirstName("Jane");
+        e2.setLastName("Smith");
+        Tasks.await(testDatabase.setUserData(e2.getHardwareID(), e2));
+
+        event.addEntrantToAcceptedList(e1.getHardwareID());
+        event.addEntrantToAcceptedList(e2.getHardwareID());
+        Tasks.await(testDatabase.setEventData(eventId, event));
+        eventsToClean.add(event);
+
+        // Simulate CSV Generation
+        List<String> names = new ArrayList<>();
+        for (String id : event.getAcceptedEntrants()) {
+            User u = Tasks.await(testDatabase.getUser(id));
+            names.add(u.getFirstName() + " " + u.getLastName());
+        }
+        String csvOutput = String.join(", ", names);
+
+        // Verify format
+        assertTrue("Should contain John Doe", csvOutput.contains("John Doe"));
+        assertTrue("Should contain Jane Smith", csvOutput.contains("Jane Smith"));
+        assertTrue("Should be comma separated", csvOutput.contains(", "));
+    }
 }

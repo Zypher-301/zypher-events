@@ -261,11 +261,13 @@ public class Database {
                         ArrayList<String> acceptedList = parseHardwareIdList(doc.get("acceptedEntrants"));
 
                         ArrayList<String> declinedList = parseHardwareIdList(doc.get("declinedEntrants"));
+                        ArrayList<String> cancelledList = parseHardwareIdList(doc.get("cancelledEntrants"));
 
                         event.setWaitListEntrants(waitList);
                         event.setInvitedEntrants(invitedList);
                         event.setAcceptedEntrants(acceptedList);
                         event.setDeclinedEntrants(declinedList);
+                        event.setCancelledEntrants(cancelledList);
 
                         return event;
                     } catch (Exception e) {
@@ -695,11 +697,13 @@ public class Database {
                             ArrayList<String> acceptedList = parseHardwareIdList(doc.get("acceptedEntrants"));
 
                             ArrayList<String> declinedList = parseHardwareIdList(doc.get("declinedEntrants"));
+                            ArrayList<String> cancelledList = parseHardwareIdList(doc.get("cancelledEntrants"));
 
                             event.setWaitListEntrants(waitList);
                             event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
+                            event.setCancelledEntrants(cancelledList);
 
                             eventList.add(event);
 
@@ -798,11 +802,13 @@ public class Database {
                             ArrayList<String> acceptedList = parseHardwareIdList(doc.get("acceptedEntrants"));
 
                             ArrayList<String> declinedList = parseHardwareIdList(doc.get("declinedEntrants"));
+                            ArrayList<String> cancelledList = parseHardwareIdList(doc.get("cancelledEntrants"));
 
                             event.setWaitListEntrants(waitList);
                             event.setInvitedEntrants(invitedList);
                             event.setAcceptedEntrants(acceptedList);
                             event.setDeclinedEntrants(declinedList);
+                            event.setCancelledEntrants(cancelledList);
 
                             eventList.add(event);
 

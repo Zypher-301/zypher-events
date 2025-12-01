@@ -757,6 +757,29 @@ public class Event implements Serializable {
     }
 
     /**
+     * Adds an entrant to the event's cancelled list.
+     * The entrant will only be added if they are not already in the list.
+     *
+     * @param entrantHardwareID the entrant hardware ID to add to the cancelled list
+     */
+    public void addEntrantToCancelledList(String entrantHardwareID) {
+        if (!cancelledEntrants.contains(entrantHardwareID)) {
+            cancelledEntrants.add(entrantHardwareID);
+        }
+    }
+
+    /**
+     * Removes an entrant from the event's cancelled list.
+     * If the entrant is not present, no changes are made.
+     *
+     * @param entrantHardwareID the entrant hardware ID to remove from the cancelled
+     *                          list
+     */
+    public void removeEntrantFromCancelledList(String entrantHardwareID) {
+        cancelledEntrants.remove(entrantHardwareID);
+    }
+
+    /**
      * Checks if registration is currently open for this event.
      * Registration is open if the current time is between registrationStartTime and registrationEndTime.
      *

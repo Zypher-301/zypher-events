@@ -1,14 +1,17 @@
 package com.example.zypherevent.ui.admin.events;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.example.zypherevent.Event;
 import com.example.zypherevent.R;
 
@@ -16,25 +19,23 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
+
 /**
- * An adapter for displaying a list of {@link Event} objects in a {@link RecyclerView}
- * for the admin interface.
+ * Adapter for populating a {@link RecyclerView} with a list of {@link Event} objects
+ * for the admin interface. This adapter is responsible for creating views for each event,
+ * binding event data to those views, and handling interactions such as event deletion.
  * <p>
- * This class is responsible for creating and binding views for each event in the list,
- * allowing an administrator to view event details and delete them. It uses a custom
- * layout {@code fragment_admin_item_event_card.xml} to define the appearance of each
- * event item.
- * <p>
- * The adapter requires an implementation of the {@link OnDeleteListener} interface to handle
- * the deletion of events, delegating the actual data removal logic to the hosting
- * component (e.g., a Fragment or Activity).
+ * It displays key event details including the event name, start time, registration window,
+ * description, location, and organizer. It uses the Glide library for efficiently loading
+ * event posters from a URL. A delete button is provided for each event, which triggers a
+ * callback to a listener.
  *
  * @author Arunavo Dutta
- * @version 2.0
+ * @version 2.2
+ * @see RecyclerView.Adapter
  * @see Event
- * @see AdminEventsAdapter.OnDeleteListener
  * @see AdminEventsAdapter.EventViewHolder
- * @see com.example.zypherevent.R.layout#fragment_admin_item_event_card
+ * @see OnDeleteListener
  */
 public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.EventViewHolder> {
 
@@ -43,9 +44,6 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     /**
      * Interface for a callback to be invoked when an event's delete button is clicked.
-     * <p>
-     * Implement this interface to define the action that should be taken when the user
-     * requests to delete an event from the list.
      */
     public interface OnDeleteListener {
         void onDelete(Event event);
@@ -53,16 +51,9 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     /**
      * Constructs a new AdminEventsAdapter.
-     * <p>
-     * This adapter is responsible for creating views for events and binding data to them
-     * for the admin interface. It requires a list of events to display and a listener
-     * to handle deletion actions.
      *
-     * @param eventList      The list of {@link Event} objects to be displayed in the RecyclerView.
-     * @param deleteListener The listener that will be invoked when the delete button on an event is clicked.
-     *                       This allows the calling component (e.g., a Fragment or Activity) to handle the
-     *                       actual deletion logic.
-     * @see OnDeleteListener
+     * @param eventList      A list of {@link Event} objects to be displayed.
+     * @param deleteListener A listener to handle delete button clicks for each event.
      */
     public AdminEventsAdapter(List<Event> eventList, OnDeleteListener deleteListener) {
         this.eventList = eventList;
@@ -70,17 +61,16 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
     }
 
     /**
-     * Inflates the layout for an individual event item and returns a new {@link EventViewHolder} instance.
+     * Called when RecyclerView needs a new {@link EventViewHolder} of the given type to represent
+     * an item.
      * <p>
-     * This method is called by the RecyclerView when it needs a new ViewHolder to represent an item.
-     * It inflates the {@code fragment_admin_item_event_card.xml} layout, which defines the visual
-     * structure of a single event card in the admin's event list.
+     * This new ViewHolder is constructed with a new View that is inflated from the
+     * {@code R.layout.fragment_admin_item_event_card} XML layout file.
      *
      * @param parent   The ViewGroup into which the new View will be added after it is bound to
-     *                 an adapter position. This is the RecyclerView itself.
-     * @param viewType The view type of the new View. This is not used in this adapter as there is
-     *                 only one type of item view.
-     * @return A new {@link EventViewHolder} that holds the View for a single event item.
+     *                 an adapter position.
+     * @param viewType The view type of the new View.
+     * @return A new EventViewHolder that holds a View of the given view type.
      */
     @NonNull
     @Override
@@ -91,45 +81,65 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
     }
 
     /**
-     * Called by RecyclerView to display the data at the specified position.
+     * Called by RecyclerView to display the data at the specified position. This method
+     * updates the contents of the {@link EventViewHolder#itemView} to reflect the event
+     * at the given position in the list.
      * <p>
-     * This method updates the contents of the {@link EventViewHolder#itemView} to reflect the
-     * event item at the given position. It binds the event's data (name, start/end times,
-     * description, location, and organizer ID) to the corresponding UI elements within the
-     * {@code EventViewHolder}.
-     * <p>
-     * It also sets an {@link View.OnClickListener} on the delete button. When clicked, this
-     * listener invokes the {@link OnDeleteListener#onDelete(Event)} callback, passing the
-     * specific {@link Event} object associated with that view holder.
+     * This method performs the following actions:
+     * <ol>
+     *     <li>Retrieves the {@link Event} object for the current position.</li>
+     *     <li>Sets the event name.</li>
+     *     <li>Formats and displays the event start date and registration window dates. If dates are null, "TBD" or "N/A" is shown.</li>
+     *     <li>Concatenates and displays detailed event information, including description, location, and organizer ID.</li>
+     *     <li>Loads the event poster image using Glide. If the URL is empty or invalid, a placeholder drawable is displayed.</li>
+     *     <li>Sets an OnClickListener on the delete button to trigger the {@link OnDeleteListener#onDelete(Event)} callback when clicked.</li>
+     * </ol>
      *
-     * @param holder The {@link EventViewHolder} which should be updated to represent the contents of the
-     *               item at the given position in the data set.
+     * @param holder   The {@link EventViewHolder} which should be updated to represent the
+     *                 contents of the item at the given position in the data set.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
-
         Event event = eventList.get(position);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
+        // 1. Basic Info
         holder.eventName.setText(event.getEventName());
 
+        // 2. Date Formatting (Retrieve and format the Event Start Time)
+        String eventStart = (event.getStartTime() != null) ? formatter.format(event.getStartTime()) : "TBD";
+
+        // Retrieve and format Registration Window
         String regStart = (event.getRegistrationStartTime() != null) ? formatter.format(event.getRegistrationStartTime()) : "N/A";
         String regEnd = (event.getRegistrationEndTime() != null) ? formatter.format(event.getRegistrationEndTime()) : "N/A";
 
-        holder.eventTime.setText("Registration Opens: " + regStart);
-        holder.eventLotteryDetails.setText("Registration Closes: " + regEnd);
+        // 3. Set Text Fields
+        // Primary Time: The actual event date
+        holder.eventTime.setText("Event Start: " + eventStart);
 
+        // Secondary Detail: The registration window
+        holder.eventLotteryDetails.setText("Registration: " + regStart + " to " + regEnd);
 
-        // Description, Location, and Organizer ID
-        // Combining these into the 'details' text view.
+        // 4. Detailed Description
         String details = "Description: " + event.getEventDescription() +
                 "\nAt: " + event.getLocation() +
                 "\nOrganizer: " + event.getEventOrganizerHardwareID();
         holder.eventDetails.setText(details);
 
+        // 5. Image Loading
+        if (!TextUtils.isEmpty(event.getPosterURL())) {
+            Glide.with(holder.itemView.getContext())
+                    .load(event.getPosterURL())
+                    .placeholder(R.drawable.ic_images)
+                    .error(R.drawable.ic_images)
+                    .centerCrop()
+                    .into(holder.eventImage);
+        } else {
+            holder.eventImage.setImageResource(R.drawable.ic_images);
+        }
 
-
+        // 6. Delete Action
         holder.deleteButton.setOnClickListener(v -> {
             deleteListener.onDelete(event);
         });
@@ -137,11 +147,8 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     /**
      * Returns the total number of items in the data set held by the adapter.
-     * <p>
-     * This method is used by the RecyclerView to determine how many items to display.
-     * It is essential for the layout manager to correctly size and position the views.
      *
-     * @return The total number of events in the {@code eventList}.
+     * @return The total number of events in the list.
      */
     @Override
     public int getItemCount() {
@@ -150,22 +157,28 @@ public class AdminEventsAdapter extends RecyclerView.Adapter<AdminEventsAdapter.
 
     /**
      * A {@link RecyclerView.ViewHolder} that describes an event item view and metadata about its place
-     * within the {@link RecyclerView}. This is specifically for the admin interface.
+     * within the {@link RecyclerView}. This holder is used in the admin interface to display
+     * event details and provide an option to delete the event.
      * <p>
-     * It holds the UI components for a single event card, including {@link TextView}s for the
-     * event's name, start time, registration closing time (labeled as lottery details), and other
-     * combined details (description, location, organizer). It also includes a {@link Button}
-     * for deleting the event.
-     *
-     * @see AdminEventsAdapter
-     * @see res/layout/fragment_admin_item_event_card.xml
+     * It holds references to the UI components (like {@link TextView}, {@link ImageView}, and {@link Button})
+     * for each individual event card in the list.
+     * </p>
      */
     public static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView eventName, eventTime, eventLotteryDetails, eventDetails;
+        ImageView eventImage;
         Button deleteButton;
 
+        /**
+         * Constructs an {@code EventViewHolder}.
+         * Initializes the UI components of the event card by finding their respective views
+         * within the item layout.
+         *
+         * @param itemView The view of the individual list item.
+         */
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
+            eventImage = itemView.findViewById(R.id.event_image);
             eventName = itemView.findViewById(R.id.event_name);
             eventTime = itemView.findViewById(R.id.event_time);
             eventLotteryDetails = itemView.findViewById(R.id.event_lottery_details);

@@ -85,6 +85,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
     private NotificationService notificationService;
     private boolean serviceBound = false;
+    private com.google.firebase.firestore.ListenerRegistration waitlistListener;
 
     /**
      * Default no-argument constructor required by the Fragment framework.
@@ -515,15 +516,17 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase()
                         + " entrant(s)?")
                 .setPositiveButton("Send", (confirmDialog, which) -> {
-                    sendBulkNotificationsViaService(uniqueIds, customHeader, customBody, event.getUniqueEventID(), isInvitation, () -> {
-                        Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.",
-                                Toast.LENGTH_LONG).show();
-                        sendButton.setEnabled(true);
-                        dialog.dismiss();
-                    }, () -> {
-                        Toast.makeText(getContext(), "Failed to send some notifications.", Toast.LENGTH_SHORT).show();
-                        sendButton.setEnabled(true);
-                    });
+                    sendBulkNotificationsViaService(uniqueIds, customHeader, customBody, event.getUniqueEventID(),
+                            isInvitation, () -> {
+                                Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.",
+                                        Toast.LENGTH_LONG).show();
+                                sendButton.setEnabled(true);
+                                dialog.dismiss();
+                            }, () -> {
+                                Toast.makeText(getContext(), "Failed to send some notifications.", Toast.LENGTH_SHORT)
+                                        .show();
+                                sendButton.setEnabled(true);
+                            });
                 })
                 .setNegativeButton("Cancel", (confirmDialog, which) -> {
                     sendButton.setEnabled(true);
@@ -534,16 +537,19 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     /**
      * Sends bulk notifications using Database directly.
      */
-    private void sendBulkNotificationsViaService(List<String> entrantIds, String header, String body, Long eventId, boolean isInvitation,
+    private void sendBulkNotificationsViaService(List<String> entrantIds, String header, String body, Long eventId,
+            boolean isInvitation,
             Runnable onSuccess, Runnable onFailure) {
         if (!serviceBound || notificationService == null) {
             Log.e(TAG, "NotificationService unavailable");
-            Toast.makeText(getContext(), "NotificationService unavailable. Please try again.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "NotificationService unavailable. Please try again.", Toast.LENGTH_SHORT)
+                    .show();
             onFailure.run();
             return;
         }
 
-        notificationService.sendBulkNotifications(organizerUser.getHardwareID(), entrantIds, header, body, eventId, isInvitation);
+        notificationService.sendBulkNotifications(organizerUser.getHardwareID(), entrantIds, header, body, eventId,
+                isInvitation);
         Log.d(TAG, "Sent " + entrantIds.size() + " notifications via NotificationService");
         onSuccess.run();
     }
@@ -723,6 +729,27 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         waitlistAdapter.sortByNewest();
 
+        com.google.firebase.firestore.FirebaseFirestore firestore = com.google.firebase.firestore.FirebaseFirestore
+                .getInstance();
+        com.google.firebase.firestore.DocumentReference eventRef = firestore.collection("events")
+                .document(String.valueOf(event.getUniqueEventID()));
+
+        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
+
+        waitlistListener = eventRef.addSnapshotListener((snapshot, e) -> {
+            if (e != null) {
+                Log.w(TAG, "Waitlist listen failed", e);
+                return;
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                ArrayList<WaitlistEntry> updated = db.parseWaitlistEntryList(snapshot.get("waitListEntrants"));
+                finalWaitlistEntrants.clear();
+                finalWaitlistEntrants.addAll(updated);
+                waitlistAdapter.notifyDataSetChanged();
+            }
+        });
+
         Button runLotteryButton = dialogView.findViewById(R.id.run_lottery);
         EditText etSampleSize = dialogView.findViewById(R.id.etSampleSize);
         Button btnDrawReplacement = dialogView.findViewById(R.id.btn_draw_replacement);
@@ -730,8 +757,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         if (btnDrawReplacement != null) {
             btnDrawReplacement.setOnClickListener(v -> drawReplacementFromPool(event));
         }
-
-        List<WaitlistEntry> finalWaitlistEntrants = waitlistEntrants;
 
         if (runLotteryButton != null && etSampleSize != null) {
             runLotteryButton.setOnClickListener(v -> {
@@ -802,13 +827,20 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         }
 
         AlertDialog dialog = builder.create();
+        dialog.setOnDismissListener(d -> {
+            if (waitlistListener != null) {
+                waitlistListener.remove();
+                waitlistListener = null;
+            }
+        });
         dialog.show();
     }
 
     /**
-     * Sends invitation notifications to the selected entrants using NotificationService
+     * Sends invitation notifications to the selected entrants using
+     * NotificationService
      *
-     * @param event The event that we did the lottery on
+     * @param event      The event that we did the lottery on
      * @param invitedIds List of selected entrant hardware IDs
      */
     private void sendInvitationNotification(Event event, List<String> invitedIds) {
@@ -829,7 +861,7 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     /**
      * Sends notification to the non-selected entrants using NotificationService
      *
-     * @param event The event we did the lottery on
+     * @param event       The event we did the lottery on
      * @param notSelected List of WaitlistEntry objects for non-selected entrants
      */
     private void sendWaitlistNotification(Event event, List<WaitlistEntry> notSelected) {
@@ -945,8 +977,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
         ArrayList<String> declined = event.getDeclinedEntrants();
         ArrayList<String> cancelled = event.getCancelledEntrants();
 
-
-
         if (invited == null)
             invited = new ArrayList<>();
         if (accepted == null)
@@ -955,7 +985,6 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             declined = new ArrayList<>();
         if (cancelled == null)
             cancelled = new ArrayList<>();
-
 
         ArrayList<WaitlistEntry> eligible = new ArrayList<>();
         for (WaitlistEntry entry : waitlist) {

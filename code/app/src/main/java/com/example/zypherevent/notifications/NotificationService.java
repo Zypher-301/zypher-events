@@ -159,18 +159,6 @@ public class NotificationService extends Service {
      *                           notification
      * @param title              The notification title
      * @param message            The notification message
-     * @return Task that completes when teh notification is saved
-     */
-    /**
-     * Sends notification to a specific user.
-     * Creates the notification in Firestore
-     *
-     * @param senderHardwareId   The hardware ID of the user sending the
-     *                           notification
-     * @param receiverHardwareId The hardware ID of the user receiving the
-     *                           notification
-     * @param title              The notification title
-     * @param message            The notification message
      * @param eventID            The ID of the event associated with the
      *                           notification (can be null)
      * @param isInvitation       true if this is an event invitation

@@ -2,13 +2,17 @@ package com.example.zypherevent.ui.organizer.events;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.ComponentName;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.IBinder;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
@@ -40,6 +44,7 @@ import com.example.zypherevent.OrganizerActivity;
 import com.example.zypherevent.R;
 import com.example.zypherevent.Utils;
 import com.example.zypherevent.WaitlistEntry;
+import com.example.zypherevent.notifications.NotificationService;
 import com.example.zypherevent.userTypes.Entrant;
 import com.example.zypherevent.userTypes.Organizer;
 import com.google.android.gms.tasks.Task;
@@ -78,10 +83,38 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     private Organizer organizerUser;
     private FloatingActionButton fabCreateEvent;
 
+    private NotificationService notificationService;
+    private boolean serviceBound = false;
+
     /**
      * Default no-argument constructor required by the Fragment framework.
      */
     public OrganizerMyEventsFragment() {
+    }
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            NotificationService.LocalBinder binder = (NotificationService.LocalBinder) service;
+            notificationService = binder.getService();
+            serviceBound = true;
+            Log.d(TAG, "NotificationService connected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+            notificationService = null;
+            Log.d(TAG, "NotificationService disconnected");
+        }
+    };
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Intent intent = new Intent(getContext(), NotificationService.class);
+        getContext().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     /**
@@ -472,14 +505,17 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
             return;
         }
 
+        // Remove duplicates
         List<String> uniqueIds = new ArrayList<>(new java.util.HashSet<>(entrantIds));
+        // Determine if this is an invitation
+        boolean isInvitation = "Accepted".equals(selectedStatus);
 
         new AlertDialog.Builder(getContext())
                 .setTitle("Confirm Notification Send")
                 .setMessage("Send notifications to " + uniqueIds.size() + " " + selectedStatus.toLowerCase()
                         + " entrant(s)?")
                 .setPositiveButton("Send", (confirmDialog, which) -> {
-                    sendBulkNotificationsViaDatabase(uniqueIds, customHeader, customBody, () -> {
+                    sendBulkNotificationsViaService(uniqueIds, customHeader, customBody, event.getUniqueEventID(), isInvitation, () -> {
                         Toast.makeText(getContext(), "Sent notifications to " + uniqueIds.size() + " entrants.",
                                 Toast.LENGTH_LONG).show();
                         sendButton.setEnabled(true);
@@ -498,56 +534,18 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
     /**
      * Sends bulk notifications using Database directly.
      */
-    private void sendBulkNotificationsViaDatabase(List<String> entrantIds, String header, String body,
+    private void sendBulkNotificationsViaService(List<String> entrantIds, String header, String body, Long eventId, boolean isInvitation,
             Runnable onSuccess, Runnable onFailure) {
-        int totalEntrants = entrantIds.size();
-        final int[] successCount = { 0 };
-        final int[] failureCount = { 0 };
-
-        for (String entrantId : entrantIds) {
-            db.getUniqueNotificationID()
-                    .addOnSuccessListener(notificationID -> {
-                        com.example.zypherevent.Notification notification = new com.example.zypherevent.Notification(
-                                notificationID,
-                                organizerUser.getHardwareID(),
-                                entrantId,
-                                header,
-                                body,
-                                null,
-                                false);
-
-                        db.setNotificationData(notificationID, notification)
-                                .addOnSuccessListener(v -> {
-                                    successCount[0]++;
-                                    Log.d(TAG, "Notification sent to: " + entrantId);
-                                    if (successCount[0] + failureCount[0] == totalEntrants) {
-                                        onSuccess.run();
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    failureCount[0]++;
-                                    Log.e(TAG, "Failed to send notification to: " + entrantId, e);
-                                    if (successCount[0] + failureCount[0] == totalEntrants) {
-                                        if (successCount[0] > 0) {
-                                            onSuccess.run();
-                                        } else {
-                                            onFailure.run();
-                                        }
-                                    }
-                                });
-                    })
-                    .addOnFailureListener(e -> {
-                        failureCount[0]++;
-                        Log.e(TAG, "Failed to get notification ID for: " + entrantId, e);
-                        if (successCount[0] + failureCount[0] == totalEntrants) {
-                            if (successCount[0] > 0) {
-                                onSuccess.run();
-                            } else {
-                                onFailure.run();
-                            }
-                        }
-                    });
+        if (!serviceBound || notificationService == null) {
+            Log.e(TAG, "NotificationService unavailable");
+            Toast.makeText(getContext(), "NotificationService unavailable. Please try again.", Toast.LENGTH_SHORT).show();
+            onFailure.run();
+            return;
         }
+
+        notificationService.sendBulkNotifications(organizerUser.getHardwareID(), entrantIds, header, body, eventId, isInvitation);
+        Log.d(TAG, "Sent " + entrantIds.size() + " notifications via NotificationService");
+        onSuccess.run();
     }
 
     /**
@@ -767,8 +765,10 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                 Collections.shuffle(shuffled);
 
                 List<WaitlistEntry> selected = shuffled.subList(0, n);
+                List<WaitlistEntry> notSelected = shuffled.subList(n, shuffled.size());
 
                 int invitedCount = 0;
+                List<String> invitedIds = new ArrayList<>();
 
                 for (WaitlistEntry entry : selected) {
 
@@ -784,6 +784,14 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                                     err -> Log.e(TAG, "Failed to move entrant to invited: " + err.getMessage()));
 
                     invitedCount++;
+                    invitedIds.add(hardwareId);
+                }
+
+                if (!invitedIds.isEmpty()) {
+                    sendInvitationNotification(event, invitedIds);
+                }
+                if (!notSelected.isEmpty()) {
+                    sendWaitlistNotification(event, notSelected);
                 }
 
                 Toast.makeText(getContext(), "Selected and invited " + invitedCount + " entrant(s).", Toast.LENGTH_LONG)
@@ -795,6 +803,58 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    /**
+     * Sends invitation notifications to the selected entrants using NotificationService
+     *
+     * @param event The event that we did the lottery on
+     * @param invitedIds List of selected entrant hardware IDs
+     */
+    private void sendInvitationNotification(Event event, List<String> invitedIds) {
+        if (!serviceBound || notificationService == null) {
+            Log.e(TAG, "NotificationService not bound, cannot send notifications");
+            return;
+        }
+
+        String title = "You've Been Selected!";
+        String message = "Congratulations! You have been selected for " + event.getEventName()
+                + ". Please accept to claim your spot before the deadline.";
+
+        notificationService.sendBulkNotifications(organizerUser.getHardwareID(), invitedIds, title, message,
+                event.getUniqueEventID(), true);
+        Log.d(TAG, "Invitation notification sent to: " + invitedIds.size() + " entrants");
+    }
+
+    /**
+     * Sends notification to the non-selected entrants using NotificationService
+     *
+     * @param event The event we did the lottery on
+     * @param notSelected List of WaitlistEntry objects for non-selected entrants
+     */
+    private void sendWaitlistNotification(Event event, List<WaitlistEntry> notSelected) {
+        if (!serviceBound || notificationService == null) {
+            Log.e(TAG, "NotificationService not bound, cannot send notifications");
+            return;
+        }
+
+        String title = "Event Update";
+        String message = "You were not selected in " + event.getEventName() +
+                "at this lottery run, but you will remain on the waitlist for future selections.";
+
+        // Get all hardware IDs from waitlist entrants
+        List<String> notSelectedIds = new ArrayList<>();
+        for (WaitlistEntry entry : notSelected) {
+            if (entry != null && entry.getEntrantHardwareID() != null) {
+                notSelectedIds.add(entry.getEntrantHardwareID());
+            }
+        }
+
+        if (!notSelectedIds.isEmpty()) {
+            notificationService.sendBulkNotifications(organizerUser.getHardwareID(), notSelectedIds, title, message,
+                    event.getUniqueEventID(), false);
+        }
+        Log.d(TAG, "Waitlist notifications sent to " + notSelectedIds.size() + " entrants");
     }
 
     /**
@@ -1572,5 +1632,15 @@ public class OrganizerMyEventsFragment extends Fragment implements OrganizerEven
                     callback.onDateSelected(selected.getTime());
                 }, year, month, day);
         dialog.show();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        if (serviceBound && getContext() != null) {
+            getContext().unbindService(serviceConnection);
+            serviceBound = false;
+        }
     }
 }

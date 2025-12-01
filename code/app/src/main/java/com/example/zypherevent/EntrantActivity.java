@@ -20,8 +20,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -451,6 +453,9 @@ public class EntrantActivity extends AppCompatActivity {
             }
 
             navigateToNotifications();
+
+            intent.removeExtra("navigate_to");
+            setIntent(intent);
         }
     }
 
@@ -464,7 +469,18 @@ public class EntrantActivity extends AppCompatActivity {
         new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
             try {
                 Log.d("EntrantActivity", "Attempting navigation to notifications");
-                navController.navigate(R.id.nav_notifications);
+                NavOptions navOptions = new NavOptions.Builder()
+                        .setLaunchSingleTop(true)
+                        .setPopUpTo(navController.getGraph().getStartDestinationId(), true) // reset stack to root
+                        .setRestoreState(true)
+                        .build();
+
+                navController.navigate(R.id.nav_notifications, null, navOptions);
+
+                // Close the drawer after navigating
+                if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                }
                 Log.d("EntrantActivity", "Navigation successful");
             } catch (IllegalArgumentException e) {
                 Log.e("EntrantActivity", "Navigation destination not found", e);
